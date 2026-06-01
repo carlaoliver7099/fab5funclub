@@ -3,6 +3,7 @@ let CLUB = null;
 let EVENTS = [];
 let CALENDAR_DATE = new Date();
 CALENDAR_DATE.setDate(1);
+let CHAT_HISTORY = []; // [{role, content}]
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
@@ -10,18 +11,68 @@ const $$ = (sel) => document.querySelectorAll(sel);
 async function api(path, opts = {}) {
   const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     ...opts,
     body: opts.body ? JSON.stringify(opts.body) : undefined
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(err.error || 'Request failed');
-  }
-  return res.json();
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || ('Request failed: ' + res.status));
+  return data;
 }
 
-// ---------- INITIAL LOAD ----------
-async function init() {
+// ---------- AUTH FLOW ----------
+async function checkAuth() {
+  try {
+    const me = await api('/api/me');
+    if (me.authed) {
+      showApp();
+    } else {
+      showLogin();
+    }
+  } catch {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  $('#login-screen').style.display = 'flex';
+  $('#main-app').style.display = 'none';
+  setTimeout(() => $('#login-password')?.focus(), 100);
+}
+
+function showApp() {
+  $('#login-screen').style.display = 'none';
+  $('#main-app').style.display = 'block';
+  initApp();
+}
+
+function setupLogin() {
+  $('#login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const pw = $('#login-password').value;
+    const msg = $('#login-msg');
+    msg.textContent = 'Sniffing your password... 🐾';
+    msg.className = '';
+    try {
+      await api('/api/login', { method: 'POST', body: { password: pw } });
+      msg.textContent = '🎉 Welcome to the pack!';
+      setTimeout(showApp, 400);
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'error';
+      $('#login-password').value = '';
+    }
+  });
+}
+
+async function logout() {
+  try { await api('/api/logout', { method: 'POST' }); } catch {}
+  CLUB = null; EVENTS = []; CHAT_HISTORY = [];
+  showLogin();
+}
+
+// ---------- INITIAL APP LOAD (after auth) ----------
+async function initApp() {
   try {
     const info = await api('/api/club-info');
     CLUB = info;
@@ -31,6 +82,8 @@ async function init() {
     fillMemberCheckboxes();
     setupForm();
     setupCalendarNav();
+    setupPebblesChat();
+    $('#logout-btn').addEventListener('click', logout);
 
     const data = await api('/api/events');
     EVENTS = data.events;
@@ -38,19 +91,26 @@ async function init() {
     renderEventsList();
   } catch (e) {
     console.error('Init failed:', e);
+    if (String(e.message).toLowerCase().includes('log in')) showLogin();
   }
 }
 
 // ---------- MEMBERS ----------
 function renderMembers() {
   const grid = $('#members-grid');
-  grid.innerHTML = CLUB.members.map(m => `
-    <div class="member-card" style="background: linear-gradient(180deg, white 60%, ${m.color})">
-      <span class="member-emoji" style="background:${m.color}">${m.emoji}</span>
-      <div class="member-name">${m.name}</div>
-      <div class="member-role">${m.role}</div>
-    </div>
-  `).join('');
+  grid.innerHTML = CLUB.members.map(m => {
+    const isPebbles = m.name === 'Pebbles';
+    const emojiHtml = isPebbles
+      ? `<span class="member-emoji pebbles-pic" style="background:${m.color}"><img src="/static/pebbles.png" alt="Pebbles" /></span>`
+      : `<span class="member-emoji" style="background:${m.color}">${m.emoji}</span>`;
+    return `
+      <div class="member-card ${isPebbles ? 'mascot' : ''}" style="background: linear-gradient(180deg, white 60%, ${m.color})">
+        ${emojiHtml}
+        <div class="member-name">${m.name}</div>
+        <div class="member-role">${m.role}</div>
+      </div>
+    `;
+  }).join('');
 }
 
 // ---------- ACTIVITIES ----------
@@ -79,12 +139,10 @@ function renderActivities() {
     </div>
   `).join('');
 
-  // Click an activity to pre-fill the form
   $$('.activity-card').forEach(card => {
     card.addEventListener('click', () => {
       const name = card.dataset.name;
-      const select = $('#evt-activity');
-      select.value = name;
+      $('#evt-activity').value = name;
       $('#evt-title').focus();
       $('#add-event').scrollIntoView({ behavior: 'smooth' });
     });
@@ -99,7 +157,9 @@ function fillActivityDropdown() {
 
 function fillMemberCheckboxes() {
   const box = $('#members-checks');
-  box.innerHTML = CLUB.members.map(m => `
+  // Exclude Pebbles from "who's coming" (she's everywhere in spirit 🐾)
+  const humanMembers = CLUB.members.filter(m => m.name !== 'Pebbles');
+  box.innerHTML = humanMembers.map(m => `
     <label class="member-check" data-name="${m.name}">
       <input type="checkbox" value="${m.name}" />
       ${m.emoji} ${m.name}
@@ -108,10 +168,7 @@ function fillMemberCheckboxes() {
   $$('.member-check').forEach(lbl => {
     const cb = lbl.querySelector('input');
     lbl.addEventListener('click', (e) => {
-      // Avoid double-toggle when clicking the checkbox itself
-      if (e.target.tagName !== 'INPUT') {
-        cb.checked = !cb.checked;
-      }
+      if (e.target.tagName !== 'INPUT') cb.checked = !cb.checked;
       lbl.classList.toggle('checked', cb.checked);
     });
   });
@@ -132,25 +189,20 @@ function setupCalendarNav() {
 function renderCalendar() {
   const year = CALENDAR_DATE.getFullYear();
   const month = CALENDAR_DATE.getMonth();
-  const monthName = CALENDAR_DATE.toLocaleString('en-AU', { month: 'long', year: 'numeric' });
-  $('#month-label').textContent = monthName;
-
-  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  $('#month-label').textContent = CALENDAR_DATE.toLocaleString('en-AU', { month: 'long', year: 'numeric' });
+  const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   const headers = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     .map(d => `<div class="cal-header">${d}</div>`).join('');
 
   let cells = '';
-  // leading blanks
   for (let i = 0; i < firstDay; i++) cells += `<div class="cal-cell empty"></div>`;
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const dt = new Date(year, month, d);
-    const weekday = dt.getDay();
+    const weekday = new Date(year, month, d).getDay();
     const isWeekend = weekday === 0 || weekday === 6;
     const evs = EVENTS.filter(e => e.date === dateStr);
     const classes = [
@@ -159,7 +211,6 @@ function renderCalendar() {
       evs.length ? 'has-event' : '',
       dateStr === todayStr ? 'today' : ''
     ].filter(Boolean).join(' ');
-
     cells += `<div class="${classes}" data-date="${dateStr}">
       <span class="cal-day-num">${d}</span>
       ${evs.slice(0, 2).map(e => `<span class="cal-event-dot" title="${e.title}">${e.title.slice(0, 12)}</span>`).join('')}
@@ -169,7 +220,6 @@ function renderCalendar() {
 
   $('#calendar-grid').innerHTML = headers + cells;
 
-  // Click weekend cells to pre-fill add form
   $$('.cal-cell[data-date]').forEach(cell => {
     cell.addEventListener('click', () => {
       const date = cell.dataset.date;
@@ -192,7 +242,7 @@ function renderEventsList() {
     .sort((a, b) => a.date.localeCompare(b.date));
 
   if (!upcoming.length) {
-    $('#events-list').innerHTML = `<div class="loading">No upcoming adventures yet — add one below! 🎉</div>`;
+    $('#events-list').innerHTML = `<div class="loading">No upcoming adventures yet — add one below or ask Pebbles! 🐾</div>`;
     return;
   }
 
@@ -247,15 +297,11 @@ function setupForm() {
     e.preventDefault();
     const date = $('#evt-date').value;
     if (!date) return flashMsg('Pick a date!', 'error');
-
     const day = new Date(date + 'T12:00:00').getDay();
-    if (day !== 0 && day !== 6) {
-      return flashMsg('Adventures only on Saturdays & Sundays! 🌞', 'error');
-    }
+    if (day !== 0 && day !== 6) return flashMsg('Adventures only on Saturdays & Sundays! 🌞', 'error');
 
     const members = Array.from($$('#members-checks input:checked')).map(cb => cb.value);
-    const equipment = $('#evt-equipment').value
-      .split(',').map(s => s.trim()).filter(Boolean);
+    const equipment = $('#evt-equipment').value.split(',').map(s => s.trim()).filter(Boolean);
 
     const body = {
       title: $('#evt-title').value.trim(),
@@ -264,8 +310,7 @@ function setupForm() {
       startTime: $('#evt-start').value,
       endTime: $('#evt-end').value,
       location: $('#evt-location').value.trim() || 'TBA',
-      members,
-      equipment,
+      members, equipment,
       notes: $('#evt-notes').value.trim()
     };
 
@@ -284,8 +329,6 @@ function setupForm() {
       flashMsg('Oops: ' + err.message, 'error');
     }
   });
-
-  // Constrain time picker hint (7am to 7pm)
   $('#evt-date').min = new Date().toISOString().slice(0, 10);
 }
 
@@ -296,10 +339,93 @@ function flashMsg(text, type) {
   setTimeout(() => { if (m.textContent === text) m.textContent = ''; }, 4000);
 }
 
+// ---------- PEBBLES CHAT ----------
+function setupPebblesChat() {
+  const fab = $('#pebbles-fab');
+  const chat = $('#pebbles-chat');
+  const close = $('#pebbles-close');
+  const form = $('#pebbles-form');
+  const input = $('#pebbles-input');
+
+  fab.addEventListener('click', () => {
+    chat.style.display = 'flex';
+    fab.style.display = 'none';
+    if (CHAT_HISTORY.length === 0) {
+      addBubble('assistant', `🐾 *wags tail* G'day! I'm Pebbles, the Fab 5 Fun Club mascot and your AI events coach!\n\nI can help you:\n• Plan adventures 🗺️\n• Find the best LOCAL spots on the Sunny Coast 📍\n• Tell you what GEAR you need 🎒\n• Estimate COSTS 💰\n• Teach you team-leader skills 🎖️\n• Add events straight to your calendar! 📅\n\nWho's chatting? Pick your name above 👆 and ask me anything!`);
+    }
+    setTimeout(() => input.focus(), 100);
+  });
+
+  close.addEventListener('click', () => {
+    chat.style.display = 'none';
+    fab.style.display = 'flex';
+  });
+
+  $$('#pebbles-quick button').forEach(b => {
+    b.addEventListener('click', () => {
+      input.value = b.dataset.prompt;
+      form.dispatchEvent(new Event('submit'));
+    });
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    const user = $('#pebbles-user').value;
+    addBubble('user', text);
+    CHAT_HISTORY.push({ role: 'user', content: text });
+
+    const thinking = addBubble('assistant', '🐾 *sniffing for ideas...*', 'thinking');
+
+    try {
+      const res = await api('/api/pebbles/chat', {
+        method: 'POST',
+        body: { messages: CHAT_HISTORY, user }
+      });
+      thinking.remove();
+      const reply = res.message?.content || '*tilts head*';
+      addBubble('assistant', reply);
+      CHAT_HISTORY.push({ role: 'assistant', content: reply });
+
+      // If Pebbles added an event, refresh the calendar
+      if (res.eventCreated) {
+        EVENTS.push(res.eventCreated);
+        renderCalendar();
+        renderEventsList();
+      }
+    } catch (err) {
+      thinking.remove();
+      addBubble('assistant', `*whimper* Oops: ${err.message}`);
+    }
+  });
+}
+
+function addBubble(role, text, extraClass = '') {
+  const wrap = $('#pebbles-messages');
+  const div = document.createElement('div');
+  div.className = `bubble ${role} ${extraClass}`.trim();
+  div.innerHTML = formatMessage(text);
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+function formatMessage(text) {
+  // very light markdown: **bold**, line breaks
+  return escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 // Go!
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  setupLogin();
+  checkAuth();
+});
