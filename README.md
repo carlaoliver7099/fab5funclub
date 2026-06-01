@@ -1,138 +1,124 @@
 # 🌈 Fab 5 Fun Club
 
 ## Project Overview
-- **Name**: Fab 5 Fun Club
-- **Goal**: A **private**, interactive adventure-planning website for Saia, Elijah, Charlotte, Ace & Sienna — a 5-friend fun club based on the Sunshine Coast & Hinterlands, SE Queensland, Australia. Their dog Pebbles is the AI events mascot.
-- **Features**:
-  - 🔐 Private login (password-protected)
-  - 🎨 Custom colorful logo
-  - 🐾 **Pebbles the AI Mascot** — Saia's real Bull Arab dog reborn as an AI events coach with chat
-  - 📅 Interactive calendar (Saturdays & Sundays only, 7am – 7pm)
-  - ➕ Manual or AI-assisted event creation
-  - 🌟 Club Values + Duke of Edinburgh-style adventure framework + Team Leader questions
-  - 🗑️ Delete events
-  - 👋 Crew member profiles (5 friends + Pebbles)
-  - 🎯 25 epic activities by category
-  - 📱 Mobile responsive
+A **private, AI-powered adventure-planning website** for Saia, Elijah, Charlotte, Ace & Sienna — a 5-friend fun club on the Sunshine Coast & Hinterlands, SE Queensland, Australia. Their dog Pebbles is the AI events mascot, badge-awarder, and leadership coach.
 
-## Live URL (Sandbox Preview)
+### Live URL
 **https://3000-i9m9vtz06aqmft4184vj3-ea026bf9.sandbox.novita.ai**
-
 - **Password**: `pebbles123!`
-- **GitHub**: not pushed yet
-- **Cloudflare Pages**: not deployed yet
 
 ## Currently Completed Features
-✅ **Login screen** — animated rainbow background, password protection, cookie-based session (90 days)
-✅ **Logout button** in the top-right of the main app
-✅ **Colorful animated hero** with logo, club name, crew, and Pebbles mascot mention
-✅ **The Crew section** — 5 friends + Pebbles (with her real photo as avatar)
-✅ **Our Values section** — Carla's three rules, Duke of Edinburgh framework, Team Leader questions
-✅ **Monthly calendar** with navigation, weekend highlighting, click-to-add
-✅ **Add Event form** — activity dropdown, Sat/Sun-only date picker, time 7am–7pm, member checkboxes, equipment, notes
-✅ **Upcoming events list** with detailed cards & delete
-✅ **25 activities** filterable by category — click to start planning
-✅ **🐾 PEBBLES AI CHAT WIDGET** (floating bubble bottom-right):
-  - Real photo of Pebbles as avatar
-  - Aussie dog personality, kid-safe language
-  - Knows local Sunshine Coast spots for every activity
-  - Knows typical kid budgets for activities
-  - Teaches team leadership questions
-  - Reinforces club values (Carla's 3 rules + Duke of Ed framework)
-  - **Can ADD EVENTS to the calendar directly via OpenAI tool calling**
-  - Confirms before adding
-  - Quick-action buttons for common questions
-  - User-selector so Pebbles knows which kid is chatting
-✅ Server-side weekend validation
-✅ Friendly error/success messages
+✅ **Private login** (90-day cookie session)
+✅ **Sticky top navigation** for jumping between sections
+✅ **Colorful animated hero** with rotating logo
+✅ **The Crew** — 5 friends + Pebbles (real photo)
+✅ **Team Charter / Values section** with:
+   - Carla's 3 rules (not selfish/greedy/impatient)
+   - Carla's team rule ("if you're not a team player, you're not in the team")
+   - Carla's story wisdom ("we have the pen in our hands")
+   - Duke of Edinburgh 4-pillar framework with link to dukeofed.com.au
+   - Peer-guidance explanation + Team Leader questions
+✅ **Calendar** — month nav, weekend-only Sat/Sun events, leader badge per event, click rotate button
+✅ **Add Event form** — full details + leader selector + auto-rotate option
+✅ **Leader Rotation tracker** — shows who's led how many times, highlights "next up"
+✅ **Merch section** — 4 designs (crew tee, leader tee in gold, hoodie, snapback caps + leader cap)
+   - "How to print" guide (Redbubble, Printify, local printers)
+   - Pebbles' pup-tip on sizing
+✅ **Awards section** with:
+   - All 8 badge designs shown
+   - Nominate-a-friend form (peer feedback only — can't self-award)
+   - Per-member badge cards with reasons and "from" attribution
+   - Delete badges
+✅ **Gallery** — upload photos & videos (under 2MB, base64 in-memory), captions, by-line, delete
+✅ **Concert Wishlist** — pre-seeded with Olivia Rodrigo (GUTS Tour) + Chappell Roan (Pink Pony Club!), add new, interest chips (5 members can tap to mark "I want to go")
+✅ **🐾 Pebbles AI** with 3 tool-calling abilities:
+   - `create_event` — adds events to calendar (Sat/Sun validated, auto-rotates leader)
+   - `award_badge` — issues badges with peer-feedback reasons (asks for detail first!)
+   - `add_concert` — adds concerts to wishlist
+   - Knows leader-rotation fairness and suggests next leader
+   - Aussie dog personality, kid-safe, teaches leadership questions
 
-## Functional API Endpoints
-| Method | Path                  | Auth | Description |
-|--------|-----------------------|------|-------------|
-| GET    | `/`                   | public | Main app page (renders login overlay if not authed) |
-| POST   | `/api/login`          | public | `{password}` → sets 90-day session cookie |
-| POST   | `/api/logout`         | public | Clears session cookie |
-| GET    | `/api/me`             | public | `{authed: bool}` |
-| GET    | `/api/club-info`      | 🔐 | Club name, location, 6 members, 25 activities |
-| GET    | `/api/events`         | 🔐 | All events, sorted by date |
-| POST   | `/api/events`         | 🔐 | Create event (Sat/Sun only). Body: `{title, activity, date, startTime, endTime, location, members[], equipment[], notes}` |
-| DELETE | `/api/events/:id`     | 🔐 | Delete event by id |
-| POST   | `/api/pebbles/chat`   | 🔐 | Body: `{messages: [...], user: "Saia"}` → returns Pebbles AI reply, may also create an event |
+## API Endpoints
+All `/api/*` (except `/api/login`, `/api/logout`, `/api/me`) require login cookie.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/login` | Body `{password}` → cookie |
+| POST | `/api/logout` | Clears cookie |
+| GET  | `/api/me` | `{authed: bool}` |
+| GET  | `/api/club-info` | Club name, location, 6 members, 25 activities, 8 badges |
+| GET  | `/api/events` | All events |
+| POST | `/api/events` | Create event (Sat/Sun only). Auto-rotates leader if not provided. |
+| DELETE | `/api/events/:id` | Delete |
+| POST | `/api/leader/rotate/:eventId` | Rotate leader to next member |
+| GET  | `/api/leader/next` | Suggest fairest next leader |
+| GET  | `/api/awards` | All awards (peer feedback) |
+| POST | `/api/awards` | Body `{awardedBy, member, badgeId, reason}` |
+| DELETE | `/api/awards/:id` | Delete |
+| GET  | `/api/gallery` | All photos/videos |
+| POST | `/api/gallery` | Body `{type, dataUrl, caption, uploadedBy}` (<2MB) |
+| DELETE | `/api/gallery/:id` | Delete |
+| GET  | `/api/concerts` | All concert wishlist items |
+| POST | `/api/concerts` | Body `{artist, tour, city, date, notes}` |
+| POST | `/api/concerts/:id/interested` | Body `{member, going: bool}` toggle interest |
+| DELETE | `/api/concerts/:id` | Delete |
+| POST | `/api/pebbles/chat` | Body `{messages, user}` → AI reply, may create events/awards/concerts |
+
+## Badges (8)
+**Duke of Edinburgh inspired:**
+- 🧠 Skill Master — learned something new
+- 💪 Physical Hero — pushed their body
+- 🏞️ Adventurer — tried something exciting outdoors
+- ❤️ Service Star — helped someone
+
+**Fab 5 Values (Carla-inspired):**
+- 🤝 Team Player — "no team player → not in team"
+- 👯 Peer Mentor — guided a friend with kindness
+- 💛 Kind Heart — not selfish, greedy, or impatient
+- ⛑️ Safety Champ — kept the team safe
+
+## Merch Designs
+- 👕 Crew T-Shirt — white with rainbow logo, 5 names — Est. $25-35
+- 🎖️ Leader T-Shirt — GOLD edition rotates daily — Est. $30-40
+- 🧥 Crew Hoodie — pink with huge back print — Est. $55-75
+- 🧢 Crew + Leader Caps — teal & gold snapbacks — Est. $25-35 each
+
+Print via: Redbubble, Printify, Spring, or local Sunshine Coast printers.
+
+## Leader Merch System
+- Gold tee/hoodie/cap rotates fairly between Saia, Elijah, Charlotte, Ace, Sienna
+- The Leader of the Day asks the team-leader questions, not bossy
+- After every event, crew gives kind peer feedback to the leader
+- Tracker on the Merch section shows counts so rotation stays fair
 
 ## Data Architecture
-- **Models**:
-  - `Event { id, title, activity, date, startTime, endTime, location, members[], equipment[], notes, createdAt }`
-  - `Member { name, role, emoji, color }`
-  - `Activity { name, emoji, category }`
-- **Storage**: In-memory (resets on worker restart) — TODO: migrate to Cloudflare D1
-- **AI**: OpenAI-compatible LLM (`gpt-5-mini`) via Genspark LLM proxy
-- **Auth**: HTTP-only session cookie (`fab5_auth`), 90-day expiry, shared password stored in `CLUB_PASSWORD` env var
-- **Secrets**: `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `CLUB_PASSWORD` stored in `.dev.vars` locally (git-ignored)
-
-## How to Share Access With Your Friends & Their Parents
-1. **Send them this URL**: https://3000-i9m9vtz06aqmft4184vj3-ea026bf9.sandbox.novita.ai
-2. **Send them the password**: `pebbles123!`
-3. They'll see the login screen, type the password, and they're in!
-4. The login lasts 90 days on their device — so once they log in, they won't have to do it again for ages.
-
-## Pebbles' Knowledge — Sunshine Coast Spots
-Pebbles knows real local spots for: motocross, kayaking, snorkeling, wakeboarding, waterfalls, caving, abseiling, skateparks, go karting, aqua parks, theme parks, camping, and outback festivals. Including: Coolum Pines MX, Lake MacDonald, Maroochy River, Noosa Everglades, Kondalilla Falls, Gardners Falls, Booloumba Creek, Mt Coolum, Mt Tibrogargan, Maroochydore Skatepark, Big Kart Track Landsborough, Aussie World, and many more.
-
-## Pebbles' Values (Taught to Saia by her Mum, Carla)
-> **"Don't be selfish. Don't be greedy. Don't be impatient. Then everything will be ok."**
-
-Plus inspiration from the **Duke of Edinburgh Award** (Carla did this when she was younger!) — every adventure should include:
-1. **SKILL** — learn something new
-2. **PHYSICAL** — move your body
-3. **ADVENTURE** — try something exciting
-4. **SERVICE** — help someone else
-
-## Activities Available (25)
-**Wheels** 🏍️ MX • Enduro • Go Karting • Skateboarding • Rollerskating
-**Water** 🌊 Kayaking • Snorkeling • SUP • Wakeboarding • Water Skiing • Jet Skiing • Sailing • 6HP Boating • Aqua Park
-**Adventure** 🥾 Waterfalls • Canyoning • Caving • Abseiling • Trekking • Camping
-**Skills** ⛑️ First Aid • Survival
-**Fun** 🎢 Theme Parks • Pig Races • Outback Festivals
-
-## User Guide
-1. **Log in** with the club password.
-2. **Talk to Pebbles** — click the floating dog photo in the bottom-right corner. Pick your name from the dropdown so she knows who's chatting. Try the quick-action buttons or type freely!
-3. **Pebbles can add events** — describe an adventure (activity, date, who's coming, location), confirm, and she'll put it straight on your calendar.
-4. **Or use the form** — scroll to "➕ Plan a New Adventure" to add events manually.
-5. **Browse activities** — click any of the 25 activity cards to start planning that activity.
-6. **Read your values** — the "🌟 Our Values" section reminds you of Carla's wisdom and the Duke of Ed framework.
+- **In-memory** stores: events, awards, gallery (base64), concerts (resets on worker restart)
+- **AI**: OpenAI-compatible (`gpt-5-mini`) via Genspark LLM proxy with 3 function tools
+- **Auth**: HTTP-only cookie, 90-day expiry, shared password in `CLUB_PASSWORD`
+- **Secrets** in `.dev.vars` (git-ignored): `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `CLUB_PASSWORD`
 
 ## Features Not Yet Implemented
-- 💾 Persistent storage (events disappear if worker restarts) — would use Cloudflare D1
-- 📸 Photo uploads from past adventures (R2 storage)
-- 🌦️ Weather forecast preview for event dates
+- 💾 Persistent storage (Cloudflare D1) — events/awards/gallery reset on restart
+- 📸 Gallery on R2 storage so big videos work (currently 2MB cap)
+- 👤 Per-person logins
+- 🌦️ Weather forecast for event dates
 - 🗺️ Map view of locations
-- 📲 Mobile push reminders
-- 💰 Shared equipment budget/wishlist tracker
-- 🎉 RSVP yes/no/maybe
-- 🏆 Badges / completed adventures log (Duke of Ed style progress!)
-- 👤 Individual logins per person (currently one shared password)
-- ☁️ Cloudflare Pages production deploy with custom domain
+- 📲 SMS/email reminders to parents
+- 🏆 "Duke-of-Ed style progress tracker" — auto badges when adventure covers all 4 pillars
+- 🎟️ Live concert API integration (Ticketek/Ticketmaster) for real concert dates
+- ☁️ Cloudflare Pages production deploy
 
 ## Recommended Next Steps
-1. **Persist data with Cloudflare D1** so events survive restarts
-2. **Deploy to Cloudflare Pages** so the site is on a real URL like `fab5funclub.pages.dev`
-3. **Per-user logins** so each kid has their own login (better security than a shared password)
-4. **Photo gallery of past events** (R2 bucket)
-5. **Duke of Ed progress tracker** — track which adventures included Skill / Physical / Adventure / Service and award badges
-6. **Email/SMS reminders to parents** the day before each event
+1. **Cloudflare D1** — make all data permanent
+2. **Cloudflare R2** — host big photos/videos
+3. **Deploy to Cloudflare Pages** with custom domain like `fab5funclub.com.au`
+4. **Per-person logins** (better security for parent sharing)
+5. **Live concert ticket integration**
+6. **Photo tagging** — tag which crew members are in each photo
+7. **Adventure progress dashboard** — show stats per person (badges earned, events led, etc.)
 
 ## Deployment
-- **Platform**: Cloudflare Pages (Hono + Workers runtime) — running locally in sandbox via PM2 + Wrangler
-- **Status**: ✅ Active (sandbox preview, password-protected)
-- **Tech Stack**: Hono 4 (TypeScript JSX) • Vite 6 build • OpenAI-compatible AI (gpt-5-mini) • Cookie auth • Vanilla JS frontend
+- **Platform**: Cloudflare Pages (Hono + Workers) via Wrangler + PM2 in sandbox
+- **Status**: ✅ Active (private)
+- **Tech**: Hono 4 TSX • Vite 6 • OpenAI-compatible gpt-5-mini • cookie auth • vanilla JS
 - **Last Updated**: 2026-06-01
-
-## Local Development
-```bash
-cd /home/user/webapp
-npm run build
-pm2 start ecosystem.config.cjs
-pm2 logs webapp --nostream
-curl http://localhost:3000/api/me
-```
