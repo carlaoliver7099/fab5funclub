@@ -235,7 +235,7 @@ app.post('/api/login', async (c) => {
     })
     return c.json({ ok: true })
   }
-  return c.json({ ok: false, error: 'Wrong password! Ask Saia or a parent for the club password 🐾' }, 401)
+  return c.json({ ok: false, error: 'Wrong password! Ask a parent for the club password 🐾' }, 401)
 })
 
 app.post('/api/logout', (c) => {
@@ -711,7 +711,7 @@ app.get('/', (c) => {
           <img src="/static/logo.png" alt="Fab 5 Fun Club" class="login-logo" />
           <h1 class="login-title">FAB 5 FUN CLUB</h1>
           <p class="login-sub">🔐 Private Adventure Crew</p>
-          <p class="login-help">Ask Saia or a parent for the club password!</p>
+          <p class="login-help">Ask a parent for the club password!</p>
           <form id="login-form" class="login-form">
             <input id="login-password" type="password" placeholder="Club password" autocomplete="off" required />
             <button type="submit" class="btn btn-primary btn-big">🐾 Let me in!</button>
