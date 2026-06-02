@@ -1,18 +1,32 @@
 # 🌈 Fab 5 Fun Club
 
 ## Project Overview
-A **private, AI-powered adventure-planning website** for Saia, Elijah, Charlotte, Ace & Sienna — a 5-friend fun club on the Sunshine Coast & Hinterlands, SE Queensland, Australia. Their dog Pebbles is the AI events mascot, badge-awarder, and leadership coach.
+A **private, AI-powered adventure-planning website** for 5 friends — **Ace, Charlotte, Elijah, Saia & Sienna** — an EGALITARIAN fun club on the Sunshine Coast & Hinterlands, SE Queensland, Australia. Their Bull Arab puppy **Pebbles** is the AI events mascot, badge-awarder, and leadership coach.
 
-### Live URL
-**https://3000-i9m9vtz06aqmft4184vj3-ea026bf9.sandbox.novita.ai**
+> 🤝 **Egalitarian rule**: "We don't have roles. We just wear the merch for leader when we are the leader. Other than that we are just the Fab 5."
+
+## Live URLs
+
+### 🌐 Production (LIVE on Cloudflare!)
+- **Primary**: https://fab5funclub.pages.dev
+- **Custom domain (pending mum's DNS setup)**: https://fab5funclub.org
 - **Password**: `pebbles123!`
 
+### Sandbox (development)
+- https://3000-i9m9vtz06aqmft4184vj3-ea026bf9.sandbox.novita.ai
+
+### Source Code
+- **GitHub**: https://github.com/carlaoliver7099/fab5funclub
+
 ## Currently Completed Features
-✅ **Private login** (90-day cookie session)
+✅ **Private login** (90-day cookie session, password: `pebbles123!`)
 ✅ **Sticky top navigation** for jumping between sections
-✅ **Colorful animated hero** with rotating logo
-✅ **The Crew** — 5 friends + Pebbles (real photo)
+✅ **Egalitarian rebrand** — no founder, no captain, all "Fab 5"
+✅ **Cartoon group hero image** — all 5 cartoon kids + real Pebbles (Bull Arab girl!) under a rainbow on the Sunshine Coast
+✅ **Individual cartoon avatars** for all 5 friends (Pixar-style, custom-drawn from real photos)
+✅ **The Crew** — 5 friends with their cartoon avatars + Pebbles (real photo)
 ✅ **Team Charter / Values section** with:
+   - 🤝 Egalitarian rule (top of section)
    - Carla's 3 rules (not selfish/greedy/impatient)
    - Carla's team rule ("if you're not a team player, you're not in the team")
    - Carla's story wisdom ("we have the pen in our hands")
@@ -31,12 +45,13 @@ A **private, AI-powered adventure-planning website** for Saia, Elijah, Charlotte
    - Delete badges
 ✅ **Gallery** — upload photos & videos (under 2MB, base64 in-memory), captions, by-line, delete
 ✅ **Concert Wishlist** — pre-seeded with Olivia Rodrigo (GUTS Tour) + Chappell Roan (Pink Pony Club!), add new, interest chips (5 members can tap to mark "I want to go")
-✅ **🐾 Pebbles AI** with 3 tool-calling abilities:
+✅ **🐾 Pebbles AI** with 3 tool-calling abilities (now egalitarian-aware):
    - `create_event` — adds events to calendar (Sat/Sun validated, auto-rotates leader)
    - `award_badge` — issues badges with peer-feedback reasons (asks for detail first!)
    - `add_concert` — adds concerts to wishlist
-   - Knows leader-rotation fairness and suggests next leader
+   - Knows leader-rotation fairness, never calls Saia "founder", treats all 5 as equals
    - Aussie dog personality, kid-safe, teaches leadership questions
+✅ **Cloudflare Pages production deploy** — live worldwide on the edge!
 
 ## API Endpoints
 All `/api/*` (except `/api/login`, `/api/logout`, `/api/me`) require login cookie.
@@ -86,7 +101,7 @@ All `/api/*` (except `/api/login`, `/api/logout`, `/api/me`) require login cooki
 Print via: Redbubble, Printify, Spring, or local Sunshine Coast printers.
 
 ## Leader Merch System
-- Gold tee/hoodie/cap rotates fairly between Saia, Elijah, Charlotte, Ace, Sienna
+- Gold tee/hoodie/cap rotates fairly between Ace, Charlotte, Elijah, Saia, Sienna
 - The Leader of the Day asks the team-leader questions, not bossy
 - After every event, crew gives kind peer feedback to the leader
 - Tracker on the Merch section shows counts so rotation stays fair
@@ -100,25 +115,28 @@ Print via: Redbubble, Printify, Spring, or local Sunshine Coast printers.
 ## Features Not Yet Implemented
 - 💾 Persistent storage (Cloudflare D1) — events/awards/gallery reset on restart
 - 📸 Gallery on R2 storage so big videos work (currently 2MB cap)
-- 👤 Per-person logins
+- 👤 Onboarding wizard — each friend fills in their own profile via invite link (designed, awaiting mum's login choice A/B/C)
 - 🌦️ Weather forecast for event dates
 - 🗺️ Map view of locations
 - 📲 SMS/email reminders to parents
 - 🏆 "Duke-of-Ed style progress tracker" — auto badges when adventure covers all 4 pillars
 - 🎟️ Live concert API integration (Ticketek/Ticketmaster) for real concert dates
-- ☁️ Cloudflare Pages production deploy
 
 ## Recommended Next Steps
-1. **Cloudflare D1** — make all data permanent
-2. **Cloudflare R2** — host big photos/videos
-3. **Deploy to Cloudflare Pages** with custom domain like `fab5funclub.com.au`
-4. **Per-person logins** (better security for parent sharing)
-5. **Live concert ticket integration**
-6. **Photo tagging** — tag which crew members are in each photo
-7. **Adventure progress dashboard** — show stats per person (badges earned, events led, etc.)
+1. **Mum finishes DNS setup** so `fab5funclub.org` resolves to the Pages project
+2. **Onboarding wizard** — each friend logs in with an invite link and fills in their own profile
+3. **Cloudflare D1** — make all data permanent
+4. **Cloudflare R2** — host big photos/videos
+5. **Per-person logins** (better security for parent sharing)
+6. **Live concert ticket integration**
+7. **Photo tagging** — tag which crew members are in each photo
+8. **Adventure progress dashboard** — show stats per person (badges earned, events led, etc.)
 
 ## Deployment
-- **Platform**: Cloudflare Pages (Hono + Workers) via Wrangler + PM2 in sandbox
-- **Status**: ✅ Active (private)
+- **Platform**: Cloudflare Pages (Hono + Workers, edge-deployed worldwide)
+- **Project name**: `fab5funclub`
+- **Production branch**: `main`
+- **Status**: ✅ Live at https://fab5funclub.pages.dev
+- **Custom domain**: fab5funclub.org (DNS pending mum's setup)
 - **Tech**: Hono 4 TSX • Vite 6 • OpenAI-compatible gpt-5-mini • cookie auth • vanilla JS
-- **Last Updated**: 2026-06-01
+- **Last Updated**: 2026-06-02
