@@ -3491,3 +3491,181 @@ body {
   .wizard-dot { width: 8px; height: 8px; }
   .wizard-dot.active { width: 22px; }
 }
+
+/* =========================================================================
+   📱 FULL MOBILE AUDIT — applies on top of all earlier mobile rules
+   Targets phones (<=640px) and tiny phones (<=380px).
+   Goals: nothing horizontally cramped, all text readable, no horizontal scroll
+   on the body, forms 1-column where it matters, tap targets >=40px.
+   ========================================================================= */
+@media (max-width: 640px) {
+  /* ----- global page ----- */
+  html, body { overflow-x: hidden; }
+  body { font-size: 15px; }
+  .section { padding: 1.5rem 0.85rem; }
+  .section-title { font-size: 1.45rem; line-height: 1.2; }
+  .section-subtitle { font-size: 0.92rem; }
+  h2 { line-height: 1.2; }
+  h3 { line-height: 1.25; }
+  p { line-height: 1.55; }
+
+  /* ----- hero ----- */
+  .hero-content { padding: 1.4rem 1rem; border-radius: 22px; border-width: 3px; }
+  .hero-content h1 { font-size: 1.85rem !important; line-height: 1.1; }
+  .hero-content p { font-size: 0.95rem; }
+  .logo { width: 110px; height: 110px; margin-bottom: 0.6rem; border-width: 3px; }
+  .hero-group { border-radius: 14px; border-width: 3px; margin-bottom: 1rem; }
+
+  /* ----- calendar (7-col grid stays but cells shrink hard) ----- */
+  .calendar-grid { padding: 0.5rem; gap: 3px; border-width: 2px; border-radius: 14px; }
+  .cal-header { font-size: 0.6rem; padding: 0.2rem 0; }
+  .cal-cell { min-height: 38px; padding: 2px; border-radius: 6px; border-width: 1.5px; font-size: 0.62rem; }
+  .cal-day-num { font-size: 0.7rem; }
+  .cal-event-dot { font-size: 0.5rem; padding: 1px 2px; border-radius: 4px; }
+  .calendar-nav { gap: 0.4rem; flex-wrap: wrap; justify-content: center; }
+  #month-label { font-size: 1.1rem; min-width: 0; flex: 1 1 100%; order: -1; }
+
+  /* ----- event cards stacked ----- */
+  .event-card { padding: 0.9rem; border-width: 2px; border-radius: 14px; gap: 0.6rem; }
+  .event-date-badge { min-width: 58px; padding: 0.35rem; }
+  .event-date-badge .day { font-size: 1.35rem; }
+  .event-date-badge .month, .event-date-badge .weekday { font-size: 0.62rem; }
+  .event-info h4 { font-size: 1.02rem; }
+  .event-info .meta { font-size: 0.82rem; }
+  .chip { font-size: 0.72rem; padding: 0.1rem 0.55rem; }
+
+  /* ----- plan adventure form ----- */
+  .event-form { gap: 0.6rem; }
+  .event-form input, .event-form select, .event-form textarea {
+    padding: 0.65rem 0.8rem; font-size: 16px; /* 16px stops iOS zoom */
+  }
+  .member-check { padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+
+  /* ----- members grid ----- */
+  .members-grid { grid-template-columns: repeat(2, 1fr); gap: 0.7rem; }
+  .member-card { padding: 0.9rem 0.6rem; border-radius: 18px; }
+  .member-avatar, .member-emoji { width: 78px; height: 78px; line-height: 78px; font-size: 2.1rem; border-width: 3px; }
+  .member-name { font-size: 0.98rem; }
+  .member-role { font-size: 0.78rem; }
+  .member-tap-hint { font-size: 0.66rem; padding: 2px 7px; margin-top: 5px; }
+
+  /* ----- activities grid ----- */
+  .activities-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+  .activity-card { padding: 0.85rem 0.4rem; border-width: 2px; border-radius: 14px; }
+  .activity-card .emoji { font-size: 1.9rem; }
+  .activity-card .name { font-size: 0.85rem; }
+  .activity-card .cat { font-size: 0.62rem; }
+  .activity-filters { gap: 0.35rem; }
+  .filter-btn { padding: 0.3rem 0.75rem; font-size: 0.82rem; }
+
+  /* ----- values / fab5-ways / charter cards ----- */
+  .values-card { padding: 1rem !important; border-radius: 18px !important; }
+  .values-card h3 { font-size: 1.05rem; }
+  .values-card p { font-size: 0.92rem; }
+
+  /* ----- merch ----- */
+  .merch-card { padding: 0.9rem; border-radius: 16px; }
+  .merch-card img { border-radius: 12px; }
+
+  /* ----- awards & badges ----- */
+  .award-card, .badge-card { padding: 0.9rem; border-radius: 16px; }
+  .award-card h3, .badge-card h3 { font-size: 1rem; }
+  .award-form, .badge-form { gap: 0.55rem; }
+
+  /* ----- gallery ----- */
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .gallery-item img { border-radius: 10px; }
+
+  /* ----- concerts ----- */
+  .concert-card { padding: 0.9rem; border-radius: 14px; }
+  .concert-add-form { gap: 0.5rem; }
+
+  /* ----- Pebbles picks / weather / playlist / kid profiles / dashboards ----- */
+  .picks-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+  .pick-card { padding: 1rem; font-size: 1rem; }
+  .pick-result-shell { padding: 1.1rem; }
+  .pick-result-pick { font-size: 1.45rem; }
+  .weather-form .form-row,
+  .playlist-form .form-row,
+  .concert-watch-form .form-row,
+  .kid-profile-form .kpf-row { grid-template-columns: 1fr; gap: 0.55rem; }
+  .weather-stats { grid-template-columns: repeat(2, 1fr); gap: 0.4rem; }
+  .weather-stat { padding: 8px 6px; }
+  .weather-stat strong { font-size: 1rem; }
+  .weather-emoji { font-size: 2.3rem; }
+  .weather-header h3 { font-size: 1.05rem; }
+  .dash-stats { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .dash-stat { padding: 0.9rem 0.5rem; }
+  .dash-stat-num { font-size: 1.35rem; }
+  .dash-stat-label { font-size: 0.7rem; }
+  .kid-profiles-grid { grid-template-columns: 1fr; gap: 0.8rem; }
+  .playlist-track { padding: 0.7rem; }
+
+  /* ----- diary, postcards, hall of fame, birthdays ----- */
+  .diary-entry { padding: 0.95rem 1rem; border-radius: 14px; }
+  .diary-entry-head h3 { font-size: 1rem; }
+  .postcards-list { grid-template-columns: 1fr; }
+  .birthday-list { grid-template-columns: 1fr; }
+  .birthday-card { padding: 0.9rem; }
+  .hof-categories { grid-template-columns: 1fr; gap: 0.6rem; }
+  .hof-stats { grid-template-columns: 1fr; gap: 0.6rem; }
+  .hof-stat-grid { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+  .hof-card { padding: 0.9rem; }
+
+  /* ----- crew challenges & caption battles ----- */
+  .challenges-grid { grid-template-columns: 1fr; }
+  .challenge-card { padding: 0.95rem; border-radius: 16px; }
+  .cb-grid { grid-template-columns: 1fr; }
+  .cb-card { padding: 0.95rem; }
+
+  /* ----- adventure map ----- */
+  .adventure-map-section { padding-left: 0.6rem; padding-right: 0.6rem; }
+  .adventure-map-svg { max-width: 100%; height: auto; }
+  .map-legend { font-size: 0.78rem; gap: 8px; flex-wrap: wrap; }
+  .spot-form { grid-template-columns: 1fr; gap: 0.5rem; }
+  .spot-form button { grid-column: 1; }
+  .spot-form input, .spot-form select { font-size: 16px; padding: 0.6rem 0.75rem; }
+
+  /* ----- voice pebbles, invite writer, parents faq ----- */
+  .voice-pebbles-card { padding: 1rem; border-radius: 16px; }
+  .voice-pebbles-btn { font-size: 1rem; padding: 12px 18px; }
+  .invite-writer-card { padding: 1rem; border-radius: 16px; }
+  .faq-item { padding: 0.95rem 1rem; }
+  .faq-item h3 { font-size: 1rem; }
+  .faq-item p { font-size: 0.92rem; }
+
+  /* ----- inputs: prevent iOS zoom + decent tap area ----- */
+  input[type="text"], input[type="number"], input[type="date"], input[type="email"],
+  input[type="tel"], input[type="url"], input[type="search"], textarea, select {
+    font-size: 16px !important;
+    min-height: 42px;
+  }
+  button { min-height: 40px; }
+
+  /* ----- pebbles chat already fullscreen on mobile (existing rule) ----- */
+  .pebbles-fab { width: 62px; height: 62px; bottom: 10px; right: 10px; }
+  .pebbles-fab img { width: 52px; height: 52px; }
+
+  /* ----- footer / general ----- */
+  footer { padding: 1.2rem 1rem; font-size: 0.85rem; text-align: center; }
+}
+
+/* ===== TINY PHONES (<=380px, e.g. iPhone SE) ===== */
+@media (max-width: 380px) {
+  .section-title { font-size: 1.25rem; }
+  .hero-content h1 { font-size: 1.55rem !important; }
+  .hero-content p { font-size: 0.88rem; }
+  .logo { width: 92px; height: 92px; }
+  .members-grid { grid-template-columns: 1fr 1fr; gap: 0.55rem; }
+  .member-avatar, .member-emoji { width: 70px; height: 70px; line-height: 70px; font-size: 1.85rem; }
+  .activities-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .activity-card .emoji { font-size: 1.65rem; }
+  .activity-card .name { font-size: 0.78rem; }
+  .cal-cell { min-height: 32px; font-size: 0.55rem; }
+  .cal-day-num { font-size: 0.62rem; }
+  .cal-event-dot { font-size: 0.45rem; }
+  .take-tour-btn { font-size: 0.85rem; padding: 7px 11px; }
+  .topnav-links a { padding: 0.28rem 0.6rem; font-size: 0.74rem; }
+  .dash-stats, .weather-stats, .hof-stat-grid { grid-template-columns: 1fr 1fr; }
+  .gallery-grid { grid-template-columns: 1fr 1fr; }
+}
