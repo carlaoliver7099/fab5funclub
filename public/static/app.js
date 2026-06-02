@@ -1779,8 +1779,8 @@ function openKidProfileModal(name) {
   const avatarSrc = isPebbles ? '/static/pebbles.png?v=2' : `/static/avatars/${name.toLowerCase()}.png?v=2`;
   const hasAvatar = isPebbles || ['Ace', 'Charlotte', 'Elijah', 'Saia', 'Sienna'].includes(name);
 
-  // Pull stats from existing data
-  const profile = (CLUB.kidProfiles || []).find(p => p.name === name) || {};
+  // Pull stats from existing data (kidProfiles is an object keyed by name)
+  const profile = (CLUB.kidProfiles && CLUB.kidProfiles[name]) || {};
   const ledEvents = (EVENTS || []).filter(e => e.leader === name);
   const memberEvents = (EVENTS || []).filter(e => Array.isArray(e.members) && e.members.includes(name));
   const myAwards = (AWARDS || []).filter(a => a.member === name);

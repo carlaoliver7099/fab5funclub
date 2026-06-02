@@ -375,7 +375,7 @@ body {
 }
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 6px;
   background: var(--white);
   padding: 1rem;
@@ -383,7 +383,11 @@ body {
   border-radius: 20px;
   box-shadow: var(--shadow);
   margin-bottom: 2rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
+.cal-cell { min-width: 0; }
 .cal-header {
   text-align: center;
   font-weight: 700;
@@ -420,6 +424,9 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 /* ===== EVENTS LIST ===== */
