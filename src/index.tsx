@@ -318,6 +318,95 @@ const CONCERT_WATCHES: ConcertWatch[] = [
 // These are the buckets Pebbles can randomly choose from
 const PEBBLES_PICKS_BUCKETS = ['activity', 'leader', 'snack', 'slogan', 'song'] as const
 
+// =========== 📔 ADVENTURE DIARY (Pebbles writes story-style memories) ===========
+type DiaryEntry = {
+  id: string
+  eventId?: string           // optional link back to the event
+  title: string              // "The Lake MacDonald Kayak Day"
+  story: string              // Pebbles-written 2-3 paragraph story
+  mentionedMembers: string[]
+  createdAt: number
+  date?: string              // when the adventure happened
+}
+const DIARY: DiaryEntry[] = []
+
+// =========== 🗺️ ADVENTURE MAP (SE QLD pins) ===========
+type AdventureSpot = {
+  id: string
+  name: string                                 // "Lake MacDonald", "Maleny Botanic Gardens"
+  emoji: string
+  lat: number
+  lon: number
+  status: 'visited' | 'planned' | 'wishlist'
+  notes?: string
+  addedAt: number
+  visitedCount?: number                        // how many adventures here
+}
+// Seeded with some classic SE QLD adventure spots
+const ADVENTURE_SPOTS: AdventureSpot[] = [
+  { id: 'spot-lake-macdonald', name: 'Lake MacDonald', emoji: '🛶', lat: -26.3833, lon: 152.9667, status: 'wishlist', notes: 'Kayaking paradise', addedAt: Date.now() },
+  { id: 'spot-noosa-main',     name: 'Noosa Main Beach', emoji: '🏖️', lat: -26.3833, lon: 153.0900, status: 'wishlist', notes: 'Swim + ice cream day', addedAt: Date.now() },
+  { id: 'spot-maleny',         name: 'Maleny Botanic Gardens', emoji: '🌳', lat: -26.7567, lon: 152.8542, status: 'wishlist', notes: 'Bird walk + picnic', addedAt: Date.now() },
+  { id: 'spot-eumundi',        name: 'Eumundi Markets', emoji: '🎪', lat: -26.4769, lon: 152.9494, status: 'wishlist', notes: 'Wednesday/Saturday markets', addedAt: Date.now() },
+  { id: 'spot-glasshouse',     name: 'Glass House Mountains', emoji: '⛰️', lat: -26.9000, lon: 152.9500, status: 'wishlist', notes: 'Hiking + lookouts', addedAt: Date.now() },
+  { id: 'spot-mooloolaba',     name: 'Mooloolaba Beach', emoji: '🌊', lat: -26.6817, lon: 153.1192, status: 'wishlist', notes: 'Sealife centre + boardwalk', addedAt: Date.now() },
+]
+
+// =========== 🎯 CREW CHALLENGES OF THE WEEK ===========
+type Challenge = {
+  id: string
+  weekStart: string          // YYYY-MM-DD of Monday
+  title: string
+  description: string
+  emoji: string
+  category: 'kindness' | 'nature' | 'creativity' | 'team' | 'skill'
+  completedBy: string[]      // member names who completed it
+  createdAt: number
+}
+const CHALLENGES: Challenge[] = []
+// Bank of challenges Pebbles rotates through
+const CHALLENGE_BANK: Omit<Challenge, 'id'|'weekStart'|'completedBy'|'createdAt'>[] = [
+  { title: 'Catch a sunrise together', description: 'Wake up early one morning and watch the sun come up as a crew. Bring hot chocolate.', emoji: '🌅', category: 'team' },
+  { title: 'Teach each other one new word', description: 'Every kid picks a cool word and teaches the others what it means. Bonus points for big ones!', emoji: '📚', category: 'creativity' },
+  { title: 'Do something kind for someone outside the crew', description: 'A neighbour, a teacher, a stranger. No selfies — just kindness.', emoji: '💛', category: 'kindness' },
+  { title: 'Build something together', description: 'A sandcastle, a cubby, a Lego masterpiece. Build it together, no leader.', emoji: '🏗️', category: 'team' },
+  { title: 'Try a food none of you have tried', description: 'Adventurous taste buds! Vote on which was the best.', emoji: '🍽️', category: 'skill' },
+  { title: 'Make a TikTok with a kindness message', description: 'Use your platform for good vibes only.', emoji: '📱', category: 'kindness' },
+  { title: 'Pick up 10 pieces of rubbish on a walk', description: 'Bonus: count how many are bottles for the bottle fund!', emoji: '🌍', category: 'nature' },
+  { title: 'Write a letter to someone you appreciate', description: 'Old-school paper, real envelope, real stamp. Make their day.', emoji: '💌', category: 'kindness' },
+  { title: 'Spend 30 minutes outside with no phones', description: 'Find a tree, lie under it, talk about anything. Phones in pockets.', emoji: '🌳', category: 'nature' },
+  { title: 'Compliment three people you don\'t know well', description: 'Specific compliments only — "I like your shoes" doesn\'t count unless you mean it!', emoji: '🌟', category: 'kindness' },
+  { title: 'Cook a meal together', description: 'Each kid does one part. Take a photo of the result.', emoji: '👨‍🍳', category: 'skill' },
+  { title: 'Learn each other\'s favourite song lyrics', description: 'Sing-along on the next adventure mandatory.', emoji: '🎵', category: 'creativity' },
+]
+
+// =========== 📸 PHOTO CAPTION BATTLE ===========
+type CaptionBattle = {
+  id: string
+  galleryItemId: string        // links to GALLERY item
+  captions: { id: string; text: string; author: 'pebbles' | string; votes: string[] }[]
+  status: 'voting' | 'closed'
+  createdAt: number
+}
+const CAPTION_BATTLES: CaptionBattle[] = []
+
+// =========== 💌 PEBBLES POSTCARDS (for kids who missed) ===========
+type Postcard = {
+  id: string
+  toMember: string             // kid who missed
+  fromEventId?: string         // event they missed
+  fromEventTitle?: string
+  message: string              // Pebbles-written warm message
+  createdAt: number
+}
+const POSTCARDS: Postcard[] = []
+
+// =========== 🌟 HALL OF FAME (computed live, no store needed but cache) ===========
+// (No store — computed from EVENTS + AWARDS + GALLERY on demand)
+
+// =========== 🎂 BIRTHDAY BRAIN (computed from KID_PROFILES) ===========
+// (No store — computed from KID_PROFILES.birthday on demand)
+
 const CLUB_INFO = {
   name: 'Fab 5 Fun Club',
   location: 'Sunshine Coast & Hinterlands, SE Queensland, Australia',
@@ -560,6 +649,11 @@ app.get('/api/club-info', (c) => c.json({
   kidProfiles: KID_PROFILES,
   playlist: PLAYLIST,
   concertWatches: CONCERT_WATCHES,
+  diary: DIARY,
+  adventureSpots: ADVENTURE_SPOTS,
+  challenges: CHALLENGES,
+  captionBattles: CAPTION_BATTLES,
+  postcards: POSTCARDS,
 }))
 
 // =========== 🧒 KID PROFILES API ===========
@@ -778,6 +872,415 @@ app.get('/api/weather', async (c) => {
   } catch (e: any) {
     return c.json({ error: 'Weather lookup error: ' + e.message }, 500)
   }
+})
+
+// =========== 📔 ADVENTURE DIARY API ===========
+app.get('/api/diary', (c) => c.json({ entries: DIARY.slice().sort((a,b)=>b.createdAt-a.createdAt) }))
+
+app.post('/api/diary', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any))
+  const title = (body.title || '').toString().trim().slice(0, 200)
+  const story = (body.story || '').toString().trim().slice(0, 5000)
+  if (!title || !story) return c.json({ error: 'Title + story required' }, 400)
+  const entry: DiaryEntry = {
+    id: 'diary-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    eventId: body.eventId || undefined,
+    title, story,
+    mentionedMembers: Array.isArray(body.mentionedMembers) ? body.mentionedMembers.slice(0, 6) : [],
+    date: (body.date || '').toString().slice(0, 20) || undefined,
+    createdAt: Date.now(),
+  }
+  DIARY.unshift(entry)
+  if (DIARY.length > 100) DIARY.length = 100
+  return c.json({ ok: true, entry })
+})
+
+app.delete('/api/diary/:id', (c) => {
+  const id = c.req.param('id')
+  const idx = DIARY.findIndex(d => d.id === id)
+  if (idx === -1) return c.json({ error: 'Not found' }, 404)
+  DIARY.splice(idx, 1)
+  return c.json({ ok: true })
+})
+
+// Pebbles writes a diary entry for an event (uses OpenAI)
+app.post('/api/diary/generate', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any))
+  const eventId = (body.eventId || '').toString()
+  const event = EVENTS.find(e => e.id === eventId)
+  if (!event) return c.json({ error: 'Event not found' }, 404)
+
+  const apiKey = c.env?.OPENAI_API_KEY || ''
+  const baseUrl = c.env?.OPENAI_BASE_URL || 'https://api.openai.com/v1'
+  if (!apiKey) {
+    // Fallback: simple template if no AI
+    const entry: DiaryEntry = {
+      id: 'diary-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      eventId,
+      title: `The ${event.title} Adventure`,
+      story: `Today the Fab 5 hit ${event.location} for some ${event.activity}! ${event.members.join(', ')} were on the crew. ${event.leader ? `${event.leader} wore the gold and led the day.` : ''} What a memory! 🐾`,
+      mentionedMembers: event.members || [],
+      date: event.date,
+      createdAt: Date.now(),
+    }
+    DIARY.unshift(entry)
+    return c.json({ ok: true, entry, fallback: true })
+  }
+
+  // Build context for Pebbles to write a story
+  const profiles = KID_PROFILES
+  const sparks = (event.members || []).map(m => {
+    const p = profiles[m]
+    return p?.spark ? `${m} (spark: "${p.spark}")` : m
+  }).join(', ')
+  const awardsForEvent = AWARDS.filter(a => a.eventId === eventId || (event.date && a.date === event.date))
+  const awardsText = awardsForEvent.length ? `Badges awarded: ${awardsForEvent.map(a => `${a.badge} to ${a.recipient}`).join('; ')}` : ''
+
+  try {
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: 'gpt-5-mini',
+        messages: [
+          { role: 'system', content: `You are Pebbles 🐾, the Fab 5 Fun Club's Bull Arab dog mascot. Write a warm, fun, 2-3 paragraph kid-friendly diary entry about an adventure the crew just had. Use the kids' sparks. Sprinkle Pebbles-isms (*tail wag*, dog metaphors). Be specific, not generic. End with a one-line memory hook.` },
+          { role: 'user', content: `Write a diary entry about this adventure:\nTitle: ${event.title}\nActivity: ${event.activity}\nLocation: ${event.location}\nDate: ${event.date}\nMembers: ${sparks}\n${event.leader ? `Leader: ${event.leader} (wore the gold)` : ''}\n${awardsText}\n${event.notes ? `Notes from the day: ${event.notes}` : ''}` }
+        ],
+        max_completion_tokens: 700,
+      })
+    })
+    if (!res.ok) return c.json({ error: 'AI write failed: ' + res.status }, 500)
+    const data: any = await res.json()
+    const story = data.choices?.[0]?.message?.content?.trim() || 'A great day! 🐾'
+    const entry: DiaryEntry = {
+      id: 'diary-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      eventId,
+      title: `The ${event.title} Adventure`,
+      story,
+      mentionedMembers: event.members || [],
+      date: event.date,
+      createdAt: Date.now(),
+    }
+    DIARY.unshift(entry)
+    if (DIARY.length > 100) DIARY.length = 100
+    return c.json({ ok: true, entry })
+  } catch (e: any) {
+    return c.json({ error: 'AI error: ' + e.message }, 500)
+  }
+})
+
+// =========== 🗺️ ADVENTURE SPOTS API ===========
+app.get('/api/adventure-spots', (c) => c.json({ spots: ADVENTURE_SPOTS }))
+
+app.post('/api/adventure-spots', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any))
+  const name = (body.name || '').toString().trim().slice(0, 100)
+  if (!name) return c.json({ error: 'Name required' }, 400)
+  const lat = Number(body.lat), lon = Number(body.lon)
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return c.json({ error: 'Valid lat/lon required' }, 400)
+  const spot: AdventureSpot = {
+    id: 'spot-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    name,
+    emoji: (body.emoji || '📍').toString().slice(0, 8),
+    lat, lon,
+    status: ['visited','planned','wishlist'].includes(body.status) ? body.status : 'wishlist',
+    notes: (body.notes || '').toString().slice(0, 300) || undefined,
+    addedAt: Date.now(),
+  }
+  ADVENTURE_SPOTS.push(spot)
+  return c.json({ ok: true, spot })
+})
+
+app.patch('/api/adventure-spots/:id', async (c) => {
+  const id = c.req.param('id')
+  const spot = ADVENTURE_SPOTS.find(s => s.id === id)
+  if (!spot) return c.json({ error: 'Not found' }, 404)
+  const body = await c.req.json().catch(() => ({} as any))
+  if (body.status && ['visited','planned','wishlist'].includes(body.status)) spot.status = body.status
+  if (typeof body.notes === 'string') spot.notes = body.notes.slice(0, 300) || undefined
+  return c.json({ ok: true, spot })
+})
+
+app.delete('/api/adventure-spots/:id', (c) => {
+  const id = c.req.param('id')
+  const idx = ADVENTURE_SPOTS.findIndex(s => s.id === id)
+  if (idx === -1) return c.json({ error: 'Not found' }, 404)
+  ADVENTURE_SPOTS.splice(idx, 1)
+  return c.json({ ok: true })
+})
+
+// =========== 🎯 CREW CHALLENGES API ===========
+function getMondayISO(d = new Date()): string {
+  const dt = new Date(d)
+  const day = dt.getDay() || 7      // Sun = 0 -> 7
+  if (day !== 1) dt.setHours(-24 * (day - 1))
+  return dt.toISOString().slice(0, 10)
+}
+
+app.get('/api/challenges', (c) => {
+  // Ensure there's a challenge for THIS week
+  const weekStart = getMondayISO()
+  let current = CHALLENGES.find(ch => ch.weekStart === weekStart)
+  if (!current) {
+    // Pick a random one from the bank not used in the last 8 weeks
+    const recentTitles = CHALLENGES.slice(-8).map(ch => ch.title)
+    const available = CHALLENGE_BANK.filter(b => !recentTitles.includes(b.title))
+    const pool = available.length ? available : CHALLENGE_BANK
+    const pick = pool[Math.floor(Math.random() * pool.length)]
+    current = {
+      id: 'challenge-' + weekStart,
+      weekStart,
+      title: pick.title,
+      description: pick.description,
+      emoji: pick.emoji,
+      category: pick.category,
+      completedBy: [],
+      createdAt: Date.now(),
+    }
+    CHALLENGES.unshift(current)
+  }
+  return c.json({ current, history: CHALLENGES.slice().sort((a,b)=>b.createdAt-a.createdAt) })
+})
+
+app.post('/api/challenges/:id/complete', async (c) => {
+  const id = c.req.param('id')
+  const body = await c.req.json().catch(() => ({} as any))
+  const member = (body.member || '').toString().trim()
+  if (!member) return c.json({ error: 'Member required' }, 400)
+  const ch = CHALLENGES.find(x => x.id === id)
+  if (!ch) return c.json({ error: 'Challenge not found' }, 404)
+  if (!ch.completedBy.includes(member)) ch.completedBy.push(member)
+  return c.json({ ok: true, challenge: ch })
+})
+
+app.post('/api/challenges/new', async (c) => {
+  // Force a new random challenge for this week
+  const weekStart = getMondayISO()
+  const idx = CHALLENGES.findIndex(ch => ch.weekStart === weekStart)
+  const recentTitles = CHALLENGES.slice(0, 8).map(ch => ch.title)
+  const available = CHALLENGE_BANK.filter(b => !recentTitles.includes(b.title))
+  const pool = available.length ? available : CHALLENGE_BANK
+  const pick = pool[Math.floor(Math.random() * pool.length)]
+  const fresh: Challenge = {
+    id: 'challenge-' + weekStart + '-' + Math.random().toString(36).slice(2, 5),
+    weekStart,
+    title: pick.title,
+    description: pick.description,
+    emoji: pick.emoji,
+    category: pick.category,
+    completedBy: [],
+    createdAt: Date.now(),
+  }
+  if (idx >= 0) CHALLENGES.splice(idx, 1, fresh)
+  else CHALLENGES.unshift(fresh)
+  return c.json({ ok: true, challenge: fresh })
+})
+
+// =========== 📸 PHOTO CAPTION BATTLE API ===========
+app.get('/api/caption-battles', (c) => c.json({ battles: CAPTION_BATTLES.slice().sort((a,b)=>b.createdAt-a.createdAt) }))
+
+// Start a battle on a gallery item — Pebbles auto-writes 3 captions
+app.post('/api/caption-battles/start', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any))
+  const galleryItemId = (body.galleryItemId || '').toString()
+  const item = GALLERY.find(g => g.id === galleryItemId)
+  if (!item) return c.json({ error: 'Gallery item not found' }, 404)
+  // Prevent duplicate active battles
+  if (CAPTION_BATTLES.find(b => b.galleryItemId === galleryItemId && b.status === 'voting')) {
+    return c.json({ error: 'Battle already running for this photo' }, 400)
+  }
+
+  // Try to generate 3 fun captions with Pebbles
+  const apiKey = c.env?.OPENAI_API_KEY || ''
+  const baseUrl = c.env?.OPENAI_BASE_URL || 'https://api.openai.com/v1'
+  let captions: { id: string; text: string; author: 'pebbles'|string; votes: string[] }[] = []
+
+  if (apiKey) {
+    try {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: 'gpt-5-mini',
+          messages: [
+            { role: 'system', content: `You are Pebbles 🐾, a Bull Arab dog mascot for the Fab 5 Fun Club. Write THREE different funny one-line captions for a kids' adventure photo. Each on its own line. Number them 1) 2) 3). No commentary, JUST the captions. Keep them silly, kind, kid-friendly. Use emojis.` },
+            { role: 'user', content: `Photo caption: "${item.caption || 'A Fab 5 adventure moment!'}". Write 3 funny captions.` }
+          ],
+          max_completion_tokens: 300,
+        })
+      })
+      if (res.ok) {
+        const data: any = await res.json()
+        const txt = data.choices?.[0]?.message?.content?.trim() || ''
+        // Parse out 3 captions
+        const lines = txt.split('\n').map((l: string) => l.replace(/^\s*[\d)\.\-]+\s*/, '').trim()).filter((l: string) => l.length > 0)
+        captions = lines.slice(0, 3).map((text: string) => ({
+          id: 'cap-' + Math.random().toString(36).slice(2, 8),
+          text, author: 'pebbles' as const, votes: []
+        }))
+      }
+    } catch {}
+  }
+  // Fallback captions if AI failed
+  if (captions.length < 3) {
+    captions = [
+      { id: 'cap-' + Math.random().toString(36).slice(2,8), text: 'When you realise the snack pack is empty 😱', author: 'pebbles', votes: [] },
+      { id: 'cap-' + Math.random().toString(36).slice(2,8), text: 'Main character energy ✨🐾', author: 'pebbles', votes: [] },
+      { id: 'cap-' + Math.random().toString(36).slice(2,8), text: 'Tell your friends you were there 📸', author: 'pebbles', votes: [] },
+    ]
+  }
+
+  const battle: CaptionBattle = {
+    id: 'battle-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    galleryItemId,
+    captions,
+    status: 'voting',
+    createdAt: Date.now(),
+  }
+  CAPTION_BATTLES.unshift(battle)
+  return c.json({ ok: true, battle })
+})
+
+// Add a human-written caption to an existing battle
+app.post('/api/caption-battles/:id/add-caption', async (c) => {
+  const id = c.req.param('id')
+  const battle = CAPTION_BATTLES.find(b => b.id === id)
+  if (!battle) return c.json({ error: 'Battle not found' }, 404)
+  const body = await c.req.json().catch(() => ({} as any))
+  const text = (body.text || '').toString().trim().slice(0, 200)
+  const author = (body.author || 'crew').toString().trim().slice(0, 40)
+  if (!text) return c.json({ error: 'Caption text required' }, 400)
+  battle.captions.push({ id: 'cap-' + Math.random().toString(36).slice(2,8), text, author, votes: [] })
+  return c.json({ ok: true, battle })
+})
+
+// Vote for a caption
+app.post('/api/caption-battles/:id/vote', async (c) => {
+  const id = c.req.param('id')
+  const battle = CAPTION_BATTLES.find(b => b.id === id)
+  if (!battle) return c.json({ error: 'Battle not found' }, 404)
+  const body = await c.req.json().catch(() => ({} as any))
+  const captionId = (body.captionId || '').toString()
+  const voter = (body.voter || '').toString().trim()
+  if (!voter) return c.json({ error: 'Voter required' }, 400)
+  // Remove existing vote from this voter
+  battle.captions.forEach(cap => { cap.votes = cap.votes.filter(v => v !== voter) })
+  const cap = battle.captions.find(x => x.id === captionId)
+  if (!cap) return c.json({ error: 'Caption not found' }, 404)
+  cap.votes.push(voter)
+  return c.json({ ok: true, battle })
+})
+
+app.post('/api/caption-battles/:id/close', (c) => {
+  const id = c.req.param('id')
+  const battle = CAPTION_BATTLES.find(b => b.id === id)
+  if (!battle) return c.json({ error: 'Battle not found' }, 404)
+  battle.status = 'closed'
+  return c.json({ ok: true, battle })
+})
+
+// =========== 💌 PEBBLES POSTCARDS API ===========
+app.get('/api/postcards', (c) => c.json({ postcards: POSTCARDS.slice().sort((a,b)=>b.createdAt-a.createdAt) }))
+
+app.post('/api/postcards/generate', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any))
+  const toMember = (body.toMember || '').toString().trim()
+  const eventId = (body.eventId || '').toString()
+  if (!toMember) return c.json({ error: 'toMember required' }, 400)
+  const event = eventId ? EVENTS.find(e => e.id === eventId) : undefined
+
+  const apiKey = c.env?.OPENAI_API_KEY || ''
+  const baseUrl = c.env?.OPENAI_BASE_URL || 'https://api.openai.com/v1'
+  let message = ''
+
+  const profile = KID_PROFILES[toMember]
+  const sparkLine = profile?.spark ? `What makes ${toMember} special: "${profile.spark}". ` : ''
+  const eventLine = event ? `They missed: ${event.title} (${event.activity}) at ${event.location} on ${event.date}.` : ''
+
+  if (apiKey) {
+    try {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: 'gpt-5-mini',
+          messages: [
+            { role: 'system', content: `You are Pebbles 🐾, the Fab 5 Fun Club mascot. Write a warm, short (3-4 sentences) "we missed you!" postcard to a kid who couldn't make today's adventure. Be specific to their spark. End with paw print 🐾 and "Love, Pebbles + the crew". Don't be over-the-top — just genuine warmth.` },
+            { role: 'user', content: `Write a postcard to ${toMember}. ${sparkLine}${eventLine}` }
+          ],
+          max_completion_tokens: 300,
+        })
+      })
+      if (res.ok) {
+        const data: any = await res.json()
+        message = data.choices?.[0]?.message?.content?.trim() || ''
+      }
+    } catch {}
+  }
+  if (!message) {
+    // Fallback
+    message = `Hey ${toMember}!\n\nThe crew missed your sunshine today. ${event ? `${event.title} wasn't the same without you. ` : ''}Hope you're OK — next adventure's going to be even better with you back! 🐾\n\nLove, Pebbles + the crew`
+  }
+
+  const postcard: Postcard = {
+    id: 'post-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    toMember,
+    fromEventId: event?.id,
+    fromEventTitle: event?.title,
+    message,
+    createdAt: Date.now(),
+  }
+  POSTCARDS.unshift(postcard)
+  if (POSTCARDS.length > 100) POSTCARDS.length = 100
+  return c.json({ ok: true, postcard })
+})
+
+app.delete('/api/postcards/:id', (c) => {
+  const id = c.req.param('id')
+  const idx = POSTCARDS.findIndex(p => p.id === id)
+  if (idx === -1) return c.json({ error: 'Not found' }, 404)
+  POSTCARDS.splice(idx, 1)
+  return c.json({ ok: true })
+})
+
+// =========== 🌟 HALL OF FAME API (computed) ===========
+app.get('/api/hall-of-fame', (c) => {
+  const memberNames = CLUB_INFO.members.filter(m => m.name !== 'Pebbles').map(m => m.name)
+  const stats = memberNames.map(name => {
+    const adventures = EVENTS.filter(e => e.members?.includes(name)).length
+    const led = EVENTS.filter(e => e.leader === name).length
+    const badges = AWARDS.filter(a => a.recipient === name).length
+    const photos = GALLERY.filter(g => g.uploadedBy === name).length
+    return { name, adventures, led, badges, photos }
+  })
+  return c.json({
+    stats,
+    mostAdventures: [...stats].sort((a,b) => b.adventures - a.adventures)[0],
+    mostLed:        [...stats].sort((a,b) => b.led - a.led)[0],
+    mostBadges:     [...stats].sort((a,b) => b.badges - a.badges)[0],
+    mostPhotos:     [...stats].sort((a,b) => b.photos - a.photos)[0],
+  })
+})
+
+// =========== 🎂 BIRTHDAY BRAIN API (computed from profiles) ===========
+app.get('/api/birthdays', (c) => {
+  const today = new Date()
+  const upcoming: { name: string; birthday: string; daysUntil: number; age: number; turning: number }[] = []
+  Object.values(KID_PROFILES).forEach(p => {
+    if (!p.birthday) return
+    const [y, m, d] = p.birthday.split('-').map(Number)
+    if (!y || !m || !d) return
+    const thisYear = new Date(today.getFullYear(), m - 1, d)
+    let nextBday = thisYear
+    if (nextBday < new Date(today.toDateString())) {
+      nextBday = new Date(today.getFullYear() + 1, m - 1, d)
+    }
+    const daysUntil = Math.round((nextBday.getTime() - new Date(today.toDateString()).getTime()) / (1000 * 60 * 60 * 24))
+    const turning = nextBday.getFullYear() - y
+    upcoming.push({ name: p.name, birthday: p.birthday, daysUntil, age: turning - 1, turning })
+  })
+  upcoming.sort((a, b) => a.daysUntil - b.daysUntil)
+  return c.json({ birthdays: upcoming })
 })
 
 // =========== 🥤 BOTTLE FUND API ===========
@@ -1048,6 +1551,13 @@ YOUR JOBS:
 14. WEATHER WISDOM — when asked about an adventure date, suggest they use the 🌦️ Weather Brain on the site (it pulls real Open-Meteo forecasts). For high-risk weather (storms, 35°+ heat, heavy rain), always offer a backup indoor plan.
 15. PLAYLIST CURATION — the crew has a 🎵 Crew Playlist with Spotify embeds. Founding tracks: "vampire" by Olivia Rodrigo and "Pink Pony Club" by Chappell Roan. Each kid can have a hype song in their profile.
 16. CONCERT WATCH — the crew watches artists for tour announcements. Olivia Rodrigo & Chappell Roan are on watch. If asked "is X touring?" — point them to the Concert Watch section.
+17. ADVENTURE DIARY — when asked to "remember" or "write up" an adventure, point them to the 📔 Adventure Diary section (or use the diary generator button on each event card).
+18. SPOT IDEAS — when planning, suggest locations from the Adventure Map (Lake MacDonald, Maleny, Noosa, etc). Encourage adding new spots to the wishlist.
+19. CHALLENGES — the 🎯 Crew Challenge of the Week is a small kind/creative dare for the whole crew. Encourage completion. If asked, suggest a new challenge from the bank.
+20. CAPTION BATTLE — for any gallery photo, the crew can start a Caption Battle. You write 3 funny captions and the crew votes. Encourage it!
+21. POSTCARDS — when a kid misses an adventure, write them a warm "we missed you" postcard. Use their spark from their profile. Sign off with 🐾 Love, Pebbles + the crew.
+22. BIRTHDAYS — once profiles have birthdays, you can suggest birthday parties and remind the crew when a birthday is coming up.
+23. HALL OF FAME — celebrates each kid for THEIR thing (most adventures, most led, most badges, most photos). Never about ranking kids against each other — about celebrating their unique contribution.
 
 🌟 EGALITARIAN LANGUAGE (super important!):
 - ALWAYS say "parents" or "grown-ups" or "the family" — NEVER default to "mum" alone
@@ -1886,6 +2396,159 @@ app.get('/', (c) => {
               <div id="watch-msg"></div>
             </form>
           </details>
+        </section>
+
+        {/* 🎂 BIRTHDAY BRAIN */}
+        <section class="section birthday-brain-section" id="birthday-brain">
+          <h2 class="section-title">🎂 Birthday Brain</h2>
+          <p class="section-subtitle">Pebbles never forgets a crew birthday 🐾</p>
+          <div id="birthday-list" class="birthday-list">
+            {/* Populated by app.js */}
+          </div>
+        </section>
+
+        {/* 🌟 HALL OF FAME */}
+        <section class="section hall-of-fame-section" id="hall-of-fame">
+          <h2 class="section-title">🌟 Hall of Fame</h2>
+          <p class="section-subtitle">Every kid celebrated for THEIR thing — not against each other 💛</p>
+          <div id="hof-categories" class="hof-categories">
+            {/* Populated by app.js: most adventures, most led, most badges, most photos */}
+          </div>
+          <div id="hof-stats" class="hof-stats">
+            {/* Per-kid stat cards */}
+          </div>
+        </section>
+
+        {/* 🎯 CREW CHALLENGE OF THE WEEK */}
+        <section class="section challenge-section" id="challenge">
+          <h2 class="section-title">🎯 Crew Challenge of the Week</h2>
+          <p class="section-subtitle">A small kind/creative dare for the whole crew 🌟</p>
+          <div id="challenge-current" class="challenge-current">
+            {/* Populated by app.js */}
+          </div>
+          <details class="challenge-history-wrap">
+            <summary>📜 Past challenges</summary>
+            <div id="challenge-history" class="challenge-history"></div>
+          </details>
+        </section>
+
+        {/* 🗺️ ADVENTURE MAP */}
+        <section class="section adventure-map-section" id="adventure-map">
+          <h2 class="section-title">🗺️ Adventure Map — SE Queensland</h2>
+          <p class="section-subtitle">Where we've been, where we're going 📍</p>
+          <div class="map-legend">
+            <span class="legend-item"><span class="legend-dot visited"></span> Visited</span>
+            <span class="legend-item"><span class="legend-dot planned"></span> Planned</span>
+            <span class="legend-item"><span class="legend-dot wishlist"></span> Wishlist</span>
+          </div>
+          <div id="adventure-map-svg" class="adventure-map-svg">
+            {/* SVG map populated by app.js */}
+          </div>
+          <div id="adventure-spots-list" class="adventure-spots-list">
+            {/* List view fallback */}
+          </div>
+          <details class="spot-add-wrap">
+            <summary>➕ Add a new spot</summary>
+            <form id="spot-form" class="spot-form">
+              <div class="form-row">
+                <label><span>📍 Name</span><input type="text" id="spot-name" required maxlength={100} placeholder="e.g. Caloundra Skate Park" /></label>
+                <label><span>✨ Emoji</span><input type="text" id="spot-emoji" maxlength={4} placeholder="🛹" /></label>
+              </div>
+              <div class="form-row">
+                <label><span>📡 Latitude</span><input type="number" id="spot-lat" step="0.0001" placeholder="-26.8" /></label>
+                <label><span>📡 Longitude</span><input type="number" id="spot-lon" step="0.0001" placeholder="153.1" /></label>
+              </div>
+              <label><span>📝 Notes</span><input type="text" id="spot-notes" maxlength={300} placeholder="Why's it cool?" /></label>
+              <label><span>🏷️ Status</span><select id="spot-status"><option value="wishlist">Wishlist</option><option value="planned">Planned</option><option value="visited">Visited</option></select></label>
+              <button type="submit" class="btn btn-primary">📍 Add to map</button>
+              <p class="field-hint">💡 Tip: search the place on Google Maps → right-click the pin → click the lat/lon to copy.</p>
+            </form>
+          </details>
+        </section>
+
+        {/* 📔 ADVENTURE DIARY */}
+        <section class="section diary-section" id="diary">
+          <h2 class="section-title">📔 Adventure Diary</h2>
+          <p class="section-subtitle">Pebbles writes up our adventures, story-style 🐾✨</p>
+          <details class="diary-write-wrap">
+            <summary>✍️ Write a new diary entry (Pebbles will do it for you)</summary>
+            <div class="diary-write-body">
+              <label><span>📅 Which adventure?</span>
+                <select id="diary-event-select">
+                  <option value="">Pick an event from your calendar...</option>
+                </select>
+              </label>
+              <button id="diary-generate-btn" class="btn btn-secondary">🐾 Ask Pebbles to write it</button>
+              <div id="diary-msg"></div>
+            </div>
+          </details>
+          <div id="diary-entries" class="diary-entries">
+            {/* populated by app.js */}
+          </div>
+        </section>
+
+        {/* 📸 PHOTO CAPTION BATTLE */}
+        <section class="section caption-battle-section" id="caption-battle">
+          <h2 class="section-title">📸 Photo Caption Battle</h2>
+          <p class="section-subtitle">Pebbles writes 3 funny captions, the crew votes for the best 🏆</p>
+          <details class="caption-start-wrap">
+            <summary>⚡ Start a new battle on a gallery photo</summary>
+            <div class="caption-start-body">
+              <label><span>📸 Which photo?</span>
+                <select id="caption-gallery-select">
+                  <option value="">Pick a photo from your gallery...</option>
+                </select>
+              </label>
+              <button id="caption-start-btn" class="btn btn-tertiary">🎬 Start the battle!</button>
+              <div id="caption-start-msg"></div>
+            </div>
+          </details>
+          <div id="caption-battles-list" class="caption-battles-list">
+            {/* populated by app.js */}
+          </div>
+        </section>
+
+        {/* 💌 PEBBLES POSTCARDS */}
+        <section class="section postcards-section" id="postcards">
+          <h2 class="section-title">💌 Pebbles Postcards</h2>
+          <p class="section-subtitle">For when a crew member missed an adventure — nobody gets left out 💛</p>
+          <details class="postcard-write-wrap">
+            <summary>✍️ Write a postcard to a kid who missed out</summary>
+            <div class="postcard-write-body">
+              <div class="form-row">
+                <label><span>👤 To which kid?</span>
+                  <select id="postcard-to">
+                    <option>Ace</option><option>Charlotte</option><option>Elijah</option><option>Saia</option><option>Sienna</option>
+                  </select>
+                </label>
+                <label><span>📅 Which adventure did they miss? <em>(optional)</em></span>
+                  <select id="postcard-event">
+                    <option value="">Pick an event...</option>
+                  </select>
+                </label>
+              </div>
+              <button id="postcard-generate-btn" class="btn btn-primary">🐾 Ask Pebbles to write it</button>
+              <div id="postcard-msg"></div>
+            </div>
+          </details>
+          <div id="postcards-list" class="postcards-list">
+            {/* populated by app.js */}
+          </div>
+        </section>
+
+        {/* 🎤 VOICE PEBBLES — floating chat already exists, this adds voice button */}
+        <section class="section voice-pebbles-section" id="voice-pebbles">
+          <h2 class="section-title">🎤 Voice Pebbles</h2>
+          <p class="section-subtitle">Press the mic, talk to Pebbles, she replies out loud 🐾</p>
+          <div class="voice-pebbles-card">
+            <button id="voice-pebbles-btn" class="voice-pebbles-btn">
+              <span class="voice-mic-icon">🎤</span>
+              <span class="voice-btn-text">Hold to talk to Pebbles</span>
+            </button>
+            <div id="voice-status" class="voice-status">Click the mic, ask anything!</div>
+            <div id="voice-transcript" class="voice-transcript"></div>
+            <p class="voice-hint">💡 Pebbles will listen, think, and talk back. Best for little kids who can't type fast yet!</p>
+          </div>
         </section>
 
         {/* PARENTS' SUGGESTION BOX */}

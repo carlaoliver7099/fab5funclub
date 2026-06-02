@@ -2656,3 +2656,322 @@ body {
   .pick-result-pick { font-size: 1.4rem; }
   .dash-stats { grid-template-columns: 1fr 1fr; }
 }
+
+/* ============================================================ */
+/* ===========  WAVE 2 + 3 — 8 NEW FEATURES  ================== */
+/* ============================================================ */
+
+/* ------------- 🎂 BIRTHDAY BRAIN ------------- */
+.birthday-brain-section { background: linear-gradient(135deg, #fff0f5 0%, #fff 60%); }
+.birthday-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 14px; }
+.birthday-card {
+  background: white; border: 3px solid #FFB6C1; border-radius: 16px;
+  padding: 16px; box-shadow: 0 4px 12px rgba(255, 105, 180, 0.12);
+  transition: transform 0.2s;
+}
+.birthday-card:hover { transform: translateY(-2px); }
+.birthday-card.birthday-today {
+  background: linear-gradient(135deg, #ffeb99, #ffd1dc);
+  border-color: #FFD700; animation: birthdayPulse 1.8s ease-in-out infinite;
+}
+.birthday-card.birthday-soon {
+  background: linear-gradient(135deg, #fff8dc, #ffeef5);
+  border-color: #FFA500;
+}
+@keyframes birthdayPulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4); }
+  50% { box-shadow: 0 8px 24px rgba(255, 105, 180, 0.6); }
+}
+.birthday-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.birthday-emoji { font-size: 2.4rem; }
+.birthday-header h3 { margin: 0; font-size: 1.1rem; color: #333; }
+.birthday-when { margin: 2px 0 0; font-weight: 700; color: #c44569; font-size: 0.95rem; }
+.birthday-meta { margin: 0; font-size: 0.9rem; color: #555; }
+
+/* ------------- 🌟 HALL OF FAME ------------- */
+.hall-of-fame-section { background: linear-gradient(135deg, #fff9e6 0%, #fff 60%); }
+.hof-categories { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin: 16px 0 24px; }
+.hof-trophy {
+  background: linear-gradient(180deg, white 60%, #fff8dc);
+  border: 3px solid #FFD700; border-radius: 16px; padding: 16px;
+  text-align: center; box-shadow: 0 4px 14px rgba(255, 215, 0, 0.18);
+  font-size: 2.4rem;
+}
+.hof-trophy h4 { margin: 6px 0 4px; font-size: 0.85rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+.hof-trophy.hof-trophy-empty { opacity: 0.65; border-color: #ddd; background: white; }
+.hof-trophy.hof-trophy-empty p { font-size: 0.85rem; color: #999; margin: 0; font-weight: 500; }
+.hof-winner-name { font-size: 1.2rem; font-weight: 800; color: #333; margin: 4px 0 2px; }
+.hof-winner-stat { font-size: 1.8rem; font-weight: 800; color: #FF6B9D; margin: 0; }
+
+.hof-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.hof-stat-card {
+  background: white; border: 2px solid #ddd; border-radius: 14px; padding: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.hof-stat-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.hof-stat-emoji { font-size: 1.8rem; }
+.hof-stat-head h4 { margin: 0; font-size: 1.05rem; color: #333; }
+.hof-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.hof-stat-grid > div { display: flex; align-items: center; gap: 6px; background: #f9f9f9; padding: 8px 10px; border-radius: 8px; font-size: 0.9rem; }
+.hof-stat-grid span { font-size: 1.1rem; }
+.hof-stat-grid strong { color: #FF6B9D; font-weight: 800; }
+.hof-stat-grid em { color: #777; font-style: normal; font-size: 0.85rem; }
+
+/* ------------- 🎯 CHALLENGE OF THE WEEK ------------- */
+.challenge-section { background: linear-gradient(135deg, #e8f5e9 0%, #fff 60%); }
+.challenge-current { margin-top: 14px; }
+.challenge-card {
+  background: white; border: 3px solid #4CAF50; border-radius: 18px;
+  padding: 20px; box-shadow: 0 6px 18px rgba(76, 175, 80, 0.18);
+}
+.challenge-card.category-kindness { border-color: #FF6B9D; background: linear-gradient(180deg, white 50%, #ffeef5); }
+.challenge-card.category-nature { border-color: #4CAF50; background: linear-gradient(180deg, white 50%, #e8f5e9); }
+.challenge-card.category-creativity { border-color: #9C27B0; background: linear-gradient(180deg, white 50%, #f3e5f5); }
+.challenge-card.category-team { border-color: #2196F3; background: linear-gradient(180deg, white 50%, #e3f2fd); }
+.challenge-card.category-skill { border-color: #FF9800; background: linear-gradient(180deg, white 50%, #fff3e0); }
+
+.challenge-header { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.challenge-emoji { font-size: 3rem; }
+.challenge-header h3 { margin: 2px 0 0; font-size: 1.4rem; color: #222; }
+.challenge-week { display: inline-block; font-size: 0.78rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+.challenge-desc { font-size: 1.05rem; color: #444; margin: 12px 0 16px; line-height: 1.55; }
+.challenge-checkin { background: rgba(255,255,255,0.7); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+.challenge-checkin strong { display: block; margin-bottom: 8px; color: #333; }
+.challenge-check {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: white; padding: 6px 12px; margin: 4px 6px 4px 0;
+  border-radius: 20px; border: 2px solid #ddd; cursor: pointer;
+  font-weight: 600; font-size: 0.9rem; transition: all 0.18s;
+}
+.challenge-check:hover { border-color: #4CAF50; }
+.challenge-check input { accent-color: #4CAF50; cursor: pointer; }
+.challenge-check input:checked + span { color: #4CAF50; }
+
+.challenge-history-wrap { margin-top: 18px; }
+.challenge-history-wrap summary { cursor: pointer; font-weight: 700; padding: 8px 0; color: #555; }
+.challenge-history { margin-top: 10px; display: grid; gap: 8px; }
+.challenge-past {
+  display: flex; align-items: center; gap: 12px;
+  background: white; border: 1.5px solid #eee; border-radius: 10px; padding: 10px 14px;
+}
+.challenge-past-emoji { font-size: 1.6rem; }
+.challenge-past small { color: #888; }
+
+/* ------------- 🗺️ ADVENTURE MAP ------------- */
+.adventure-map-section { background: linear-gradient(135deg, #e3f2fd 0%, #fff 70%); }
+.map-legend { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 14px; font-size: 0.9rem; }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 1px #999; }
+.legend-dot.visited { background: #2ecc71; }
+.legend-dot.planned { background: #f39c12; }
+.legend-dot.wishlist { background: #9b59b6; }
+
+.adventure-map-svg {
+  width: 100%; max-width: 600px; margin: 0 auto 18px; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12); background: white;
+}
+.adv-svg { display: block; width: 100%; height: auto; }
+.map-pin { cursor: pointer; transition: transform 0.2s; transform-origin: center; transform-box: fill-box; }
+.map-pin:hover circle { stroke-width: 4; }
+
+.adventure-spots-list { display: grid; gap: 8px; margin-bottom: 16px; }
+.spot-item {
+  display: flex; align-items: center; gap: 12px;
+  background: white; border: 2px solid #eee; border-radius: 12px; padding: 10px 14px;
+  transition: border-color 0.18s;
+}
+.spot-item:hover { border-color: #74b9ff; }
+.spot-emoji { font-size: 1.8rem; }
+.spot-body { flex: 1; }
+.spot-name strong { font-size: 1.02rem; color: #333; }
+.spot-status { display: inline-block; margin-left: 8px; font-size: 0.78rem; padding: 2px 8px; border-radius: 10px; background: #f0f0f0; color: #555; text-transform: capitalize; }
+.spot-notes { font-size: 0.85rem; color: #666; margin-top: 4px; }
+.spot-actions { display: flex; gap: 6px; align-items: center; }
+.spot-status-select { padding: 6px 10px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 0.85rem; }
+.spot-remove {
+  background: #ffebee; border: none; color: #c62828; width: 32px; height: 32px;
+  border-radius: 50%; cursor: pointer; font-weight: 800; font-size: 1rem;
+}
+.spot-remove:hover { background: #ffcdd2; }
+
+.spot-add-wrap { margin-top: 10px; }
+.spot-add-wrap summary { cursor: pointer; font-weight: 700; padding: 8px 0; color: #555; }
+.spot-form { display: grid; grid-template-columns: 1.5fr 0.5fr 1fr 1fr 0.7fr auto; gap: 8px; margin-top: 10px; align-items: end; }
+.spot-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: #555; font-weight: 600; }
+.spot-form input, .spot-form select { padding: 8px 10px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 0.9rem; }
+
+/* ------------- 📔 ADVENTURE DIARY ------------- */
+.diary-section { background: linear-gradient(135deg, #fff8e1 0%, #fff 60%); }
+.diary-write-wrap { margin-bottom: 14px; }
+.diary-write-wrap summary { cursor: pointer; font-weight: 700; padding: 8px 0; color: #555; }
+.diary-write-body { background: white; border-radius: 12px; padding: 14px; border: 1.5px solid #eee; }
+.diary-write-body select { width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 0.95rem; margin-bottom: 10px; }
+#diary-msg { margin-top: 8px; font-weight: 600; }
+
+.diary-entries { display: grid; gap: 16px; margin-top: 14px; }
+.diary-entry {
+  background: linear-gradient(180deg, #fffef0, #fff8dc);
+  border: 2px dashed #d4a373; border-radius: 14px;
+  padding: 18px 20px; box-shadow: 0 4px 12px rgba(212, 163, 115, 0.18);
+  font-family: 'Georgia', 'Times New Roman', serif;
+  position: relative;
+}
+.diary-entry::before {
+  content: '📔'; position: absolute; top: -12px; left: 18px;
+  font-size: 1.6rem; background: white; padding: 0 6px; border-radius: 50%;
+}
+.diary-entry-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1.5px dashed #d4a373; }
+.diary-entry-head h3 { margin: 0; flex: 1; font-size: 1.15rem; color: #5d4e37; font-family: inherit; }
+.diary-date { font-size: 0.85rem; color: #8b7355; font-style: italic; }
+.diary-remove {
+  background: transparent; border: none; cursor: pointer; font-size: 1rem;
+  color: #c62828; padding: 4px 8px; border-radius: 50%;
+}
+.diary-remove:hover { background: #ffebee; }
+.diary-story { font-size: 1rem; line-height: 1.7; color: #4a3f2e; white-space: pre-wrap; }
+.diary-members { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #d4a373; font-size: 0.85rem; color: #6b5b3e; }
+.diary-members .chip { display: inline-block; background: white; border: 1.5px solid #d4a373; border-radius: 12px; padding: 2px 10px; margin: 2px 4px; font-family: var(--font); font-size: 0.8rem; color: #5d4e37; }
+
+/* ------------- 📸 PHOTO CAPTION BATTLE ------------- */
+.caption-battle-section { background: linear-gradient(135deg, #f3e5f5 0%, #fff 60%); }
+.caption-start-wrap { margin-bottom: 14px; }
+.caption-start-wrap summary { cursor: pointer; font-weight: 700; padding: 8px 0; color: #555; }
+.caption-start-body { background: white; border-radius: 12px; padding: 14px; border: 1.5px solid #eee; }
+.caption-start-body select { width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 0.95rem; margin-bottom: 10px; }
+#caption-start-msg { margin-top: 8px; font-weight: 600; }
+
+.caption-battles-list { display: grid; gap: 20px; margin-top: 14px; }
+.caption-battle {
+  background: white; border: 3px solid #9C27B0; border-radius: 16px;
+  padding: 18px; box-shadow: 0 6px 16px rgba(156, 39, 176, 0.18);
+}
+.cb-photo { width: 100%; max-width: 400px; display: block; margin: 0 auto 14px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+.cb-no-photo { background: #f5f5f5; padding: 30px; text-align: center; border-radius: 10px; color: #888; margin-bottom: 14px; }
+.cb-captions { display: grid; gap: 12px; }
+.cb-caption {
+  background: #faf3fc; border: 2px solid #e1bee7; border-radius: 12px;
+  padding: 12px 14px; transition: all 0.2s;
+}
+.cb-caption.cb-caption-winner {
+  background: linear-gradient(135deg, #fff9c4, #ffeb3b22);
+  border-color: #FFD700; box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+.cb-caption.cb-caption-winner::before { content: '🏆 '; }
+.cb-caption-text { font-size: 1.02rem; color: #333; font-weight: 600; margin-bottom: 6px; }
+.cb-caption-meta { display: flex; justify-content: space-between; font-size: 0.82rem; color: #777; margin-bottom: 8px; }
+.cb-author { font-style: italic; }
+.cb-votes { font-weight: 700; color: #9C27B0; }
+.cb-vote-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+.cb-vote-btn {
+  background: white; border: 2px solid #ddd; border-radius: 50%;
+  width: 38px; height: 38px; cursor: pointer; font-size: 1.1rem;
+  transition: all 0.18s;
+}
+.cb-vote-btn:hover { transform: scale(1.15); border-color: #9C27B0; }
+.cb-vote-btn.voted { background: #9C27B0; color: white; border-color: #9C27B0; transform: scale(1.1); }
+
+.cb-add-form { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1.5px dashed #e1bee7; }
+.cb-new-text { padding: 8px 12px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 0.95rem; }
+.cb-new-author { padding: 8px 10px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 0.9rem; }
+
+/* ------------- 💌 POSTCARDS ------------- */
+.postcards-section { background: linear-gradient(135deg, #fce4ec 0%, #fff 60%); }
+.postcard-write-wrap { margin-bottom: 14px; }
+.postcard-write-wrap summary { cursor: pointer; font-weight: 700; padding: 8px 0; color: #555; }
+.postcard-write-body { background: white; border-radius: 12px; padding: 14px; border: 1.5px solid #eee; }
+.postcard-write-body select { padding: 9px 12px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 0.95rem; }
+#postcard-msg { margin-top: 8px; font-weight: 600; }
+
+.postcards-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 14px; }
+.postcard {
+  background: linear-gradient(135deg, #fff 70%, #ffeef5);
+  border: 3px solid #FFB6C1; border-radius: 14px; padding: 16px;
+  box-shadow: 0 4px 14px rgba(255, 105, 180, 0.15);
+  position: relative;
+  transition: transform 0.2s;
+}
+.postcard:hover { transform: translateY(-3px) rotate(-0.6deg); }
+.postcard::after {
+  content: ''; position: absolute; top: 8px; right: 8px; bottom: 8px; left: 8px;
+  border: 1.5px dashed #FFB6C1; border-radius: 10px; pointer-events: none;
+}
+.postcard-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1.5px dashed #FFB6C1; position: relative; z-index: 1; }
+.postcard-stamp { font-size: 2rem; }
+.postcard-to { font-size: 0.95rem; color: #555; }
+.postcard-emoji { font-size: 1.1rem; margin-left: 4px; }
+.postcard-event { font-size: 0.82rem; color: #888; font-style: italic; margin-top: 2px; }
+.postcard-remove {
+  background: transparent; border: none; cursor: pointer; font-size: 1rem;
+  color: #c62828; padding: 4px 8px; border-radius: 50%;
+}
+.postcard-remove:hover { background: #ffebee; }
+.postcard-message {
+  font-family: 'Comic Sans MS', 'Marker Felt', cursive;
+  font-size: 1rem; line-height: 1.6; color: #4a3f5e;
+  white-space: pre-wrap; position: relative; z-index: 1;
+}
+
+/* ------------- 🎤 VOICE PEBBLES ------------- */
+.voice-pebbles-section { background: linear-gradient(135deg, #e0f7fa 0%, #fff 60%); }
+.voice-pebbles-card {
+  background: white; border-radius: 18px; padding: 28px 20px;
+  border: 3px solid #4DD0E1; box-shadow: 0 6px 18px rgba(77, 208, 225, 0.18);
+  text-align: center;
+}
+.voice-pebbles-btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, #FF6B9D, #FF8E53);
+  color: white; border: none; padding: 18px 30px;
+  border-radius: 50px; cursor: pointer; font-size: 1.2rem; font-weight: 800;
+  box-shadow: 0 6px 20px rgba(255, 107, 157, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.voice-pebbles-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 8px 24px rgba(255, 107, 157, 0.5); }
+.voice-pebbles-btn:disabled { background: #ccc; cursor: not-allowed; opacity: 0.6; box-shadow: none; }
+.voice-pebbles-btn.listening {
+  background: linear-gradient(135deg, #f44336, #ff9800);
+  animation: voicePulse 1s ease-in-out infinite;
+}
+@keyframes voicePulse {
+  0%, 100% { box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4); transform: scale(1); }
+  50% { box-shadow: 0 10px 30px rgba(244, 67, 54, 0.7); transform: scale(1.04); }
+}
+.voice-mic-icon { font-size: 1.8rem; }
+.voice-status { margin-top: 16px; font-size: 1.05rem; font-weight: 600; color: #00838F; min-height: 1.4em; }
+.voice-transcript {
+  margin-top: 16px; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto;
+  display: grid; gap: 10px;
+}
+.voice-you {
+  background: #e3f2fd; border-left: 4px solid #2196F3; border-radius: 10px;
+  padding: 10px 14px; font-size: 0.95rem;
+}
+.voice-pebbles {
+  background: linear-gradient(135deg, #fff0f5, #fce4ec);
+  border-left: 4px solid #FF6B9D; border-radius: 10px;
+  padding: 10px 14px; font-size: 0.95rem; font-weight: 500;
+}
+.voice-hint { margin-top: 16px; font-size: 0.85rem; color: #777; font-style: italic; }
+
+/* ===========  MOBILE RESPONSIVE — Wave 2+3 ============= */
+@media (max-width: 680px) {
+  .birthday-list,
+  .hof-stats,
+  .postcards-list { grid-template-columns: 1fr; }
+  .hof-categories { grid-template-columns: 1fr 1fr; }
+  .hof-stat-grid { grid-template-columns: 1fr 1fr; }
+  .challenge-card { padding: 16px; }
+  .challenge-emoji { font-size: 2.2rem; }
+  .challenge-header h3 { font-size: 1.15rem; }
+  .challenge-desc { font-size: 0.98rem; }
+  .spot-form { grid-template-columns: 1fr 1fr; }
+  .spot-form button { grid-column: 1 / -1; }
+  .spot-item { flex-wrap: wrap; }
+  .spot-actions { flex-basis: 100%; justify-content: space-between; margin-top: 6px; }
+  .cb-add-form { grid-template-columns: 1fr; }
+  .voice-pebbles-btn { font-size: 1.05rem; padding: 14px 22px; }
+  .voice-pebbles-btn .voice-btn-text { font-size: 0.95rem; }
+  .diary-entry { padding: 14px 16px; }
+  .postcard { padding: 14px; }
+  .map-legend { font-size: 0.82rem; gap: 10px; }
+}

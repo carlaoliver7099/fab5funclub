@@ -96,6 +96,12 @@ async function initApp() {
     setupQuickPromptButtons();
     setupPlaylistForm();
     setupConcertWatchForm();
+    // Wave 2 + 3 setup
+    setupSpotForm();
+    setupDiaryGenerator();
+    setupCaptionBattleStarter();
+    setupPostcardGenerator();
+    setupVoicePebbles();
     $('#logout-btn').addEventListener('click', logout);
 
     await refreshAll();
@@ -178,6 +184,14 @@ async function refreshAll() {
   renderPlaylist();
   renderConcertWatches();
   renderDashOverview();
+  // Wave 2 + 3 renderers
+  renderBirthdays();
+  renderHallOfFame();
+  renderChallenge();
+  renderAdventureMap();
+  renderDiary();
+  renderCaptionBattles();
+  renderPostcards();
 }
 
 // ---------- MEMBERS ----------
@@ -1154,6 +1168,593 @@ function setupConcertWatchForm() {
       setTimeout(() => { if (msg) { msg.textContent = ''; msg.className = ''; } }, 2500);
     } catch (err) {
       if (msg) { msg.textContent = 'Failed: ' + err.message; msg.className = 'error'; }
+    }
+  });
+}
+
+// ---------- 🎂 BIRTHDAY BRAIN ----------
+async function renderBirthdays() {
+  const el = $('#birthday-list');
+  if (!el) return;
+  try {
+    const data = await api('/api/birthdays');
+    const list = data.birthdays || [];
+    if (list.length === 0) {
+      el.innerHTML = `<div class="loading">Fill in birthdays in the Parents' Dashboard to light this up! 🎂</div>`;
+      return;
+    }
+    el.innerHTML = list.map(b => {
+      let label = '';
+      let cls = 'birthday-card';
+      if (b.daysUntil === 0) { label = '🎉 TODAY!'; cls += ' birthday-today'; }
+      else if (b.daysUntil <= 7) { label = `🎈 in ${b.daysUntil} day${b.daysUntil === 1 ? '' : 's'}`; cls += ' birthday-soon'; }
+      else if (b.daysUntil <= 30) { label = `📅 in ${b.daysUntil} days`; }
+      else { label = `📆 in ${b.daysUntil} days`; }
+      const member = (CLUB?.members || []).find(m => m.name === b.name);
+      const emoji = member?.emoji || '🎂';
+      const color = member?.color || '#FF6B9D';
+      return `
+        <div class="${cls}" style="border-color: ${color}">
+          <div class="birthday-header">
+            <span class="birthday-emoji">${emoji}</span>
+            <div>
+              <h3>${escapeHtml(b.name)}</h3>
+              <p class="birthday-when">${label}</p>
+            </div>
+          </div>
+          <p class="birthday-meta">🎂 Turning <strong>${b.turning}</strong> on <strong>${escapeHtml(b.birthday)}</strong></p>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="error">Could not load birthdays</div>`;
+  }
+}
+
+// ---------- 🌟 HALL OF FAME ----------
+async function renderHallOfFame() {
+  const cats = $('#hof-categories');
+  const stats = $('#hof-stats');
+  if (!cats || !stats) return;
+  try {
+    const data = await api('/api/hall-of-fame');
+    const trophyCard = (emoji, label, winner, statKey) => {
+      if (!winner || winner[statKey] === 0) return `<div class="hof-trophy hof-trophy-empty">${emoji}<h4>${label}</h4><p>No data yet</p></div>`;
+      const member = (CLUB?.members || []).find(m => m.name === winner.name);
+      return `<div class="hof-trophy" style="border-color: ${member?.color || '#FFE66D'}">
+        ${emoji}<h4>${label}</h4>
+        <p class="hof-winner-name">${escapeHtml(winner.name)}</p>
+        <p class="hof-winner-stat">${winner[statKey]}</p>
+      </div>`;
+    };
+    cats.innerHTML = `
+      ${trophyCard('🥇', 'Most adventures', data.mostAdventures, 'adventures')}
+      ${trophyCard('🎖️', 'Most days as leader', data.mostLed, 'led')}
+      ${trophyCard('🏆', 'Most badges earned', data.mostBadges, 'badges')}
+      ${trophyCard('📸', 'Most photos shared', data.mostPhotos, 'photos')}
+    `;
+    stats.innerHTML = (data.stats || []).map(s => {
+      const member = (CLUB?.members || []).find(m => m.name === s.name);
+      return `
+        <div class="hof-stat-card" style="border-color: ${member?.color || '#ccc'}">
+          <div class="hof-stat-head"><span class="hof-stat-emoji">${member?.emoji || '🌟'}</span><h4>${escapeHtml(s.name)}</h4></div>
+          <div class="hof-stat-grid">
+            <div><span>🛶</span><strong>${s.adventures}</strong><em>adventures</em></div>
+            <div><span>🎖️</span><strong>${s.led}</strong><em>led</em></div>
+            <div><span>🏆</span><strong>${s.badges}</strong><em>badges</em></div>
+            <div><span>📸</span><strong>${s.photos}</strong><em>photos</em></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    cats.innerHTML = `<div class="error">Could not load Hall of Fame</div>`;
+  }
+}
+
+// ---------- 🎯 CHALLENGES ----------
+async function renderChallenge() {
+  const curEl = $('#challenge-current');
+  const histEl = $('#challenge-history');
+  if (!curEl) return;
+  try {
+    const data = await api('/api/challenges');
+    const c = data.current;
+    if (!c) { curEl.innerHTML = `<div class="loading">No challenge yet</div>`; return; }
+    const memberNames = (CLUB?.members || []).filter(m => m.name !== 'Pebbles').map(m => m.name);
+    const completedBy = c.completedBy || [];
+    curEl.innerHTML = `
+      <div class="challenge-card category-${escapeHtml(c.category)}">
+        <div class="challenge-header">
+          <span class="challenge-emoji">${c.emoji}</span>
+          <div>
+            <span class="challenge-week">Week of ${escapeHtml(c.weekStart)}</span>
+            <h3>${escapeHtml(c.title)}</h3>
+          </div>
+        </div>
+        <p class="challenge-desc">${escapeHtml(c.description)}</p>
+        <div class="challenge-checkin">
+          <strong>✅ Completed by:</strong>
+          ${memberNames.map(n => `
+            <label class="challenge-check">
+              <input type="checkbox" data-challenge-id="${escapeHtml(c.id)}" data-member="${escapeHtml(n)}" ${completedBy.includes(n) ? 'checked disabled' : ''} />
+              <span>${escapeHtml(n)}</span>
+            </label>
+          `).join('')}
+        </div>
+        <button id="new-challenge-btn" class="btn btn-tertiary">🔄 Pick a new challenge</button>
+      </div>
+    `;
+    // Wire checkboxes
+    curEl.querySelectorAll('input[data-challenge-id]').forEach(cb => {
+      cb.addEventListener('change', async () => {
+        if (!cb.checked) return;
+        try {
+          await api(`/api/challenges/${encodeURIComponent(cb.dataset.challengeId)}/complete`, { method: 'POST', body: { member: cb.dataset.member } });
+          cb.disabled = true;
+          flashMsg(`🎉 ${cb.dataset.member} completed the challenge!`, 'success');
+        } catch (e) { flashMsg('Failed: ' + e.message, 'error'); cb.checked = false; }
+      });
+    });
+    $('#new-challenge-btn')?.addEventListener('click', async () => {
+      if (!confirm('Pick a fresh challenge for this week?')) return;
+      try {
+        await api('/api/challenges/new', { method: 'POST' });
+        renderChallenge();
+      } catch (e) { flashMsg('Failed: ' + e.message, 'error'); }
+    });
+    // History
+    if (histEl) {
+      const past = (data.history || []).filter(h => h.id !== c.id).slice(0, 10);
+      histEl.innerHTML = past.length === 0 ? `<p class="loading">No past challenges yet</p>` :
+        past.map(h => `<div class="challenge-past"><span class="challenge-past-emoji">${h.emoji}</span><div><strong>${escapeHtml(h.title)}</strong><br><small>Week of ${escapeHtml(h.weekStart)} • completed by ${h.completedBy.length}/${(CLUB?.members||[]).filter(m=>m.name!=='Pebbles').length}</small></div></div>`).join('');
+    }
+  } catch (e) {
+    curEl.innerHTML = `<div class="error">Could not load challenge</div>`;
+  }
+}
+
+// ---------- 🗺️ ADVENTURE MAP ----------
+// Roughly the SE QLD bounding box for our SVG map
+const MAP_LAT_MIN = -28.2, MAP_LAT_MAX = -25.8;
+const MAP_LON_MIN = 151.8, MAP_LON_MAX = 153.6;
+const MAP_W = 600, MAP_H = 600;
+
+function latLonToXY(lat, lon) {
+  const x = ((lon - MAP_LON_MIN) / (MAP_LON_MAX - MAP_LON_MIN)) * MAP_W;
+  const y = ((MAP_LAT_MAX - lat) / (MAP_LAT_MAX - MAP_LAT_MIN)) * MAP_H;
+  return { x, y };
+}
+
+function renderAdventureMap() {
+  const svgWrap = $('#adventure-map-svg');
+  const listWrap = $('#adventure-spots-list');
+  if (!svgWrap || !listWrap || !CLUB) return;
+  const spots = CLUB.adventureSpots || [];
+
+  // SVG map with stylised coast
+  svgWrap.innerHTML = `
+    <svg viewBox="0 0 ${MAP_W} ${MAP_H}" class="adv-svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="oceanGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#a5d8ff"/>
+          <stop offset="100%" stop-color="#74b9ff"/>
+        </linearGradient>
+        <linearGradient id="landGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#d4edda"/>
+          <stop offset="100%" stop-color="#a8d5b3"/>
+        </linearGradient>
+      </defs>
+      <rect width="${MAP_W}" height="${MAP_H}" fill="url(#oceanGrad)"/>
+      <!-- Simplified SE QLD coastline (rough shape) -->
+      <path d="M 0,80 Q 60,90 110,110 Q 160,130 200,160 Q 230,200 250,260 Q 270,330 295,400 Q 320,470 340,540 Q 360,600 0,600 Z"
+            fill="url(#landGrad)" stroke="#8fbc8f" stroke-width="2"/>
+      <!-- Brisbane river hint -->
+      <path d="M 200,420 Q 240,440 280,460 Q 320,475 360,490" stroke="#74b9ff" stroke-width="3" fill="none" opacity="0.6"/>
+      <!-- City labels -->
+      <text x="240" y="120" font-size="13" fill="#555" font-weight="700">Noosa</text>
+      <text x="180" y="260" font-size="13" fill="#555" font-weight="700">Sunshine Coast</text>
+      <text x="180" y="475" font-size="13" fill="#555" font-weight="700">Brisbane</text>
+      <text x="100" y="330" font-size="12" fill="#666" font-style="italic">Hinterland</text>
+      ${spots.map(s => {
+        const { x, y } = latLonToXY(s.lat, s.lon);
+        const inside = x >= 0 && x <= MAP_W && y >= 0 && y <= MAP_H;
+        if (!inside) return '';
+        const color = s.status === 'visited' ? '#2ecc71' : s.status === 'planned' ? '#f39c12' : '#9b59b6';
+        return `
+          <g class="map-pin" data-spot-id="${escapeHtml(s.id)}" transform="translate(${x},${y})">
+            <circle r="14" fill="${color}" stroke="white" stroke-width="3" opacity="0.95"/>
+            <text y="5" text-anchor="middle" font-size="14">${s.emoji}</text>
+            <title>${escapeHtml(s.name)} (${s.status})</title>
+          </g>
+        `;
+      }).join('')}
+    </svg>
+  `;
+
+  // List view
+  listWrap.innerHTML = spots.map(s => {
+    const statusEmoji = s.status === 'visited' ? '✅' : s.status === 'planned' ? '📅' : '⭐';
+    return `
+      <div class="spot-item" data-spot-id="${escapeHtml(s.id)}">
+        <span class="spot-emoji">${s.emoji}</span>
+        <div class="spot-body">
+          <div class="spot-name"><strong>${escapeHtml(s.name)}</strong> <span class="spot-status">${statusEmoji} ${s.status}</span></div>
+          ${s.notes ? `<div class="spot-notes">${escapeHtml(s.notes)}</div>` : ''}
+        </div>
+        <div class="spot-actions">
+          <select class="spot-status-select" data-spot-id="${escapeHtml(s.id)}">
+            <option value="wishlist" ${s.status==='wishlist'?'selected':''}>Wishlist</option>
+            <option value="planned" ${s.status==='planned'?'selected':''}>Planned</option>
+            <option value="visited" ${s.status==='visited'?'selected':''}>Visited</option>
+          </select>
+          <button class="spot-remove" data-spot-remove="${escapeHtml(s.id)}" title="Remove">✕</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  listWrap.querySelectorAll('.spot-status-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      try {
+        await api(`/api/adventure-spots/${encodeURIComponent(sel.dataset.spotId)}`, { method: 'PATCH', body: { status: sel.value } });
+        const spot = CLUB.adventureSpots.find(s => s.id === sel.dataset.spotId);
+        if (spot) spot.status = sel.value;
+        renderAdventureMap();
+      } catch (e) { flashMsg('Failed: ' + e.message, 'error'); }
+    });
+  });
+  listWrap.querySelectorAll('[data-spot-remove]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remove this spot?')) return;
+      try {
+        await api(`/api/adventure-spots/${encodeURIComponent(btn.dataset.spotRemove)}`, { method: 'DELETE' });
+        CLUB.adventureSpots = CLUB.adventureSpots.filter(s => s.id !== btn.dataset.spotRemove);
+        renderAdventureMap();
+      } catch (e) { flashMsg('Failed: ' + e.message, 'error'); }
+    });
+  });
+}
+
+function setupSpotForm() {
+  const form = $('#spot-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const body = {
+      name: $('#spot-name').value.trim(),
+      emoji: $('#spot-emoji').value.trim() || '📍',
+      lat: Number($('#spot-lat').value),
+      lon: Number($('#spot-lon').value),
+      notes: $('#spot-notes').value.trim(),
+      status: $('#spot-status').value,
+    };
+    if (!body.name || !Number.isFinite(body.lat) || !Number.isFinite(body.lon)) {
+      flashMsg('Name + valid lat/lon required!', 'error'); return;
+    }
+    try {
+      const res = await api('/api/adventure-spots', { method: 'POST', body });
+      if (!CLUB.adventureSpots) CLUB.adventureSpots = [];
+      CLUB.adventureSpots.push(res.spot);
+      renderAdventureMap();
+      form.reset();
+      flashMsg('📍 Added to the map!', 'success');
+    } catch (err) { flashMsg('Failed: ' + err.message, 'error'); }
+  });
+}
+
+// ---------- 📔 ADVENTURE DIARY ----------
+function renderDiary() {
+  const wrap = $('#diary-entries');
+  const sel = $('#diary-event-select');
+  if (!wrap || !CLUB) return;
+  const entries = CLUB.diary || [];
+  // Refresh event select
+  if (sel) {
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">Pick an event from your calendar...</option>` +
+      EVENTS.map(e => `<option value="${escapeHtml(e.id)}">${escapeHtml(e.date)} — ${escapeHtml(e.title)}</option>`).join('');
+    sel.value = cur;
+  }
+  if (entries.length === 0) {
+    wrap.innerHTML = `<div class="loading">No diary entries yet — pick an event above and ask Pebbles to write it! 🐾</div>`;
+    return;
+  }
+  wrap.innerHTML = entries.map(e => `
+    <article class="diary-entry" data-id="${escapeHtml(e.id)}">
+      <header class="diary-entry-head">
+        <h3>📔 ${escapeHtml(e.title)}</h3>
+        ${e.date ? `<span class="diary-date">${escapeHtml(e.date)}</span>` : ''}
+        <button class="diary-remove" data-diary-remove="${escapeHtml(e.id)}" title="Remove">✕</button>
+      </header>
+      <div class="diary-story">${escapeHtml(e.story).replace(/\n/g, '<br>')}</div>
+      ${e.mentionedMembers?.length ? `<footer class="diary-members">⭐ ${e.mentionedMembers.map(m => `<span class="chip member">${escapeHtml(m)}</span>`).join('')}</footer>` : ''}
+    </article>
+  `).join('');
+  wrap.querySelectorAll('[data-diary-remove]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remove this diary entry?')) return;
+      try {
+        await api(`/api/diary/${encodeURIComponent(btn.dataset.diaryRemove)}`, { method: 'DELETE' });
+        CLUB.diary = CLUB.diary.filter(d => d.id !== btn.dataset.diaryRemove);
+        renderDiary();
+      } catch (e) { flashMsg('Failed: ' + e.message, 'error'); }
+    });
+  });
+}
+
+function setupDiaryGenerator() {
+  const btn = $('#diary-generate-btn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const eventId = $('#diary-event-select').value;
+    const msg = $('#diary-msg');
+    if (!eventId) { if (msg) { msg.textContent = 'Pick an event first!'; msg.className = 'error'; } return; }
+    if (msg) { msg.textContent = '🐾 Pebbles is writing your diary entry... (this takes 10-20 seconds)'; msg.className = ''; }
+    btn.disabled = true;
+    try {
+      const res = await api('/api/diary/generate', { method: 'POST', body: { eventId } });
+      if (!CLUB.diary) CLUB.diary = [];
+      CLUB.diary.unshift(res.entry);
+      renderDiary();
+      if (msg) { msg.textContent = '✨ Done! Read it below.'; msg.className = 'success'; }
+      setTimeout(() => { if (msg) { msg.textContent = ''; msg.className = ''; } }, 4000);
+    } catch (e) {
+      if (msg) { msg.textContent = 'Failed: ' + e.message; msg.className = 'error'; }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+// ---------- 📸 PHOTO CAPTION BATTLE ----------
+function renderCaptionBattles() {
+  const wrap = $('#caption-battles-list');
+  const sel = $('#caption-gallery-select');
+  if (!wrap || !CLUB) return;
+  const battles = CLUB.captionBattles || [];
+
+  if (sel) {
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">Pick a photo from your gallery...</option>` +
+      (GALLERY || []).filter(g => g.type === 'photo').slice(0, 30).map(g => `<option value="${escapeHtml(g.id)}">${escapeHtml(g.caption || 'photo from ' + new Date(g.createdAt).toLocaleDateString())}</option>`).join('');
+    sel.value = cur;
+  }
+
+  if (battles.length === 0) {
+    wrap.innerHTML = `<div class="loading">No caption battles yet — pick a photo above and let Pebbles cook! 🐾</div>`;
+    return;
+  }
+
+  wrap.innerHTML = battles.map(b => {
+    const item = (GALLERY || []).find(g => g.id === b.galleryItemId);
+    const topVotes = Math.max(...b.captions.map(c => c.votes.length), 0);
+    return `
+      <div class="caption-battle" data-id="${escapeHtml(b.id)}">
+        ${item ? `<img class="cb-photo" src="${item.dataUrl}" alt="${escapeHtml(item.caption || 'photo')}" />` : '<div class="cb-no-photo">(photo no longer available)</div>'}
+        <div class="cb-captions">
+          ${b.captions.map(cap => {
+            const isWinner = cap.votes.length === topVotes && topVotes > 0;
+            return `
+              <div class="cb-caption ${isWinner ? 'cb-caption-winner' : ''}">
+                <div class="cb-caption-text">${cap.author === 'pebbles' ? '🐾' : '👤'} ${escapeHtml(cap.text)}</div>
+                <div class="cb-caption-meta">
+                  <span class="cb-author">by ${escapeHtml(cap.author === 'pebbles' ? 'Pebbles' : cap.author)}</span>
+                  <span class="cb-votes">${cap.votes.length} vote${cap.votes.length === 1 ? '' : 's'}</span>
+                </div>
+                <div class="cb-vote-buttons">
+                  ${(CLUB?.members || []).filter(m => m.name !== 'Pebbles').map(m => {
+                    const voted = cap.votes.includes(m.name);
+                    return `<button class="cb-vote-btn ${voted ? 'voted' : ''}" data-vote-battle="${escapeHtml(b.id)}" data-vote-caption="${escapeHtml(cap.id)}" data-vote-voter="${escapeHtml(m.name)}" title="${escapeHtml(m.name)} votes">${m.emoji}</button>`;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+        <form class="cb-add-form" data-battle-id="${escapeHtml(b.id)}">
+          <input type="text" class="cb-new-text" maxlength="200" placeholder="Add your own caption..." />
+          <select class="cb-new-author">
+            ${(CLUB?.members || []).filter(m => m.name !== 'Pebbles').map(m => `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)}</option>`).join('')}
+          </select>
+          <button type="submit" class="btn btn-tertiary">➕ Add</button>
+        </form>
+      </div>
+    `;
+  }).join('');
+
+  wrap.querySelectorAll('.cb-vote-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      try {
+        const res = await api(`/api/caption-battles/${encodeURIComponent(btn.dataset.voteBattle)}/vote`, {
+          method: 'POST',
+          body: { captionId: btn.dataset.voteCaption, voter: btn.dataset.voteVoter }
+        });
+        const idx = CLUB.captionBattles.findIndex(x => x.id === res.battle.id);
+        if (idx >= 0) CLUB.captionBattles[idx] = res.battle;
+        renderCaptionBattles();
+      } catch (e) { flashMsg('Failed: ' + e.message, 'error'); }
+    });
+  });
+  wrap.querySelectorAll('.cb-add-form').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = form.querySelector('.cb-new-text').value.trim();
+      const author = form.querySelector('.cb-new-author').value;
+      if (!text) return;
+      try {
+        const res = await api(`/api/caption-battles/${encodeURIComponent(form.dataset.battleId)}/add-caption`, { method: 'POST', body: { text, author } });
+        const idx = CLUB.captionBattles.findIndex(x => x.id === res.battle.id);
+        if (idx >= 0) CLUB.captionBattles[idx] = res.battle;
+        renderCaptionBattles();
+      } catch (e) { flashMsg('Failed: ' + e.message, 'error'); }
+    });
+  });
+}
+
+function setupCaptionBattleStarter() {
+  const btn = $('#caption-start-btn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const galleryItemId = $('#caption-gallery-select').value;
+    const msg = $('#caption-start-msg');
+    if (!galleryItemId) { if (msg) { msg.textContent = 'Pick a photo first!'; msg.className = 'error'; } return; }
+    if (msg) { msg.textContent = '🐾 Pebbles is writing 3 captions... (10-20s)'; msg.className = ''; }
+    btn.disabled = true;
+    try {
+      const res = await api('/api/caption-battles/start', { method: 'POST', body: { galleryItemId } });
+      if (!CLUB.captionBattles) CLUB.captionBattles = [];
+      CLUB.captionBattles.unshift(res.battle);
+      renderCaptionBattles();
+      if (msg) { msg.textContent = '🎬 Battle on! Scroll down to vote.'; msg.className = 'success'; }
+      setTimeout(() => { if (msg) { msg.textContent = ''; msg.className = ''; } }, 4000);
+    } catch (e) {
+      if (msg) { msg.textContent = 'Failed: ' + e.message; msg.className = 'error'; }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+// ---------- 💌 POSTCARDS ----------
+function renderPostcards() {
+  const wrap = $('#postcards-list');
+  const sel = $('#postcard-event');
+  if (!wrap || !CLUB) return;
+  const postcards = CLUB.postcards || [];
+  if (sel) {
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">(no specific event)</option>` +
+      EVENTS.map(e => `<option value="${escapeHtml(e.id)}">${escapeHtml(e.date)} — ${escapeHtml(e.title)}</option>`).join('');
+    sel.value = cur;
+  }
+  if (postcards.length === 0) {
+    wrap.innerHTML = `<div class="loading">No postcards yet — write one when a kid misses out 💛</div>`;
+    return;
+  }
+  wrap.innerHTML = postcards.map(p => {
+    const member = (CLUB?.members || []).find(m => m.name === p.toMember);
+    return `
+      <div class="postcard" data-id="${escapeHtml(p.id)}" style="border-color: ${member?.color || '#FFB6C1'}">
+        <div class="postcard-head">
+          <span class="postcard-stamp">💌</span>
+          <div>
+            <div class="postcard-to">To: <strong>${escapeHtml(p.toMember)}</strong> ${member ? `<span class="postcard-emoji">${member.emoji}</span>` : ''}</div>
+            ${p.fromEventTitle ? `<div class="postcard-event">re: ${escapeHtml(p.fromEventTitle)}</div>` : ''}
+          </div>
+          <button class="postcard-remove" data-postcard-remove="${escapeHtml(p.id)}" title="Remove">✕</button>
+        </div>
+        <div class="postcard-message">${escapeHtml(p.message).replace(/\n/g, '<br>')}</div>
+      </div>
+    `;
+  }).join('');
+  wrap.querySelectorAll('[data-postcard-remove]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remove this postcard?')) return;
+      try {
+        await api(`/api/postcards/${encodeURIComponent(btn.dataset.postcardRemove)}`, { method: 'DELETE' });
+        CLUB.postcards = CLUB.postcards.filter(p => p.id !== btn.dataset.postcardRemove);
+        renderPostcards();
+      } catch (e) { flashMsg('Failed: ' + e.message, 'error'); }
+    });
+  });
+}
+
+function setupPostcardGenerator() {
+  const btn = $('#postcard-generate-btn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const toMember = $('#postcard-to').value;
+    const eventId = $('#postcard-event').value;
+    const msg = $('#postcard-msg');
+    if (msg) { msg.textContent = '🐾 Pebbles is writing... (10-20s)'; msg.className = ''; }
+    btn.disabled = true;
+    try {
+      const res = await api('/api/postcards/generate', { method: 'POST', body: { toMember, eventId } });
+      if (!CLUB.postcards) CLUB.postcards = [];
+      CLUB.postcards.unshift(res.postcard);
+      renderPostcards();
+      if (msg) { msg.textContent = '💌 Written! Read it below.'; msg.className = 'success'; }
+      setTimeout(() => { if (msg) { msg.textContent = ''; msg.className = ''; } }, 4000);
+    } catch (e) {
+      if (msg) { msg.textContent = 'Failed: ' + e.message; msg.className = 'error'; }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+// ---------- 🎤 VOICE PEBBLES ----------
+let VOICE_RECOGNITION = null;
+let VOICE_IS_LISTENING = false;
+
+function setupVoicePebbles() {
+  const btn = $('#voice-pebbles-btn');
+  const statusEl = $('#voice-status');
+  const transcriptEl = $('#voice-transcript');
+  if (!btn) return;
+
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) {
+    btn.disabled = true;
+    if (statusEl) statusEl.textContent = '⚠️ Voice not supported on this browser. Try Chrome or Safari on a phone!';
+    return;
+  }
+
+  VOICE_RECOGNITION = new SpeechRec();
+  VOICE_RECOGNITION.continuous = false;
+  VOICE_RECOGNITION.interimResults = false;
+  VOICE_RECOGNITION.lang = 'en-AU';
+
+  VOICE_RECOGNITION.onresult = async (event) => {
+    const transcript = event.results[0][0].transcript;
+    if (transcriptEl) transcriptEl.innerHTML = `<div class="voice-you">👤 You: ${escapeHtml(transcript)}</div>`;
+    if (statusEl) statusEl.textContent = '🐾 Pebbles is thinking...';
+    // Send to Pebbles chat API
+    try {
+      const res = await api('/api/pebbles/chat', { method: 'POST', body: { messages: [{ role: 'user', content: transcript }], user: 'voice-user' } });
+      const reply = res.message?.content || 'Woof! 🐾';
+      if (transcriptEl) transcriptEl.innerHTML += `<div class="voice-pebbles">🐾 Pebbles: ${escapeHtml(reply)}</div>`;
+      if (statusEl) statusEl.textContent = '🔊 Pebbles is speaking...';
+      // Speak with Web Speech API
+      const utterance = new SpeechSynthesisUtterance(reply.replace(/\*[^*]+\*/g, '').replace(/[🐾💛✨🌟🎉🎵🎯🌈]/gu, ''));
+      utterance.lang = 'en-AU';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.2;
+      // Try to pick a female voice
+      const voices = speechSynthesis.getVoices();
+      const aussieFemale = voices.find(v => /en-AU/i.test(v.lang) && /female/i.test(v.name)) || voices.find(v => /en-AU/i.test(v.lang)) || voices.find(v => /en-GB/i.test(v.lang));
+      if (aussieFemale) utterance.voice = aussieFemale;
+      utterance.onend = () => { if (statusEl) statusEl.textContent = '✅ Click the mic to ask again!'; };
+      speechSynthesis.speak(utterance);
+    } catch (e) {
+      if (statusEl) statusEl.textContent = '❌ Failed: ' + e.message;
+    }
+  };
+
+  VOICE_RECOGNITION.onerror = (e) => {
+    VOICE_IS_LISTENING = false;
+    btn.classList.remove('listening');
+    if (statusEl) statusEl.textContent = '❌ ' + (e.error === 'not-allowed' ? 'Microphone permission denied' : 'Voice error: ' + e.error);
+  };
+  VOICE_RECOGNITION.onend = () => {
+    VOICE_IS_LISTENING = false;
+    btn.classList.remove('listening');
+  };
+
+  btn.addEventListener('click', () => {
+    if (VOICE_IS_LISTENING) {
+      VOICE_RECOGNITION.stop();
+      return;
+    }
+    try {
+      VOICE_RECOGNITION.start();
+      VOICE_IS_LISTENING = true;
+      btn.classList.add('listening');
+      if (statusEl) statusEl.textContent = '🎤 Listening... speak now!';
+      if (transcriptEl) transcriptEl.innerHTML = '';
+    } catch (e) {
+      if (statusEl) statusEl.textContent = '❌ Could not start mic: ' + e.message;
     }
   });
 }
