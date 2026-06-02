@@ -217,12 +217,30 @@ const PARENTS_FAQ = [
 // 📬 Parents' Suggestion Box — in-memory for now, will move to D1 later
 type Suggestion = {
   id: string
-  text: string
-  fromName?: string   // optional — parents can be anonymous
-  isAnonymous: boolean
+  fromName: string    // 'Anonymous parent' if none given
+  topic: string       // General / Safety / Event idea / etc.
+  message: string
   createdAt: number
 }
 const SUGGESTIONS: Suggestion[] = []
+
+// =========== 🥤 BOTTLES FOR THE CREW (Containers for Change) ===========
+// Mum set up a fab5funclub team on Containers for Change. The team URL below
+// is what parents/family click ONCE to join — every bottle they return after
+// joining gets credited to the club's fundraising pool.
+const BOTTLE_FUND = {
+  teamName: 'fab5funclub',
+  teamJoinUrl: 'https://member.containersforchange.com.au/team-member/add/qld/think-know-do-pty-ltd-6a1e42a1996da',
+  schemeName: 'Containers for Change Queensland',
+  goal: {
+    title: 'Crew Hoodies for all 5',
+    emoji: '🎽',
+    targetAud: 375,
+    raisedAud: 0,
+    description: 'Matching Fab 5 hoodies so every kid has one, every adventure.'
+  },
+  heroes: [] as { id: string; name: string; note?: string; month?: string; addedAt: number }[],
+}
 
 const CLUB_INFO = {
   name: 'Fab 5 Fun Club',
@@ -462,7 +480,66 @@ app.get('/api/club-info', (c) => c.json({
   slogans: FAB5_SLOGANS,
   sloganOfTheWeek: getSloganOfTheWeek(),
   parentsFaq: PARENTS_FAQ,
+  bottleFund: BOTTLE_FUND,
 }))
+
+// =========== 🥤 BOTTLE FUND API ===========
+// GET — anyone logged in can see the goal + progress
+app.get('/api/bottle-fund', (c) => c.json(BOTTLE_FUND))
+
+// POST update the goal (mum can change what we're saving for)
+app.post('/api/bottle-fund/goal', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any))
+  if (typeof body.title === 'string' && body.title.trim()) {
+    BOTTLE_FUND.goal.title = body.title.trim().slice(0, 120)
+  }
+  if (typeof body.emoji === 'string' && body.emoji.trim()) {
+    BOTTLE_FUND.goal.emoji = body.emoji.trim().slice(0, 8)
+  }
+  if (typeof body.targetAud === 'number' && body.targetAud >= 0) {
+    BOTTLE_FUND.goal.targetAud = Math.round(body.targetAud)
+  }
+  if (typeof body.description === 'string') {
+    BOTTLE_FUND.goal.description = body.description.trim().slice(0, 400)
+  }
+  return c.json({ ok: true, goal: BOTTLE_FUND.goal })
+})
+
+// POST update the raised total (mum types in the new total each month)
+app.post('/api/bottle-fund/raised', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any))
+  if (typeof body.raisedAud !== 'number' || body.raisedAud < 0) {
+    return c.json({ error: 'raisedAud must be a non-negative number' }, 400)
+  }
+  BOTTLE_FUND.goal.raisedAud = Math.round(body.raisedAud * 100) / 100
+  return c.json({ ok: true, goal: BOTTLE_FUND.goal })
+})
+
+// POST add a bottle hero
+app.post('/api/bottle-fund/heroes', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any))
+  const name = (body.name || '').toString().trim().slice(0, 80)
+  if (!name) return c.json({ error: 'Name is required' }, 400)
+  const hero = {
+    id: crypto.randomUUID(),
+    name,
+    note: (body.note || '').toString().trim().slice(0, 200) || undefined,
+    month: (body.month || '').toString().trim().slice(0, 30) || undefined,
+    addedAt: Date.now(),
+  }
+  BOTTLE_FUND.heroes.unshift(hero)
+  // keep most recent 30
+  if (BOTTLE_FUND.heroes.length > 30) BOTTLE_FUND.heroes.length = 30
+  return c.json({ ok: true, hero })
+})
+
+app.delete('/api/bottle-fund/heroes/:id', (c) => {
+  const id = c.req.param('id')
+  const before = BOTTLE_FUND.heroes.length
+  BOTTLE_FUND.heroes = BOTTLE_FUND.heroes.filter(h => h.id !== id)
+  if (BOTTLE_FUND.heroes.length === before) return c.json({ error: 'Not found' }, 404)
+  return c.json({ ok: true })
+})
 
 // =========== GALLERY ===========
 app.get('/api/gallery', (c) => c.json({ items: GALLERY.sort((a, b) => b.createdAt - a.createdAt) }))
@@ -666,6 +743,19 @@ YOUR JOBS:
 6. AWARD BADGES to crew members for great behavior via award_badge tool
 7. Add CONCERTS the crew wants to see via add_concert tool
 8. ALWAYS uphold the Fab 5 Ways (our shared club wisdom)
+9. EXPLAIN the 🥤 Bottles for the Crew fundraiser when asked — see below
+
+🥤 BOTTLES FOR THE CREW (Containers for Change fundraiser):
+- The Fab 5 has a registered Queensland Containers for Change team called "fab5funclub"
+- Parents, family, friends, neighbours, even workplaces can join the team by clicking ONE link (it's on the website, behind the password, in the "🥤 Bottles for the Crew" section)
+- Once they've joined the team: every bottle/can they return at any QLD refund point can be credited to fab5funclub instead of cash for themselves
+- 10c per eligible container → adds up FAST when whole offices/families contribute
+- The money goes into a club account (mum holds it for the crew) and is used for crew goals like hoodies, gear, big adventures
+- The club is STILL completely free for kids — bottles money is bonus adventure money, never required
+- If a parent asks "how can I help the club?" — point them to the Bottles for the Crew section
+- If a kid asks "how do we raise money?" — explain bottle hunts! That's a Service badge waiting to happen 🏞️
+- Plan "Bottle Hunt" adventures (beach clean-ups, park walks) — they auto-qualify for the SERVICE ❤️ badge in the Duke of Ed framework
+- Tip kids: parties = bottle goldmines, sports clubs leave heaps behind, grandparents always have stashes
 
 ${LOCATION_GUIDE}
 ${VALUES}
@@ -1415,6 +1505,141 @@ app.get('/', (c) => {
           </div>
         </section>
 
+        {/* 🥤 BOTTLES FOR THE CREW — Containers for Change team fundraiser */}
+        <section class="section bottle-fund-section" id="bottle-fund">
+          <h2 class="section-title">🥤 Bottles for the Crew</h2>
+          <p class="section-subtitle">Turn empty bottles into Fab 5 adventures 🌍💛 (just for the people we know!)</p>
+
+          <div class="bottle-hero-card">
+            <div class="bottle-hero-emoji">🥤➡️🎒</div>
+            <h3>Turn rubbish into adventures!</h3>
+            <p class="bottle-hero-text">
+              The Fab 5 has a Queensland <strong>Containers for Change</strong> team called <strong>fab5funclub</strong>.
+              Click below to join — <strong>once</strong> — and every drink container you return at any refund point can be credited to the crew instead of cash for yourself.
+              <strong>10c per bottle</strong> → adds up FAST when family, friends, workmates pitch in. 🌟
+            </p>
+            <a id="bottle-join-btn" class="bottle-join-btn" target="_blank" rel="noopener noreferrer">
+              🥤 Join the Fab 5 Bottle Squad →
+            </a>
+            <p class="bottle-safe-note">🔒 Free to join • No payment details needed • Leave anytime • You can still keep some refunds for yourself</p>
+          </div>
+
+          <div class="bottle-how-card">
+            <h3>📖 How it works (super simple!)</h3>
+            <div class="bottle-steps">
+              <div class="bottle-step">
+                <div class="bottle-step-num">1</div>
+                <div class="bottle-step-icon">🔗</div>
+                <div class="bottle-step-body">
+                  <strong>Click the link</strong>
+                  <span>2 mins, once only. Free Containers for Change account.</span>
+                </div>
+              </div>
+              <div class="bottle-step">
+                <div class="bottle-step-num">2</div>
+                <div class="bottle-step-icon">🥤</div>
+                <div class="bottle-step-body">
+                  <strong>Collect bottles</strong>
+                  <span>At home, work, parties, sports. Eligible containers have the 10c mark.</span>
+                </div>
+              </div>
+              <div class="bottle-step">
+                <div class="bottle-step-num">3</div>
+                <div class="bottle-step-icon">🚗</div>
+                <div class="bottle-step-body">
+                  <strong>Drop at any QLD refund point</strong>
+                  <span>Say "send refund to fab5funclub team" or scan your team QR code.</span>
+                </div>
+              </div>
+              <div class="bottle-step">
+                <div class="bottle-step-num">4</div>
+                <div class="bottle-step-icon">🎉</div>
+                <div class="bottle-step-body">
+                  <strong>Adventure money for the crew!</strong>
+                  <span>The Fab 5 keeps being FREE for kids — bottle money is bonus.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bottle-goal-card" id="bottle-goal-card">
+            <div class="bottle-goal-header">
+              <span class="bottle-goal-emoji" id="bottle-goal-emoji">🎽</span>
+              <div>
+                <h3>Saving up for: <span id="bottle-goal-title">Crew Hoodies for all 5</span></h3>
+                <p class="bottle-goal-desc" id="bottle-goal-desc">Matching Fab 5 hoodies so every kid has one, every adventure.</p>
+              </div>
+            </div>
+            <div class="bottle-progress-wrap">
+              <div class="bottle-progress-bar"><div class="bottle-progress-fill" id="bottle-progress-fill" style="width:0%"></div></div>
+              <div class="bottle-progress-numbers">
+                <span class="bottle-raised">💰 Raised: <strong id="bottle-raised">$0</strong></span>
+                <span class="bottle-target">🎯 Goal: <strong id="bottle-target">$375</strong></span>
+                <span class="bottle-percent" id="bottle-percent">0%</span>
+              </div>
+            </div>
+            <p class="bottle-bottles-count" id="bottle-bottles-count">That's about <strong>0 bottles</strong> still to find! 🥤</p>
+          </div>
+
+          <div class="bottle-share-card">
+            <h3>📣 Share with people we know</h3>
+            <p>Spread the link to family, your parents' workmates, grandparents, neighbours — anyone you trust. The more bottle-hunters, the faster we hit the goal!</p>
+            <div class="bottle-share-buttons">
+              <button id="bottle-copy-btn" class="btn btn-secondary">📋 Copy the link</button>
+              <a id="bottle-whatsapp-btn" class="btn btn-tertiary" target="_blank" rel="noopener noreferrer">💬 Send via WhatsApp</a>
+              <a id="bottle-sms-btn" class="btn btn-quaternary">📱 Send via SMS</a>
+              <a id="bottle-email-btn" class="btn btn-primary">✉️ Send via Email</a>
+            </div>
+            <div id="bottle-copy-msg" class="bottle-copy-msg"></div>
+          </div>
+
+          <div class="bottle-heroes-card">
+            <h3>🌟 Bottle Heroes</h3>
+            <p class="bottle-heroes-sub">A thank you to the legends who are donating their bottles to the crew 💛</p>
+            <div id="bottle-heroes-list" class="bottle-heroes-list">
+              <div class="loading">No heroes added yet — be the first! 🌟</div>
+            </div>
+            <details class="bottle-hero-form-wrap">
+              <summary>➕ Add a bottle hero (mum's admin)</summary>
+              <form id="bottle-hero-form" class="bottle-hero-form">
+                <div class="form-row">
+                  <label><span>Hero name</span><input type="text" id="hero-name" required maxlength={80} placeholder="e.g. Ace's grandma" /></label>
+                  <label><span>Month</span><input type="text" id="hero-month" maxlength={30} placeholder="e.g. June 2026" /></label>
+                </div>
+                <label><span>Short thank-you note (optional)</span><input type="text" id="hero-note" maxlength={200} placeholder="e.g. Brought 80 bottles in one go!" /></label>
+                <button type="submit" class="btn btn-primary">🌟 Add hero</button>
+                <div id="hero-msg"></div>
+              </form>
+            </details>
+          </div>
+
+          <details class="bottle-admin-card">
+            <summary>🔧 Update goal & total (mum's admin)</summary>
+            <div class="bottle-admin-body">
+              <form id="bottle-goal-form" class="bottle-goal-form">
+                <h4>🎯 Change what we're saving up for</h4>
+                <div class="form-row">
+                  <label><span>Goal title</span><input type="text" id="goal-title" maxlength={120} placeholder="e.g. Crew Hoodies for all 5" /></label>
+                  <label><span>Emoji</span><input type="text" id="goal-emoji" maxlength={4} placeholder="🎽" /></label>
+                </div>
+                <div class="form-row">
+                  <label><span>Target $AUD</span><input type="number" id="goal-target" min="0" step="1" placeholder="375" /></label>
+                  <label><span>Short description</span><input type="text" id="goal-desc" maxlength={400} placeholder="Matching hoodies..." /></label>
+                </div>
+                <button type="submit" class="btn btn-secondary">💾 Save goal</button>
+              </form>
+
+              <form id="bottle-raised-form" class="bottle-raised-form">
+                <h4>💰 Update how much we've raised</h4>
+                <p class="field-hint">Mum logs into Containers for Change once a month, checks the team total, and types it in here.</p>
+                <label><span>Total raised $AUD</span><input type="number" id="raised-amount" min="0" step="0.01" placeholder="e.g. 87.50" /></label>
+                <button type="submit" class="btn btn-secondary">💾 Update total</button>
+                <div id="raised-msg"></div>
+              </form>
+            </div>
+          </details>
+        </section>
+
         <footer class="footer">
           <p>Made with 🌈 for the Fab 5 Fun Club</p>
           <p>Sunshine Coast & Hinterlands • SE Queensland 🇦🇺</p>
@@ -1441,6 +1666,8 @@ app.get('/', (c) => {
             <button data-prompt="Award Ace the Kind Heart badge — he shared his snacks with the crew when someone forgot lunch">🏆 Award badge</button>
             <button data-prompt="How much does a wakeboarding day cost?">💰 Costs</button>
             <button data-prompt="Add Olivia Rodrigo's next Brisbane concert to our wishlist">🎵 Add concert</button>
+            <button data-prompt="Where do I join the bottle squad? How does Containers for Change work for our club?">🥤 Join bottle squad</button>
+            <button data-prompt="Plan a bottle hunt adventure for the Fab 5 — somewhere we can collect bottles and have fun">🛟 Plan a bottle hunt</button>
           </div>
           <form id="pebbles-form" class="pebbles-form">
             <select id="pebbles-user">

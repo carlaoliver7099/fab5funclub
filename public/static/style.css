@@ -1892,3 +1892,377 @@ body {
   font-style: italic;
   margin: 0;
 }
+
+/* ================== BOTTLES FOR THE CREW ================== */
+.bottle-fund-section {
+  background: linear-gradient(180deg, #e8fff4 0%, #fff 100%);
+}
+.bottle-fund-section > * + * { margin-top: 18px; }
+
+/* HERO CARD - big eye-catching join card */
+.bottle-hero-card {
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  color: white;
+  border-radius: 24px;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(46, 204, 113, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+.bottle-hero-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(255,255,255,0.1) 0%, transparent 40%);
+  pointer-events: none;
+}
+.bottle-hero-card > * { position: relative; z-index: 1; }
+.bottle-hero-emoji {
+  font-size: 3rem;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));
+}
+.bottle-hero-card h3 {
+  font-size: 1.6rem;
+  margin: 0 0 12px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.bottle-hero-text {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin: 0 auto 20px;
+  max-width: 560px;
+  opacity: 0.95;
+}
+
+.bottle-join-btn {
+  display: inline-block;
+  background: white;
+  color: #27ae60;
+  padding: 16px 28px;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: bottlePulse 2.4s ease-in-out infinite;
+  max-width: 100%;
+  word-break: break-word;
+}
+.bottle-join-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.28);
+  animation-play-state: paused;
+}
+.bottle-join-btn strong { color: #1e8449; }
+@keyframes bottlePulse {
+  0%, 100% { box-shadow: 0 6px 20px rgba(0,0,0,0.2), 0 0 0 0 rgba(255,255,255,0.6); }
+  50%      { box-shadow: 0 6px 20px rgba(0,0,0,0.2), 0 0 0 14px rgba(255,255,255,0); }
+}
+.bottle-safe-note {
+  margin: 16px 0 0;
+  font-size: 0.85rem;
+  opacity: 0.92;
+}
+
+/* HOW-IT-WORKS CARD */
+.bottle-how-card {
+  background: white;
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  border: 2px solid #e8fff4;
+}
+.bottle-how-card h3 { margin: 0 0 16px; font-size: 1.25rem; }
+.bottle-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+.bottle-step {
+  background: linear-gradient(135deg, #f0fff7 0%, #ffffff 100%);
+  border: 2px solid #d1f5e0;
+  border-radius: 14px;
+  padding: 16px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bottle-step-num {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 32px;
+  height: 32px;
+  background: var(--turq);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.bottle-step-icon { font-size: 2rem; line-height: 1; }
+.bottle-step-body strong { display: block; font-size: 1rem; margin-bottom: 4px; color: var(--dark); }
+.bottle-step-body p { margin: 0; font-size: 0.92rem; line-height: 1.4; color: #555; }
+
+/* GOAL / PROGRESS CARD */
+.bottle-goal-card {
+  background: white;
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  border: 2px solid #fff4d6;
+}
+.bottle-goal-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.bottle-goal-emoji { font-size: 2.6rem; line-height: 1; }
+.bottle-goal-header h3 { margin: 0; font-size: 1.2rem; line-height: 1.3; }
+.bottle-goal-header h3 span { color: #d68910; }
+.bottle-goal-desc { margin: 4px 0 0; font-size: 0.95rem; color: #666; }
+
+.bottle-progress-wrap { margin: 14px 0; }
+.bottle-progress-bar {
+  width: 100%;
+  height: 28px;
+  background: #f0f0f0;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.08);
+}
+.bottle-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2ecc71, #f1c40f, #e67e22);
+  background-size: 200% 100%;
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: bottleShimmer 3s linear infinite;
+  box-shadow: 0 0 12px rgba(46, 204, 113, 0.4);
+}
+@keyframes bottleShimmer {
+  0%   { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+.bottle-progress-numbers {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 0.95rem;
+}
+.bottle-percent {
+  font-weight: 800;
+  color: #27ae60;
+  font-size: 1.05rem;
+}
+.bottle-bottles-count {
+  text-align: center;
+  margin: 8px 0 0;
+  font-size: 1rem;
+  color: #555;
+  font-style: italic;
+}
+
+/* SHARE CARD */
+.bottle-share-card {
+  background: linear-gradient(135deg, #fff8e1 0%, #fff 100%);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  border: 2px solid #ffe66d;
+}
+.bottle-share-card h3 { margin: 0 0 8px; font-size: 1.2rem; }
+.bottle-share-card p { margin: 0 0 14px; color: #555; font-size: 0.95rem; }
+.bottle-share-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.bottle-share-buttons .btn {
+  flex: 1 1 160px;
+  min-width: 0;
+  text-align: center;
+  text-decoration: none;
+  padding: 12px 16px;
+}
+.bottle-copy-msg {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-height: 1.2em;
+}
+.bottle-copy-msg.success { color: #27ae60; }
+.bottle-copy-msg.error { color: #c0392b; }
+
+/* HEROES CARD */
+.bottle-heroes-card {
+  background: white;
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  border: 2px solid #ffd6e7;
+}
+.bottle-heroes-card h3 { margin: 0 0 4px; font-size: 1.2rem; }
+.bottle-heroes-sub { margin: 0 0 14px; color: #777; font-size: 0.92rem; }
+.bottle-heroes-list { display: flex; flex-direction: column; gap: 10px; }
+.bottle-hero-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #fff5fa 0%, #fff 100%);
+  border: 2px solid #ffd6e7;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+.bottle-hero-icon { font-size: 1.6rem; line-height: 1; flex-shrink: 0; }
+.bottle-hero-body { flex: 1; min-width: 0; }
+.bottle-hero-name {
+  font-weight: 700;
+  color: var(--dark);
+  font-size: 1rem;
+}
+.bottle-hero-month {
+  font-weight: 500;
+  color: #999;
+  font-size: 0.85rem;
+}
+.bottle-hero-note {
+  margin-top: 2px;
+  font-size: 0.9rem;
+  color: #666;
+}
+.bottle-hero-remove {
+  background: transparent;
+  border: none;
+  color: #c0392b;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.bottle-hero-remove:hover { background: #ffe5e5; }
+
+.bottle-hero-form-wrap {
+  margin-top: 14px;
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 8px 14px;
+  border: 1px dashed #ddd;
+}
+.bottle-hero-form-wrap summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 6px 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+.bottle-hero-form { padding: 8px 0 12px; }
+.bottle-hero-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.bottle-hero-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.bottle-hero-form label span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+}
+.bottle-hero-form input {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #ddd;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+.bottle-hero-form input:focus { outline: none; border-color: var(--turq); }
+.bottle-hero-form button { margin-top: 6px; }
+.bottle-hero-form .success { color: #27ae60; margin-top: 8px; font-size: 0.9rem; }
+.bottle-hero-form .error { color: #c0392b; margin-top: 8px; font-size: 0.9rem; }
+
+/* ADMIN CARD */
+.bottle-admin-card {
+  background: #fafafa;
+  border-radius: 14px;
+  padding: 8px 18px;
+  border: 1px dashed #ccc;
+}
+.bottle-admin-card summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 8px 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+.bottle-admin-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 10px 0 14px;
+}
+.bottle-admin-body form { background: white; border-radius: 12px; padding: 14px; border: 1px solid #eee; }
+.bottle-admin-body h4 { margin: 0 0 12px; font-size: 1rem; color: var(--dark); }
+.bottle-admin-body .field-hint { margin: 0 0 10px; font-size: 0.85rem; color: #777; font-style: italic; }
+.bottle-admin-body .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.bottle-admin-body label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bottle-admin-body label span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+}
+.bottle-admin-body input {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #ddd;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+.bottle-admin-body input:focus { outline: none; border-color: var(--turq); }
+.bottle-admin-body button { margin-top: 6px; }
+.bottle-admin-body #raised-msg { margin-top: 8px; font-size: 0.9rem; font-weight: 600; }
+.bottle-admin-body #raised-msg.success { color: #27ae60; }
+.bottle-admin-body #raised-msg.error { color: #c0392b; }
+
+/* Mobile responsive overrides */
+@media (max-width: 680px) {
+  .bottle-hero-card { padding: 22px 16px; }
+  .bottle-hero-card h3 { font-size: 1.3rem; }
+  .bottle-hero-emoji { font-size: 2.4rem; }
+  .bottle-hero-text { font-size: 0.98rem; }
+  .bottle-join-btn { padding: 14px 20px; font-size: 1rem; }
+  .bottle-steps { grid-template-columns: 1fr; }
+  .bottle-goal-header { flex-direction: column; text-align: center; gap: 6px; }
+  .bottle-goal-emoji { font-size: 2.2rem; }
+  .bottle-progress-numbers { justify-content: center; text-align: center; }
+  .bottle-share-buttons .btn { flex: 1 1 100%; }
+  .bottle-hero-form .form-row,
+  .bottle-admin-body .form-row { grid-template-columns: 1fr; }
+}

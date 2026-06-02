@@ -86,6 +86,10 @@ async function initApp() {
     setupConcertForm();
     setupPebblesChat();
     setupSuggestionForm();
+    renderBottleFund();
+    setupBottleShare();
+    setupBottleHeroForm();
+    setupBottleAdminForms();
     $('#logout-btn').addEventListener('click', logout);
 
     await refreshAll();
@@ -146,15 +150,17 @@ function fileToDataUrl(file) {
 }
 
 async function refreshAll() {
-  const [ev, aw, gal, con, sug] = await Promise.all([
+  const [ev, aw, gal, con, sug, bf] = await Promise.all([
     api('/api/events').catch(() => ({ events: [] })),
     api('/api/awards').catch(() => ({ awards: [] })),
     api('/api/gallery').catch(() => ({ items: [] })),
     api('/api/concerts').catch(() => ({ concerts: [] })),
-    api('/api/suggestions').catch(() => ({ suggestions: [] }))
+    api('/api/suggestions').catch(() => ({ suggestions: [] })),
+    api('/api/bottle-fund').catch(() => null)
   ]);
   EVENTS = ev.events; AWARDS = aw.awards; GALLERY = gal.items; CONCERTS = con.concerts;
   SUGGESTIONS = sug.suggestions || [];
+  if (bf && CLUB) CLUB.bottleFund = bf;
   renderCalendar();
   renderEventsList();
   renderRotation();
@@ -162,6 +168,7 @@ async function refreshAll() {
   renderGallery();
   renderConcerts();
   renderSuggestionsList();
+  renderBottleFund();
 }
 
 // ---------- MEMBERS ----------
@@ -891,6 +898,215 @@ function renderSuggestionsList() {
       renderSuggestionsList();
     } catch (e) { alert('Failed: ' + e.message); }
   }));
+}
+
+// ---------- BOTTLES FOR THE CREW ----------
+function bottleInviteMessage() {
+  const bf = CLUB?.bottleFund;
+  const joinUrl = bf?.teamJoinUrl || '';
+  const goalTitle = bf?.goal?.title || 'something epic';
+  const goalEmoji = bf?.goal?.emoji || '🎽';
+  return (
+    `Hi! The Fab 5 Fun Club (a kids' adventure crew on the Sunshine Coast 🌈) is fundraising through Containers for Change Queensland to save up for ${goalEmoji} ${goalTitle}.\n\n` +
+    `It's free to join the team — every 10c bottle/can you'd normally throw out gets donated to the kids' adventures instead. No payment details, just one click to join the team "fab5funclub":\n\n` +
+    `${joinUrl}\n\n` +
+    `Thank you for helping the crew! 💛🥤`
+  );
+}
+
+function renderBottleFund() {
+  const bf = CLUB?.bottleFund;
+  if (!bf) return;
+
+  // Join button URL
+  const joinBtn = $('#bottle-join-btn');
+  if (joinBtn) {
+    joinBtn.href = bf.teamJoinUrl;
+    joinBtn.innerHTML = `🚀 Join the team "<strong>${escapeHtml(bf.teamName)}</strong>" on Containers for Change`;
+  }
+
+  // Goal text
+  const goal = bf.goal || {};
+  const emojiEl = $('#bottle-goal-emoji'); if (emojiEl) emojiEl.textContent = goal.emoji || '🎯';
+  const titleEl = $('#bottle-goal-title'); if (titleEl) titleEl.textContent = goal.title || 'Our crew goal';
+  const descEl = $('#bottle-goal-desc'); if (descEl) descEl.textContent = goal.description || '';
+
+  // Progress bar
+  const raised = Number(goal.raisedAud) || 0;
+  const target = Number(goal.targetAud) || 0;
+  const pct = target > 0 ? Math.min(100, Math.max(0, (raised / target) * 100)) : 0;
+  const fill = $('#bottle-progress-fill');
+  if (fill) fill.style.width = pct.toFixed(1) + '%';
+  const raisedEl = $('#bottle-raised'); if (raisedEl) raisedEl.textContent = '$' + raised.toFixed(2);
+  const targetEl = $('#bottle-target'); if (targetEl) targetEl.textContent = '$' + target.toFixed(0);
+  const pctEl = $('#bottle-percent'); if (pctEl) pctEl.textContent = pct.toFixed(0) + '%';
+
+  // Bottles count (10c per container in QLD)
+  const remaining = Math.max(0, target - raised);
+  const bottlesNeeded = Math.ceil(remaining / 0.10);
+  const bottlesEl = $('#bottle-bottles-count');
+  if (bottlesEl) {
+    if (target <= 0) {
+      bottlesEl.innerHTML = `Set a goal in the admin section to track bottles! 🎯`;
+    } else if (raised >= target) {
+      bottlesEl.innerHTML = `🎉 <strong>We hit the goal!</strong> Time to pick a new one. 🌟`;
+    } else {
+      bottlesEl.innerHTML = `That's about <strong>${bottlesNeeded.toLocaleString()} bottles</strong> still to find! 🥤`;
+    }
+  }
+
+  // Prefill admin forms with current values
+  const gt = $('#goal-title'); if (gt && !gt.matches(':focus')) gt.value = goal.title || '';
+  const ge = $('#goal-emoji'); if (ge && !ge.matches(':focus')) ge.value = goal.emoji || '';
+  const gtarg = $('#goal-target'); if (gtarg && !gtarg.matches(':focus')) gtarg.value = goal.targetAud || '';
+  const gd = $('#goal-desc'); if (gd && !gd.matches(':focus')) gd.value = goal.description || '';
+  const ra = $('#raised-amount'); if (ra && !ra.matches(':focus')) ra.value = goal.raisedAud || '';
+
+  // Heroes list
+  renderBottleHeroes();
+}
+
+function renderBottleHeroes() {
+  const bf = CLUB?.bottleFund;
+  const list = $('#bottle-heroes-list');
+  if (!list || !bf) return;
+  const heroes = bf.heroes || [];
+  if (heroes.length === 0) {
+    list.innerHTML = `<div class="loading">No heroes added yet — be the first! 🌟</div>`;
+    return;
+  }
+  list.innerHTML = heroes.map(h => `
+    <div class="bottle-hero-item" data-id="${escapeHtml(h.id)}">
+      <div class="bottle-hero-icon">🌟</div>
+      <div class="bottle-hero-body">
+        <div class="bottle-hero-name">${escapeHtml(h.name)} ${h.month ? `<span class="bottle-hero-month">• ${escapeHtml(h.month)}</span>` : ''}</div>
+        ${h.note ? `<div class="bottle-hero-note">${escapeHtml(h.note)}</div>` : ''}
+      </div>
+      <button class="bottle-hero-remove" data-remove-hero="${escapeHtml(h.id)}" title="Remove">✕</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-remove-hero]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remove this hero from the list?')) return;
+      const id = btn.dataset.removeHero;
+      try {
+        await api('/api/bottle-fund/heroes/' + encodeURIComponent(id), { method: 'DELETE' });
+        CLUB.bottleFund.heroes = CLUB.bottleFund.heroes.filter(h => h.id !== id);
+        renderBottleHeroes();
+      } catch (e) { flashMsg('Could not remove: ' + e.message, 'error'); }
+    });
+  });
+}
+
+function setupBottleShare() {
+  const copyBtn = $('#bottle-copy-btn');
+  const wa = $('#bottle-whatsapp-btn');
+  const sms = $('#bottle-sms-btn');
+  const em = $('#bottle-email-btn');
+  const msgEl = $('#bottle-copy-msg');
+
+  function refreshLinks() {
+    const msg = bottleInviteMessage();
+    const encoded = encodeURIComponent(msg);
+    if (wa) wa.href = 'https://wa.me/?text=' + encoded;
+    if (sms) sms.href = 'sms:?&body=' + encoded;
+    if (em) em.href = 'mailto:?subject=' + encodeURIComponent('Help the Fab 5 Fun Club — free fundraiser 🥤') + '&body=' + encoded;
+  }
+  refreshLinks();
+  // Refresh on every render in case goal changes
+  document.addEventListener('club:bottleFundUpdated', refreshLinks);
+
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const text = bottleInviteMessage();
+      try {
+        await navigator.clipboard.writeText(text);
+        if (msgEl) { msgEl.textContent = '✅ Copied! Paste it anywhere you like.'; msgEl.className = 'bottle-copy-msg success'; }
+      } catch {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); if (msgEl) { msgEl.textContent = '✅ Copied!'; msgEl.className = 'bottle-copy-msg success'; } }
+        catch { if (msgEl) { msgEl.textContent = 'Could not copy — long-press to copy manually.'; msgEl.className = 'bottle-copy-msg error'; } }
+        document.body.removeChild(ta);
+      }
+      setTimeout(() => { if (msgEl) { msgEl.textContent = ''; msgEl.className = 'bottle-copy-msg'; } }, 3500);
+    });
+  }
+}
+
+function setupBottleHeroForm() {
+  const form = $('#bottle-hero-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = $('#hero-name').value.trim();
+    const month = $('#hero-month').value.trim();
+    const note = $('#hero-note').value.trim();
+    const msg = $('#hero-msg');
+    if (!name) { if (msg) { msg.textContent = 'Name is required!'; msg.className = 'error'; } return; }
+    try {
+      const res = await api('/api/bottle-fund/heroes', { method: 'POST', body: { name, month, note } });
+      if (!CLUB.bottleFund.heroes) CLUB.bottleFund.heroes = [];
+      CLUB.bottleFund.heroes.unshift(res.hero);
+      if (CLUB.bottleFund.heroes.length > 30) CLUB.bottleFund.heroes.length = 30;
+      renderBottleHeroes();
+      form.reset();
+      if (msg) { msg.textContent = '🌟 Hero added!'; msg.className = 'success'; }
+      setTimeout(() => { if (msg) { msg.textContent = ''; msg.className = ''; } }, 2500);
+    } catch (err) {
+      if (msg) { msg.textContent = 'Failed: ' + err.message; msg.className = 'error'; }
+    }
+  });
+}
+
+function setupBottleAdminForms() {
+  const goalForm = $('#bottle-goal-form');
+  if (goalForm) {
+    goalForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = $('#goal-title').value.trim();
+      const emoji = $('#goal-emoji').value.trim();
+      const targetRaw = $('#goal-target').value;
+      const description = $('#goal-desc').value.trim();
+      const body = {};
+      if (title) body.title = title;
+      if (emoji) body.emoji = emoji;
+      if (targetRaw !== '') body.targetAud = Number(targetRaw);
+      if (description) body.description = description;
+      try {
+        const res = await api('/api/bottle-fund/goal', { method: 'POST', body });
+        CLUB.bottleFund.goal = res.goal;
+        renderBottleFund();
+        document.dispatchEvent(new Event('club:bottleFundUpdated'));
+        flashMsg('🎯 Goal updated!', 'success');
+      } catch (err) {
+        flashMsg('Failed: ' + err.message, 'error');
+      }
+    });
+  }
+
+  const raisedForm = $('#bottle-raised-form');
+  if (raisedForm) {
+    raisedForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const raisedRaw = $('#raised-amount').value;
+      const msg = $('#raised-msg');
+      if (raisedRaw === '') { if (msg) { msg.textContent = 'Type in the total!'; msg.className = 'error'; } return; }
+      try {
+        const res = await api('/api/bottle-fund/raised', { method: 'POST', body: { raisedAud: Number(raisedRaw) } });
+        CLUB.bottleFund.goal = res.goal;
+        renderBottleFund();
+        if (msg) { msg.textContent = '💰 Total updated!'; msg.className = 'success'; }
+        setTimeout(() => { if (msg) { msg.textContent = ''; msg.className = ''; } }, 2500);
+      } catch (err) {
+        if (msg) { msg.textContent = 'Failed: ' + err.message; msg.className = 'error'; }
+      }
+    });
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
