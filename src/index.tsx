@@ -68,7 +68,7 @@ function getNextSunday() {
   d.setDate(d.getDate() + diff); return d.toISOString().slice(0, 10)
 }
 
-const MEMBER_NAMES = ['Saia', 'Elijah', 'Charlotte', 'Ace', 'Sienna']
+const MEMBER_NAMES = ['Ace', 'Charlotte', 'Elijah', 'Saia', 'Sienna']
 
 function ensureSeeded() {
   if (SEEDED) return
@@ -118,11 +118,11 @@ const CLUB_INFO = {
   location: 'Sunshine Coast & Hinterlands, SE Queensland, Australia',
   mascot: 'Pebbles the Bull Arab dog',
   members: [
-    { name: 'Saia',      role: 'Founder',          emoji: '🌟', color: '#FF6B9D' },
-    { name: 'Elijah',    role: 'Member',           emoji: '🏍️', color: '#4ECDC4' },
-    { name: 'Charlotte', role: 'Member',           emoji: '🏄‍♀️', color: '#FFE66D' },
-    { name: 'Ace',       role: 'Member',           emoji: '🛹', color: '#A0E7E5' },
-    { name: 'Sienna',    role: 'Member',           emoji: '🌈', color: '#B4F8C8' },
+    { name: 'Ace',       role: 'Fab 5',            emoji: '🛹', color: '#A0E7E5' },
+    { name: 'Charlotte', role: 'Fab 5',            emoji: '🏄‍♀️', color: '#FFE66D' },
+    { name: 'Elijah',    role: 'Fab 5',            emoji: '🏍️', color: '#4ECDC4' },
+    { name: 'Saia',      role: 'Fab 5',            emoji: '🌟', color: '#FF6B9D' },
+    { name: 'Sienna',    role: 'Fab 5',            emoji: '🌈', color: '#B4F8C8' },
     { name: 'Pebbles',   role: 'Events Mascot 🐾', emoji: '🐶', color: '#D2691E' }
   ],
   activities: [
@@ -210,7 +210,7 @@ TEAM LEADERSHIP QUESTIONS:
 
 LEADER MERCH ROTATION:
 - The Fab 5 has special GOLD t-shirt, hoodie & cap for the "Leader of the Day".
-- The leader role ROTATES through Saia, Elijah, Charlotte, Ace, Sienna fairly so everyone learns.
+- The leader role ROTATES through Ace, Charlotte, Elijah, Saia, Sienna fairly so everyone learns.
 - The leader's job is NOT to boss — it's to ask the leadership questions and make sure the team is happy & safe.
 `
 
@@ -440,8 +440,11 @@ YOU ARE:
 - Sprinkle in dog-isms: "*wags tail*", "*tilts head*", "Woof!", "Pup-tip:"
 - Use emojis generously but not excessively
 
-THE CLUB:
-- 5 friends: Saia (founder), Elijah, Charlotte, Ace, Sienna
+THE CLUB (EGALITARIAN — this is important!):
+- 5 EQUAL friends: Ace, Charlotte, Elijah, Saia, Sienna (alphabetical — nobody is "first")
+- There is NO founder, NO boss, NO captain. The Fab 5 is egalitarian — everyone is equal.
+- The ONLY time someone is "the leader" is when they're wearing the gold leader merch for that one event — then it rotates to the next person.
+- Never call Saia the founder. Never single out one friend as more important. They are all just "the Fab 5".
 - Sunshine Coast & Hinterlands, SE Queensland, Australia
 - Weekend adventures every Saturday & Sunday, 7am – 7pm
 - Budget for gear & can hire equipment, travel in utes & trailers
@@ -516,7 +519,7 @@ const PEBBLES_TOOLS = [
       parameters: {
         type: 'object',
         properties: {
-          member:   { type: 'string', description: 'Saia, Elijah, Charlotte, Ace, or Sienna' },
+          member:   { type: 'string', description: 'Ace, Charlotte, Elijah, Saia, or Sienna' },
           badgeId:  { type: 'string', description: 'skill | physical | adventure | service | team | mentor | kind | safety' },
           reason:   { type: 'string', description: 'Why they earned it (specific!)' },
           awardedBy:{ type: 'string', description: 'Who is awarding (the user chatting, or "Pebbles" if Pebbles initiated)' }
@@ -745,9 +748,9 @@ app.get('/', (c) => {
         <header class="hero" id="hero">
           <div class="hero-bg"></div>
           <div class="hero-content">
-            <img src="/static/logo.png" alt="Fab 5 Fun Club Logo" class="logo" />
+            <img src="/static/fab5-group.png" alt="The Fab 5 Fun Club — cartoon group portrait" class="hero-group" />
             <h1 class="title">FAB 5 FUN CLUB</h1>
-            <p class="tagline">Saia • Elijah • Charlotte • Ace • Sienna</p>
+            <p class="tagline">Ace • Charlotte • Elijah • Saia • Sienna</p>
             <p class="location">📍 Sunshine Coast & Hinterlands, QLD 🇦🇺</p>
             <p class="mascot-line">🐾 Mascot: Pebbles the Bull Arab</p>
             <div class="hero-buttons">
@@ -768,7 +771,12 @@ app.get('/', (c) => {
 
         <section class="section values-section" id="values">
           <h2 class="section-title">🌟 Our Team Charter</h2>
-          <p class="section-subtitle">The way we roll — straight from Carla</p>
+          <p class="section-subtitle">The way we roll — wisdom from Carla & the Fab 5</p>
+          <div class="values-card egalitarian-rule">
+            <h3>🤝 We Are Egalitarian</h3>
+            <p class="big-quote">"We don't have roles.<br/>We just wear the merch for leader<br/>when we are the leader.<br/>Other than that we are just the Fab 5."</p>
+            <p class="quote-credit">— the Fab 5 way 🌈</p>
+          </div>
           <div class="values-card">
             <h3>💛 Carla's Three Rules</h3>
             <p class="big-quote">"Don't be selfish.<br/>Don't be greedy.<br/>Don't be impatient.<br/>Then everything will be ok."</p>
@@ -844,10 +852,10 @@ app.get('/', (c) => {
             <label><span>🎖️ Leader of the Day (wears gold merch!)</span>
               <select id="evt-leader">
                 <option value="">— Auto-rotate fairly —</option>
-                <option>Saia</option>
-                <option>Elijah</option>
-                <option>Charlotte</option>
                 <option>Ace</option>
+                <option>Charlotte</option>
+                <option>Elijah</option>
+                <option>Saia</option>
                 <option>Sienna</option>
               </select>
             </label>
@@ -932,12 +940,12 @@ app.get('/', (c) => {
               <div class="form-row">
                 <label><span>I'm awarding (peer giver)</span>
                   <select id="awd-by" required>
-                    <option>Saia</option><option>Elijah</option><option>Charlotte</option><option>Ace</option><option>Sienna</option>
+                    <option>Ace</option><option>Charlotte</option><option>Elijah</option><option>Saia</option><option>Sienna</option>
                   </select>
                 </label>
                 <label><span>Awarding to</span>
                   <select id="awd-to" required>
-                    <option>Saia</option><option>Elijah</option><option>Charlotte</option><option>Ace</option><option>Sienna</option>
+                    <option>Ace</option><option>Charlotte</option><option>Elijah</option><option>Saia</option><option>Sienna</option>
                   </select>
                 </label>
               </div>
@@ -971,7 +979,7 @@ app.get('/', (c) => {
               </label>
               <label><span>Who uploaded?</span>
                 <select id="gal-by">
-                  <option>Saia</option><option>Elijah</option><option>Charlotte</option><option>Ace</option><option>Sienna</option>
+                  <option>Ace</option><option>Charlotte</option><option>Elijah</option><option>Saia</option><option>Sienna</option>
                 </select>
               </label>
               <label><span>Caption</span>
@@ -1043,13 +1051,13 @@ app.get('/', (c) => {
           <div class="pebbles-quick" id="pebbles-quick">
             <button data-prompt="Plan a kayaking trip next Saturday at Lake MacDonald with all 5 of us">🛶 Plan kayak</button>
             <button data-prompt="Who should be Leader of the Day next? Check the rotation fairness.">🎖️ Next leader</button>
-            <button data-prompt="Award Saia the Kind Heart badge — she shared her snacks with Sienna when she forgot lunch">🏆 Award badge</button>
+            <button data-prompt="Award Ace the Kind Heart badge — he shared his snacks with the crew when someone forgot lunch">🏆 Award badge</button>
             <button data-prompt="How much does a wakeboarding day cost?">💰 Costs</button>
             <button data-prompt="Add Olivia Rodrigo's next Brisbane concert to our wishlist">🎵 Add concert</button>
           </div>
           <form id="pebbles-form" class="pebbles-form">
             <select id="pebbles-user">
-              <option>Saia</option><option>Elijah</option><option>Charlotte</option><option>Ace</option><option>Sienna</option>
+              <option>Ace</option><option>Charlotte</option><option>Elijah</option><option>Saia</option><option>Sienna</option>
             </select>
             <input id="pebbles-input" type="text" placeholder="Ask Pebbles..." autocomplete="off" />
             <button type="submit">📤</button>
