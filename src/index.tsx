@@ -1856,7 +1856,7 @@ app.get('/', (c) => {
             <div id="login-msg"></div>
           </form>
           <div class="login-pebbles">
-            <img src="/static/pebbles.png" alt="Pebbles" />
+            <img src="/static/pebbles.png?v=2" alt="Pebbles" />
             <p>🐶 Pebbles is waiting for you inside!</p>
           </div>
         </div>
@@ -1892,7 +1892,7 @@ app.get('/', (c) => {
         <header class="hero" id="hero">
           <div class="hero-bg"></div>
           <div class="hero-content">
-            <img src="/static/fab5-group.png" alt="The Fab 5 Fun Club — cartoon group portrait" class="hero-group" />
+            <img src="/static/fab5-group.png?v=2" alt="The Fab 5 Fun Club — cartoon group portrait" class="hero-group" />
             <h1 class="title">FAB 5 FUN CLUB</h1>
             <p class="tagline">Ace • Charlotte • Elijah • Saia • Sienna</p>
             <p class="location">📍 Sunshine Coast & Hinterlands, QLD 🇦🇺</p>
@@ -2153,22 +2153,22 @@ app.get('/', (c) => {
           </div>
           <div class="merch-grid">
             <div class="merch-card">
-              <img src="/static/merch/tshirt-crew.png" alt="Crew T-Shirt" />
+              <img src="/static/merch/tshirt-crew.png?v=2" alt="Crew T-Shirt" />
               <h4>Crew T-Shirt</h4>
               <p>White tee with rainbow Fab 5 logo, 5 adventure icons, and ALL your names. Est. <strong>$25–35</strong>.</p>
             </div>
             <div class="merch-card leader">
-              <img src="/static/merch/tshirt-leader.png" alt="Leader T-Shirt" />
+              <img src="/static/merch/tshirt-leader.png?v=2" alt="Leader T-Shirt" />
               <h4>🎖️ Leader T-Shirt</h4>
               <p>Gold tee for the Leader of the Day — only one in the whole crew kit! Est. <strong>$30–40</strong>.</p>
             </div>
             <div class="merch-card">
-              <img src="/static/merch/hoodie-crew.png" alt="Crew Hoodie" />
+              <img src="/static/merch/hoodie-crew.png?v=2" alt="Crew Hoodie" />
               <h4>Crew Hoodie</h4>
               <p>Pink hoodie, huge "FAB 5" back print, "SUNSHINE COAST QLD" sleeve. Est. <strong>$55–75</strong>.</p>
             </div>
             <div class="merch-card">
-              <img src="/static/merch/caps.png" alt="Crew & Leader Caps" />
+              <img src="/static/merch/caps.png?v=2" alt="Crew & Leader Caps" />
               <h4>Crew + Leader Caps</h4>
               <p>Teal snapback for crew, GOLD snapback with crown for the leader. Est. <strong>$25–35</strong> each.</p>
             </div>
@@ -2754,13 +2754,13 @@ app.get('/', (c) => {
 
         {/* PEBBLES CHAT */}
         <button id="pebbles-fab" class="pebbles-fab" title="Chat with Pebbles">
-          <img src="/static/pebbles.png" alt="Pebbles" />
+          <img src="/static/pebbles.png?v=2" alt="Pebbles" />
           <span class="pebbles-fab-badge">Ask me!</span>
         </button>
 
         <div id="pebbles-chat" class="pebbles-chat" style="display:none">
           <div class="pebbles-chat-header">
-            <img src="/static/pebbles.png" alt="Pebbles" />
+            <img src="/static/pebbles.png?v=2" alt="Pebbles" />
             <div><h4>Pebbles 🐾</h4><span>Events Mascot • online</span></div>
             <button id="pebbles-close" title="Close">✕</button>
           </div>

@@ -204,9 +204,9 @@ function renderMembers() {
     const hasAvatar = AVATAR_MEMBERS.includes(m.name);
     let avatarHtml;
     if (isPebbles) {
-      avatarHtml = `<span class="member-avatar pebbles-pic" style="background:${m.color}"><img src="/static/pebbles.png" alt="Pebbles" /></span>`;
+      avatarHtml = `<span class="member-avatar pebbles-pic" style="background:${m.color}"><img src="/static/pebbles.png?v=2" alt="Pebbles" /></span>`;
     } else if (hasAvatar) {
-      avatarHtml = `<span class="member-avatar cartoon-pic" style="background:${m.color}"><img src="/static/avatars/${m.name.toLowerCase()}.png" alt="${m.name}" /></span>`;
+      avatarHtml = `<span class="member-avatar cartoon-pic" style="background:${m.color}"><img src="/static/avatars/${m.name.toLowerCase()}.png?v=2" alt="${m.name}" /></span>`;
     } else {
       avatarHtml = `<span class="member-avatar" style="background:${m.color}">${m.emoji}</span>`;
     }
