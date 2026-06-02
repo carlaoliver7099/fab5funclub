@@ -2266,3 +2266,393 @@ body {
   .bottle-hero-form .form-row,
   .bottle-admin-body .form-row { grid-template-columns: 1fr; }
 }
+
+/* ================== ⚠️ ALLERGY BANNER (on event cards) ================== */
+.allergy-banner {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffe082 100%);
+  border: 2px solid #ff9800;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 10px 0;
+  font-size: 0.92rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.allergy-banner strong { color: #c0392b; }
+.allergy-chip {
+  background: #fff;
+  border: 1.5px solid #ff9800;
+  color: #c0392b;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ================== 📊 PARENTS' DASHBOARD ================== */
+.parents-dashboard-section {
+  background: linear-gradient(180deg, #f3f0ff 0%, #fff 100%);
+}
+.dash-intro-card {
+  background: white;
+  border-radius: 14px;
+  padding: 16px 20px;
+  border: 2px solid #e0d4ff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  margin-bottom: 16px;
+}
+.dash-intro-card p { margin: 0; line-height: 1.5; color: #444; }
+
+.kid-profiles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+.kid-profile-card {
+  background: white;
+  border-radius: 16px;
+  border: 3px solid #e0e0e0;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+}
+.kid-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+}
+.kid-profile-emoji { font-size: 2.4rem; line-height: 1; }
+.kid-profile-title { flex: 1; }
+.kid-profile-title h3 { margin: 0; font-size: 1.3rem; }
+.kid-profile-completeness {
+  font-size: 0.8rem;
+  color: #666;
+  background: rgba(255,255,255,0.7);
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.kid-profile-form { padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 10px; }
+.kid-profile-form label { display: flex; flex-direction: column; gap: 4px; }
+.kid-profile-form label span { font-size: 0.85rem; font-weight: 600; color: #555; }
+.kid-profile-form label em { color: #999; font-weight: 400; font-size: 0.78rem; font-style: italic; }
+.kid-profile-form input, .kid-profile-form select {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #ddd;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+.kid-profile-form input:focus { outline: none; border-color: var(--turq); }
+.kid-profile-form .kpf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.kid-profile-form .kpf-allergy-label input { border-color: #ff9800; background: #fff8e1; }
+.kid-profile-form .kpf-save { margin-top: 6px; }
+.kpf-msg { font-size: 0.9rem; font-weight: 600; min-height: 1.2em; }
+.kpf-msg.success { color: #27ae60; }
+.kpf-msg.error { color: #c0392b; }
+
+.dash-overview-card {
+  background: white;
+  border-radius: 14px;
+  border: 2px dashed #c8b8ff;
+  padding: 4px 18px;
+  margin-top: 16px;
+}
+.dash-overview-card summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 600;
+  color: #555;
+  font-size: 0.95rem;
+}
+.dash-overview-body { padding: 10px 0 16px; }
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+.dash-stat {
+  background: linear-gradient(135deg, #f0ebff 0%, #fff 100%);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+  border: 1.5px solid #e0d4ff;
+}
+.dash-stat-num { display: block; font-size: 1.6rem; font-weight: 800; color: #6c5ce7; }
+.dash-stat-label { display: block; font-size: 0.82rem; color: #666; margin-top: 2px; }
+
+/* ================== 🎰 PEBBLES PICKS ================== */
+.pebbles-picks-section {
+  background: linear-gradient(180deg, #fff9e6 0%, #fff 100%);
+}
+.picks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.pick-btn {
+  background: linear-gradient(135deg, var(--yellow) 0%, var(--orange, #ffa500) 100%);
+  color: var(--dark);
+  border: none;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.pick-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
+.pick-result { min-height: 30px; }
+.pick-spinning {
+  text-align: center;
+  padding: 24px;
+  font-size: 1.1rem;
+  animation: pickSpin 0.6s linear infinite;
+}
+@keyframes pickSpin {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.pick-result-card {
+  background: white;
+  border-radius: 16px;
+  padding: 22px;
+  border: 3px solid var(--yellow);
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  animation: pickReveal 0.4s ease-out;
+}
+@keyframes pickReveal {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.pick-result-pick { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; color: var(--dark); }
+.pick-result-woof { font-size: 1rem; color: #666; margin-bottom: 12px; }
+.pick-spotify { border-radius: 12px; margin: 12px 0; }
+.pick-again-btn { margin-top: 6px; }
+
+/* ================== 🌦️ WEATHER BRAIN ================== */
+.weather-brain-section {
+  background: linear-gradient(180deg, #e3f2fd 0%, #fff 100%);
+}
+.weather-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.weather-form .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.weather-form label { display: flex; flex-direction: column; gap: 4px; }
+.weather-form label span { font-size: 0.85rem; font-weight: 600; color: #555; }
+.weather-form input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #ddd;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+.weather-form input:focus { outline: none; border-color: var(--turq); }
+
+.weather-card {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  border: 3px solid #90caf9;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+.weather-card.verdict-go { border-color: #4caf50; background: linear-gradient(135deg, #e8f5e9 0%, #fff 100%); }
+.weather-card.verdict-maybe { border-color: #ff9800; background: linear-gradient(135deg, #fff3e0 0%, #fff 100%); }
+.weather-card.verdict-no { border-color: #f44336; background: linear-gradient(135deg, #ffebee 0%, #fff 100%); }
+
+.weather-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+.weather-emoji { font-size: 3rem; line-height: 1; }
+.weather-header h3 { margin: 0; font-size: 1.2rem; }
+.weather-header p { margin: 4px 0 0; color: #666; font-size: 0.95rem; }
+
+.weather-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.weather-stat {
+  background: rgba(255,255,255,0.7);
+  padding: 10px 8px;
+  border-radius: 10px;
+  text-align: center;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+.weather-stat span { display: block; font-size: 0.75rem; color: #666; }
+.weather-stat strong { display: block; font-size: 1.15rem; color: var(--dark); margin-top: 2px; }
+
+.weather-verdict {
+  background: rgba(255,255,255,0.85);
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--dark);
+}
+
+/* ================== 💌 INVITE / 🏆 HERO ================== */
+.invite-writer-section { background: linear-gradient(180deg, #fff0f6 0%, #fff 100%); }
+.hero-spotter-section { background: linear-gradient(180deg, #fffde7 0%, #fff 100%); }
+.invite-helper-card {
+  background: white;
+  border-radius: 14px;
+  padding: 18px 20px;
+  text-align: center;
+  border: 2px dashed #ffb6c1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.invite-helper-card p { margin: 0 0 12px; color: #555; }
+.hero-spotter-section .invite-helper-card { border-color: #ffd54f; }
+
+/* ================== 🎵 CREW PLAYLIST ================== */
+.playlist-section {
+  background: linear-gradient(180deg, #f3e5f5 0%, #fff 100%);
+}
+.playlist-tracks { display: flex; flex-direction: column; gap: 14px; margin-bottom: 16px; }
+.playlist-track {
+  background: white;
+  border-radius: 14px;
+  padding: 14px;
+  border: 2px solid #ce93d8;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+  position: relative;
+}
+.playlist-track-info { margin-bottom: 8px; padding-right: 36px; }
+.playlist-track-info h4 { margin: 0; font-size: 1.05rem; }
+.playlist-artist { color: #888; font-weight: 500; font-size: 0.95rem; }
+.playlist-meta {
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: #888;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.vibe-chip { background: #ce93d8; color: white; padding: 2px 10px; border-radius: 999px; font-weight: 600; font-size: 0.78rem; }
+.playlist-spotify { border-radius: 12px; }
+.playlist-no-embed {
+  background: #fafafa;
+  border: 1px dashed #ccc;
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+  color: #999;
+  font-size: 0.9rem;
+}
+.playlist-remove {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #c0392b;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.playlist-remove:hover { background: #ffe5e5; }
+
+.playlist-add {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 8px 16px;
+  border: 1px dashed #ccc;
+}
+.playlist-add summary { cursor: pointer; font-weight: 600; padding: 6px 0; color: #666; }
+.playlist-form { padding: 10px 0 12px; display: flex; flex-direction: column; gap: 10px; }
+.playlist-form .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.playlist-form label { display: flex; flex-direction: column; gap: 4px; }
+.playlist-form label span { font-size: 0.85rem; font-weight: 600; color: #555; }
+.playlist-form label em { color: #999; font-weight: 400; font-style: italic; font-size: 0.78rem; }
+.playlist-form input, .playlist-form select {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #ddd;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+.playlist-form input:focus, .playlist-form select:focus { outline: none; border-color: var(--turq); }
+.playlist-form .field-hint { margin: 0; color: #888; font-size: 0.82rem; font-style: italic; }
+#playlist-msg, #watch-msg { font-size: 0.9rem; font-weight: 600; }
+#playlist-msg.success, #watch-msg.success { color: #27ae60; }
+#playlist-msg.error, #watch-msg.error { color: #c0392b; }
+
+/* ================== 🎟️ CONCERT WATCH ================== */
+.concert-watch-section { background: linear-gradient(180deg, #fce4ec 0%, #fff 100%); }
+.concert-watches-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.concert-watch-card {
+  background: white;
+  border-radius: 14px;
+  padding: 16px 18px;
+  border: 2px solid #f06292;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+  position: relative;
+}
+.concert-watch-card.status-watching { border-color: #ba68c8; }
+.concert-watch-card.status-announced { border-color: #ff9800; background: linear-gradient(135deg, #fff8e1 0%, #fff 100%); }
+.concert-watch-card.status-tickets {
+  border-color: #f44336;
+  background: linear-gradient(135deg, #ffcdd2 0%, #fff 100%);
+  animation: ticketPulse 1.5s ease-in-out infinite;
+}
+@keyframes ticketPulse {
+  0%, 100% { box-shadow: 0 3px 10px rgba(244, 67, 54, 0.3); }
+  50% { box-shadow: 0 6px 22px rgba(244, 67, 54, 0.55); }
+}
+.concert-watch-card.status-past { opacity: 0.6; }
+
+.cw-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.cw-header h4 { margin: 0; font-size: 1.1rem; }
+.cw-status { font-size: 0.85rem; font-weight: 600; color: #666; }
+.cw-notes { margin: 8px 0 0; color: #555; font-size: 0.92rem; }
+.cw-remove {
+  background: transparent;
+  border: 1px solid #ddd;
+  color: #999;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  margin-top: 8px;
+}
+.cw-remove:hover { background: #f5f5f5; color: #c0392b; border-color: #c0392b; }
+
+.concert-watch-add {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 8px 16px;
+  border: 1px dashed #ccc;
+}
+.concert-watch-add summary { cursor: pointer; font-weight: 600; padding: 6px 0; color: #666; }
+.concert-watch-form { padding: 10px 0 12px; display: flex; flex-direction: column; gap: 10px; }
+.concert-watch-form .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.concert-watch-form label { display: flex; flex-direction: column; gap: 4px; }
+.concert-watch-form label span { font-size: 0.85rem; font-weight: 600; color: #555; }
+.concert-watch-form input, .concert-watch-form select {
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #ddd;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+.concert-watch-form input:focus, .concert-watch-form select:focus { outline: none; border-color: var(--turq); }
+
+/* ================== Mobile responsive ================== */
+@media (max-width: 680px) {
+  .kid-profile-form .kpf-row,
+  .playlist-form .form-row,
+  .concert-watch-form .form-row,
+  .weather-form .form-row { grid-template-columns: 1fr; }
+  .kid-profiles-grid { grid-template-columns: 1fr; }
+  .picks-grid { grid-template-columns: 1fr 1fr; }
+  .weather-stats { grid-template-columns: 1fr 1fr; }
+  .pick-result-pick { font-size: 1.4rem; }
+  .dash-stats { grid-template-columns: 1fr 1fr; }
+}

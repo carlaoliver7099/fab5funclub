@@ -90,6 +90,12 @@ async function initApp() {
     setupBottleShare();
     setupBottleHeroForm();
     setupBottleAdminForms();
+    renderKidProfiles();
+    setupPicks();
+    setupWeather();
+    setupQuickPromptButtons();
+    setupPlaylistForm();
+    setupConcertWatchForm();
     $('#logout-btn').addEventListener('click', logout);
 
     await refreshAll();
@@ -169,6 +175,9 @@ async function refreshAll() {
   renderConcerts();
   renderSuggestionsList();
   renderBottleFund();
+  renderPlaylist();
+  renderConcertWatches();
+  renderDashOverview();
 }
 
 // ---------- MEMBERS ----------
@@ -342,6 +351,18 @@ function renderEventsList() {
          </div>`
       : '';
 
+    // 🛡️ Allergy safety scan — check each member in the event for allergies
+    const profiles = CLUB?.kidProfiles || {};
+    const allergyAlerts = (e.members || [])
+      .map(m => ({ name: m, allergies: profiles[m]?.allergies }))
+      .filter(x => x.allergies && x.allergies.trim());
+    const allergyHtml = allergyAlerts.length
+      ? `<div class="allergy-banner">
+           <strong>⚠️ Allergy alert — pack snacks accordingly:</strong>
+           ${allergyAlerts.map(a => `<span class="allergy-chip">${escapeHtml(a.name)}: ${escapeHtml(a.allergies)}</span>`).join('')}
+         </div>`
+      : '';
+
     return `
       <div class="event-card">
         <div class="event-date-badge">
@@ -354,6 +375,7 @@ function renderEventsList() {
           <div class="meta">🎯 ${escapeHtml(e.activity)} • 🕐 ${e.startTime} - ${e.endTime} • 📍 ${escapeHtml(e.location)}</div>
           ${leaderHtml}
           ${parentsJoiningHtml}
+          ${allergyHtml}
           ${flyerHtml}
           <div class="meta-chips">
             ${costChip}
@@ -898,6 +920,349 @@ function renderSuggestionsList() {
       renderSuggestionsList();
     } catch (e) { alert('Failed: ' + e.message); }
   }));
+}
+
+// ---------- 🎰 PEBBLES PICKS (Decision Maker) ----------
+function setupPicks() {
+  document.querySelectorAll('.pick-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const bucket = btn.dataset.bucket;
+      const result = $('#pick-result');
+      if (!result) return;
+      result.innerHTML = `<div class="pick-spinning">🎰 Pebbles is choosing...</div>`;
+      try {
+        const res = await api('/api/pebbles-picks', { method: 'POST', body: { bucket } });
+        const embed = res.pick?.spotifyId
+          ? `<iframe class="pick-spotify" src="https://open.spotify.com/embed/track/${encodeURIComponent(res.pick.spotifyId)}?utm_source=fab5" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture" loading="lazy"></iframe>`
+          : '';
+        result.innerHTML = `
+          <div class="pick-result-card">
+            <div class="pick-result-pick">${escapeHtml(res.pick.label)}</div>
+            <div class="pick-result-woof">🐾 ${escapeHtml(res.woof)}</div>
+            ${embed}
+            <button class="btn btn-tertiary pick-again-btn" data-bucket="${escapeHtml(bucket)}">🔄 Pick again</button>
+          </div>
+        `;
+        result.querySelector('.pick-again-btn')?.addEventListener('click', () => btn.click());
+      } catch (e) {
+        result.innerHTML = `<div class="error">Pebbles couldn't pick: ${escapeHtml(e.message)}</div>`;
+      }
+    });
+  });
+}
+
+// ---------- 🌦️ WEATHER BRAIN ----------
+function setupWeather() {
+  const form = $('#weather-form');
+  if (!form) return;
+  // Default the date to next Saturday
+  const dateInput = $('#weather-date');
+  if (dateInput && !dateInput.value) {
+    const d = new Date();
+    const daysToSat = (6 - d.getDay() + 7) % 7 || 7;
+    d.setDate(d.getDate() + daysToSat);
+    dateInput.value = d.toISOString().slice(0, 10);
+  }
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const date = dateInput.value;
+    const location = $('#weather-location').value.trim() || 'Sunshine Coast';
+    const result = $('#weather-result');
+    if (!result) return;
+    result.innerHTML = `<div class="loading">🔮 Pebbles is checking the sky...</div>`;
+    try {
+      const w = await api(`/api/weather?date=${encodeURIComponent(date)}&location=${encodeURIComponent(location)}`);
+      const verdictClass = w.verdict === 'go' ? 'verdict-go' : w.verdict === 'maybe' ? 'verdict-maybe' : 'verdict-no';
+      result.innerHTML = `
+        <div class="weather-card ${verdictClass}">
+          <div class="weather-header">
+            <span class="weather-emoji">${w.condEmoji}</span>
+            <div>
+              <h3>${escapeHtml(w.location)}</h3>
+              <p>${escapeHtml(w.date)} • ${escapeHtml(w.condDesc)}</p>
+            </div>
+          </div>
+          <div class="weather-stats">
+            <div class="weather-stat"><span>🌡️ Max</span><strong>${Math.round(w.tempMax)}°C</strong></div>
+            <div class="weather-stat"><span>🌡️ Min</span><strong>${Math.round(w.tempMin)}°C</strong></div>
+            <div class="weather-stat"><span>🌧️ Rain</span><strong>${w.rainMm.toFixed(1)}mm</strong></div>
+            <div class="weather-stat"><span>☔ Chance</span><strong>${w.rainProb}%</strong></div>
+            <div class="weather-stat"><span>💨 Wind</span><strong>${Math.round(w.wind)}km/h</strong></div>
+          </div>
+          <div class="weather-verdict">${escapeHtml(w.verdictMsg)}</div>
+        </div>
+      `;
+    } catch (e) {
+      result.innerHTML = `<div class="error">Weather lookup failed: ${escapeHtml(e.message)}</div>`;
+    }
+  });
+}
+
+// ---------- 💌 INVITE / 🏆 HERO buttons — they just open Pebbles chat with a prompt ----------
+function setupQuickPromptButtons() {
+  ['#invite-prompt-btn', '#hero-spot-btn'].forEach(sel => {
+    const btn = $(sel);
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      const prompt = btn.dataset.prompt;
+      // Open Pebbles chat
+      const chat = $('#pebbles-chat');
+      const fab = $('#pebbles-fab');
+      if (chat && fab) {
+        chat.style.display = 'flex';
+        fab.style.display = 'none';
+        const input = $('#pebbles-input');
+        if (input) {
+          input.value = prompt;
+          input.focus();
+        }
+        // Auto-submit
+        const peblForm = $('#pebbles-form');
+        if (peblForm) {
+          setTimeout(() => peblForm.requestSubmit(), 200);
+        }
+      }
+    });
+  });
+}
+
+// ---------- 🎵 CREW PLAYLIST ----------
+function renderPlaylist() {
+  const wrap = $('#playlist-tracks');
+  if (!wrap || !CLUB) return;
+  const tracks = (CLUB.playlist || []).slice().sort((a, b) => b.addedAt - a.addedAt);
+  if (tracks.length === 0) {
+    wrap.innerHTML = `<div class="loading">No songs yet — add the crew's favourites! 🎵</div>`;
+    return;
+  }
+  wrap.innerHTML = tracks.map(t => {
+    const embed = t.spotifyId
+      ? `<iframe class="playlist-spotify" src="https://open.spotify.com/embed/track/${encodeURIComponent(t.spotifyId)}?utm_source=fab5" width="100%" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture" loading="lazy"></iframe>`
+      : `<div class="playlist-no-embed">🎧 Add a Spotify link to enable preview</div>`;
+    const vibeMap = { hype: '🔥 Hype', chill: '😌 Chill', adventure: '🛶 Adventure', party: '🎉 Party' };
+    const vibeChip = t.vibe && vibeMap[t.vibe] ? `<span class="vibe-chip">${vibeMap[t.vibe]}</span>` : '';
+    return `
+      <div class="playlist-track" data-id="${escapeHtml(t.id)}">
+        <div class="playlist-track-info">
+          <h4>🎵 ${escapeHtml(t.title)} <span class="playlist-artist">— ${escapeHtml(t.artist)}</span></h4>
+          <div class="playlist-meta">${vibeChip} <span class="playlist-added-by">added by ${escapeHtml(t.addedBy)}</span></div>
+        </div>
+        ${embed}
+        <button class="playlist-remove" data-track-remove="${escapeHtml(t.id)}" title="Remove">✕</button>
+      </div>
+    `;
+  }).join('');
+
+  wrap.querySelectorAll('[data-track-remove]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remove this song from the playlist?')) return;
+      const id = btn.dataset.trackRemove;
+      try {
+        await api('/api/playlist/' + encodeURIComponent(id), { method: 'DELETE' });
+        CLUB.playlist = CLUB.playlist.filter(t => t.id !== id);
+        renderPlaylist();
+      } catch (e) { flashMsg('Failed: ' + e.message, 'error'); }
+    });
+  });
+}
+
+function setupPlaylistForm() {
+  const form = $('#playlist-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = $('#track-title').value.trim();
+    const artist = $('#track-artist').value.trim();
+    const spotifyId = $('#track-spotify').value.trim();
+    const addedBy = $('#track-by').value;
+    const vibe = $('#track-vibe').value;
+    const msg = $('#playlist-msg');
+    if (!title || !artist) { if (msg) { msg.textContent = 'Title + artist required!'; msg.className = 'error'; } return; }
+    try {
+      const res = await api('/api/playlist', { method: 'POST', body: { title, artist, spotifyId, addedBy, vibe } });
+      if (!CLUB.playlist) CLUB.playlist = [];
+      CLUB.playlist.unshift(res.track);
+      renderPlaylist();
+      form.reset();
+      if (msg) { msg.textContent = '🎶 Added!'; msg.className = 'success'; }
+      setTimeout(() => { if (msg) { msg.textContent = ''; msg.className = ''; } }, 2500);
+    } catch (err) {
+      if (msg) { msg.textContent = 'Failed: ' + err.message; msg.className = 'error'; }
+    }
+  });
+}
+
+// ---------- 🎟️ CONCERT WATCH ----------
+function renderConcertWatches() {
+  const wrap = $('#concert-watches-list');
+  if (!wrap || !CLUB) return;
+  const watches = CLUB.concertWatches || [];
+  if (watches.length === 0) {
+    wrap.innerHTML = `<div class="loading">Not watching any artists yet — add one below 👀</div>`;
+    return;
+  }
+  const statusMap = {
+    'watching': { emoji: '👀', label: 'Watching for tour dates', cls: 'status-watching' },
+    'tour-announced': { emoji: '🎉', label: 'Tour announced!', cls: 'status-announced' },
+    'tickets-on-sale': { emoji: '🚨', label: 'TICKETS ON SALE NOW!', cls: 'status-tickets' },
+    'past': { emoji: '📜', label: 'Past tour', cls: 'status-past' },
+  };
+  wrap.innerHTML = watches.map(w => {
+    const s = statusMap[w.status] || statusMap.watching;
+    return `
+      <div class="concert-watch-card ${s.cls}" data-artist="${escapeHtml(w.artist)}">
+        <div class="cw-header">
+          <h4>🎤 ${escapeHtml(w.artist)}</h4>
+          <span class="cw-status">${s.emoji} ${s.label}</span>
+        </div>
+        ${w.notes ? `<p class="cw-notes">${escapeHtml(w.notes)}</p>` : ''}
+        <button class="cw-remove" data-cw-remove="${escapeHtml(w.artist)}" title="Stop watching">✕ Stop watching</button>
+      </div>
+    `;
+  }).join('');
+
+  wrap.querySelectorAll('[data-cw-remove]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const artist = btn.dataset.cwRemove;
+      if (!confirm(`Stop watching ${artist}?`)) return;
+      try {
+        await api('/api/concert-watch/' + encodeURIComponent(artist), { method: 'DELETE' });
+        CLUB.concertWatches = CLUB.concertWatches.filter(w => w.artist !== artist);
+        renderConcertWatches();
+      } catch (e) { flashMsg('Failed: ' + e.message, 'error'); }
+    });
+  });
+}
+
+function setupConcertWatchForm() {
+  const form = $('#concert-watch-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const artist = $('#watch-artist').value.trim();
+    const addedBy = $('#watch-by').value;
+    const notes = $('#watch-notes').value.trim();
+    const msg = $('#watch-msg');
+    if (!artist) { if (msg) { msg.textContent = 'Artist required!'; msg.className = 'error'; } return; }
+    try {
+      const res = await api('/api/concert-watch', { method: 'POST', body: { artist, addedBy, notes } });
+      if (!CLUB.concertWatches) CLUB.concertWatches = [];
+      CLUB.concertWatches.unshift(res.watch);
+      renderConcertWatches();
+      form.reset();
+      if (msg) { msg.textContent = '👀 Now watching!'; msg.className = 'success'; }
+      setTimeout(() => { if (msg) { msg.textContent = ''; msg.className = ''; } }, 2500);
+    } catch (err) {
+      if (msg) { msg.textContent = 'Failed: ' + err.message; msg.className = 'error'; }
+    }
+  });
+}
+
+// ---------- KID PROFILES (Parents' Dashboard) ----------
+function renderKidProfiles() {
+  const grid = $('#kid-profiles-grid');
+  if (!grid || !CLUB) return;
+  const profiles = CLUB.kidProfiles || {};
+  // Render one card per Fab 5 kid (skip Pebbles — she's the mascot)
+  const kids = (CLUB.members || []).filter(m => m.name !== 'Pebbles');
+  grid.innerHTML = kids.map(m => {
+    const p = profiles[m.name] || { name: m.name };
+    const hasData = !!(p.birthday || p.hoodieSize || p.favouriteSnack || p.allergies || p.spark || p.hypeSong);
+    const completeness = [p.birthday, p.hoodieSize, p.favouriteSnack, (p.allergies !== undefined), p.spark, p.hypeSong].filter(Boolean).length;
+    const completePct = Math.round((completeness / 6) * 100);
+    return `
+      <div class="kid-profile-card" data-name="${escapeHtml(m.name)}" style="border-color: ${m.color}">
+        <div class="kid-profile-header" style="background: linear-gradient(135deg, ${m.color}40 0%, ${m.color}10 100%)">
+          <span class="kid-profile-emoji">${m.emoji}</span>
+          <div class="kid-profile-title">
+            <h3>${escapeHtml(m.name)}</h3>
+            <span class="kid-profile-completeness">${completePct}% complete</span>
+          </div>
+        </div>
+        <form class="kid-profile-form" data-kid="${escapeHtml(m.name)}">
+          <div class="kpf-row">
+            <label><span>🎂 Birthday</span><input type="date" name="birthday" value="${p.birthday || ''}" /></label>
+            <label><span>👕 Hoodie size</span><input type="text" name="hoodieSize" maxlength="30" value="${escapeHtml(p.hoodieSize || '')}" placeholder="e.g. Kids 12" /></label>
+          </div>
+          <label><span>🍎 Favourite snack</span><input type="text" name="favouriteSnack" maxlength="80" value="${escapeHtml(p.favouriteSnack || '')}" placeholder="e.g. mango, watermelon, jam sandwiches" /></label>
+          <label class="kpf-allergy-label"><span>⚠️ Allergies <em>(safety — leave blank if none)</em></span><input type="text" name="allergies" maxlength="200" value="${escapeHtml(p.allergies || '')}" placeholder="e.g. peanuts, dairy — or leave blank" /></label>
+          <label><span>✨ Their spark <em>(one sentence about what makes them special)</em></span><input type="text" name="spark" maxlength="200" value="${escapeHtml(p.spark || '')}" placeholder="e.g. Lights up every room she walks into" /></label>
+          <div class="kpf-row">
+            <label><span>🎵 Hype song title</span><input type="text" name="hypeSongTitle" maxlength="120" value="${escapeHtml(p.hypeSong?.title || '')}" placeholder="e.g. vampire" /></label>
+            <label><span>🎤 Artist</span><input type="text" name="hypeSongArtist" maxlength="80" value="${escapeHtml(p.hypeSong?.artist || '')}" placeholder="e.g. Olivia Rodrigo" /></label>
+          </div>
+          <label><span>🔗 Spotify track ID <em>(optional — for embeds)</em></span><input type="text" name="hypeSongSpotifyId" maxlength="40" value="${escapeHtml(p.hypeSong?.spotifyId || '')}" placeholder="e.g. 1kuGVB7EU95pJObxwvfwKS" /></label>
+          <button type="submit" class="btn btn-primary kpf-save">💾 Save ${escapeHtml(m.name)}'s profile</button>
+          <div class="kpf-msg"></div>
+        </form>
+      </div>
+    `;
+  }).join('');
+
+  // Wire up each form
+  grid.querySelectorAll('.kid-profile-form').forEach(form => {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const kid = form.dataset.kid;
+      const fd = new FormData(form);
+      const body = {
+        birthday: fd.get('birthday') || '',
+        hoodieSize: fd.get('hoodieSize') || '',
+        favouriteSnack: fd.get('favouriteSnack') || '',
+        allergies: fd.get('allergies') || '',
+        spark: fd.get('spark') || '',
+        hypeSong: {
+          title: fd.get('hypeSongTitle') || '',
+          artist: fd.get('hypeSongArtist') || '',
+          spotifyId: fd.get('hypeSongSpotifyId') || ''
+        }
+      };
+      const msg = form.querySelector('.kpf-msg');
+      try {
+        const res = await api('/api/kid-profiles/' + encodeURIComponent(kid), { method: 'PATCH', body });
+        if (!CLUB.kidProfiles) CLUB.kidProfiles = {};
+        CLUB.kidProfiles[kid] = res.profile;
+        if (msg) { msg.textContent = '✅ Saved!'; msg.className = 'kpf-msg success'; }
+        // Re-render so allergy chips, completeness, and event cards update
+        renderKidProfiles();
+        renderEventsList();
+        renderDashOverview();
+        renderPlaylist();
+        setTimeout(() => { const m2 = $(`.kid-profile-card[data-name="${kid}"] .kpf-msg`); if (m2) { m2.textContent = ''; m2.className = 'kpf-msg'; } }, 2500);
+      } catch (err) {
+        if (msg) { msg.textContent = 'Failed: ' + err.message; msg.className = 'kpf-msg error'; }
+      }
+    });
+  });
+}
+
+function renderDashOverview() {
+  const el = $('#dash-overview-body');
+  if (!el || !CLUB) return;
+  const upcomingCount = EVENTS.filter(e => new Date(e.date) >= new Date(new Date().toDateString())).length;
+  const profiles = CLUB.kidProfiles || {};
+  const kids = (CLUB.members || []).filter(m => m.name !== 'Pebbles');
+  const profilesFilled = kids.filter(k => profiles[k.name]?.spark || profiles[k.name]?.birthday).length;
+  const totalAllergies = kids.filter(k => profiles[k.name]?.allergies).length;
+  const bf = CLUB.bottleFund || {};
+  const goal = bf.goal || {};
+  const raised = Number(goal.raisedAud) || 0;
+  const target = Number(goal.targetAud) || 0;
+  const pct = target > 0 ? Math.round((raised / target) * 100) : 0;
+
+  el.innerHTML = `
+    <div class="dash-stats">
+      <div class="dash-stat"><span class="dash-stat-num">${EVENTS.length}</span><span class="dash-stat-label">📅 Total events</span></div>
+      <div class="dash-stat"><span class="dash-stat-num">${upcomingCount}</span><span class="dash-stat-label">🔜 Upcoming</span></div>
+      <div class="dash-stat"><span class="dash-stat-num">${AWARDS.length}</span><span class="dash-stat-label">🏆 Badges awarded</span></div>
+      <div class="dash-stat"><span class="dash-stat-num">${GALLERY.length}</span><span class="dash-stat-label">📸 Gallery items</span></div>
+      <div class="dash-stat"><span class="dash-stat-num">${CONCERTS.length}</span><span class="dash-stat-label">🎵 Concerts wishlist</span></div>
+      <div class="dash-stat"><span class="dash-stat-num">${SUGGESTIONS.length}</span><span class="dash-stat-label">💌 Suggestions</span></div>
+      <div class="dash-stat"><span class="dash-stat-num">${profilesFilled}/${kids.length}</span><span class="dash-stat-label">🧒 Profiles set up</span></div>
+      <div class="dash-stat"><span class="dash-stat-num">${totalAllergies}</span><span class="dash-stat-label">⚠️ Kids with allergies</span></div>
+      <div class="dash-stat"><span class="dash-stat-num">$${raised.toFixed(0)}</span><span class="dash-stat-label">🥤 Raised (${pct}% of goal)</span></div>
+    </div>
+  `;
 }
 
 // ---------- BOTTLES FOR THE CREW ----------

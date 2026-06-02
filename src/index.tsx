@@ -164,7 +164,7 @@ const FAB5_SLOGANS = [
   { id: 'brave-scared', text: "Brave isn't 'no fear' — brave is 'scared, and doing it anyway'.", category: 'growth', emoji: '🦁' },
   { id: 'mistakes-grow', text: "Mistakes are how the brain grows.", category: 'growth', emoji: '🧠' },
   { id: 'not-stuck', text: "You're not stuck — you're learning.", category: 'growth', emoji: '📈' },
-  // 🌈 Mum-vibe
+  // 🌈 Family-vibe
   { id: 'kind-brave-useful', text: "Be kind. Be brave. Be useful. Be you.", category: 'self', emoji: '🌈' },
   { id: 'yesterday-self', text: "We don't compare. We compete with yesterday's version of ourselves.", category: 'growth', emoji: '🪞' },
   { id: 'tone-first', text: "Tone goes first. Words come second.", category: 'kindness', emoji: '🎵' },
@@ -225,7 +225,7 @@ type Suggestion = {
 const SUGGESTIONS: Suggestion[] = []
 
 // =========== 🥤 BOTTLES FOR THE CREW (Containers for Change) ===========
-// Mum set up a fab5funclub team on Containers for Change. The team URL below
+// A parent set up a fab5funclub team on Containers for Change. The team URL below
 // is what parents/family click ONCE to join — every bottle they return after
 // joining gets credited to the club's fundraising pool.
 const BOTTLE_FUND = {
@@ -241,6 +241,82 @@ const BOTTLE_FUND = {
   },
   heroes: [] as { id: string; name: string; note?: string; month?: string; addedAt: number }[],
 }
+
+// =========== 🧒 KID PROFILES (one per Fab 5 member, set by a parent) ===========
+// Powers: Birthday Brain, snack-pack auto-suggest, allergy safety chips,
+// Adventure Diary mentions, Postcards, Crew Playlist song slots, hoodie sizes.
+type KidProfile = {
+  name: string             // matches CLUB_INFO.members[].name
+  birthday?: string        // YYYY-MM-DD
+  hoodieSize?: string      // e.g. "Kids 10", "Kids 12", "Youth M"
+  favouriteSnack?: string
+  allergies?: string       // free text, "" = none, comma-separated for multiple
+  spark?: string           // one sentence about what makes them special
+  hypeSong?: {
+    title: string
+    artist: string
+    spotifyId?: string     // Spotify track ID for embeds
+  }
+}
+// Seeded with the 5 known members (and Pebbles too — she gets her own profile!)
+const KID_PROFILES: Record<string, KidProfile> = {
+  'Ace':       { name: 'Ace' },
+  'Charlotte': { name: 'Charlotte' },
+  'Elijah':    { name: 'Elijah' },
+  'Saia':      { name: 'Saia' },
+  'Sienna':    { name: 'Sienna' },
+  'Pebbles':   { name: 'Pebbles', spark: 'The crew\'s loyal Bull Arab — wise, kind, slightly chaotic 🐾' },
+}
+
+// =========== 🎵 CREW PLAYLIST (Spotify embeds) ===========
+type PlaylistTrack = {
+  id: string
+  title: string
+  artist: string
+  spotifyId?: string      // Spotify track ID (the bit after /track/ in a share URL)
+  addedBy: string
+  addedAt: number
+  vibe?: string           // 'hype' | 'chill' | 'adventure' | 'party' | ''
+}
+// Seeded with the crew's founding tracks
+const PLAYLIST: PlaylistTrack[] = [
+  {
+    id: 'track-founding-vampire',
+    title: 'vampire',
+    artist: 'Olivia Rodrigo',
+    spotifyId: '1kuGVB7EU95pJObxwvfwKS',
+    addedBy: 'The crew',
+    addedAt: Date.now() - 1000,
+    vibe: 'hype',
+  },
+  {
+    id: 'track-founding-pinkpony',
+    title: 'Pink Pony Club',
+    artist: 'Chappell Roan',
+    spotifyId: '0kfRfeQU0Aw1SOaiYS6Vg7',
+    addedBy: 'The crew',
+    addedAt: Date.now() - 2000,
+    vibe: 'party',
+  },
+]
+
+// =========== 🎟️ CONCERT WATCH (Pebbles watches for tour announcements) ===========
+type ConcertWatch = {
+  artist: string                    // artist name
+  addedBy: string
+  addedAt: number
+  lastChecked?: number              // when Pebbles last "checked"
+  status: 'watching' | 'tour-announced' | 'tickets-on-sale' | 'past'
+  notes?: string
+}
+const CONCERT_WATCHES: ConcertWatch[] = [
+  { artist: 'Olivia Rodrigo', addedBy: 'The crew', addedAt: Date.now(), status: 'watching', notes: 'GUTS Tour wrapped 2024 — watching for next Aussie tour announcement 👀' },
+  { artist: 'Chappell Roan',  addedBy: 'The crew', addedAt: Date.now(), status: 'watching', notes: 'Currently touring globally — watching for Aussie dates 🦄' },
+]
+
+// =========== 🎲 DECISION MAKER OPTIONS (Pebbles Picks for Us) ===========
+// These are the buckets Pebbles can randomly choose from
+const PEBBLES_PICKS_BUCKETS = ['activity', 'leader', 'snack', 'slogan', 'song'] as const
 
 const CLUB_INFO = {
   name: 'Fab 5 Fun Club',
@@ -481,13 +557,234 @@ app.get('/api/club-info', (c) => c.json({
   sloganOfTheWeek: getSloganOfTheWeek(),
   parentsFaq: PARENTS_FAQ,
   bottleFund: BOTTLE_FUND,
+  kidProfiles: KID_PROFILES,
+  playlist: PLAYLIST,
+  concertWatches: CONCERT_WATCHES,
 }))
+
+// =========== 🧒 KID PROFILES API ===========
+// GET all profiles
+app.get('/api/kid-profiles', (c) => c.json({ profiles: KID_PROFILES }))
+
+// PATCH a single kid's profile — only existing members can be updated (no new kids via API)
+app.patch('/api/kid-profiles/:name', async (c) => {
+  const name = c.req.param('name')
+  if (!KID_PROFILES[name]) return c.json({ error: 'Unknown member' }, 404)
+  const body = await c.req.json().catch(() => ({} as any))
+  const prof = KID_PROFILES[name]
+
+  if (typeof body.birthday === 'string') {
+    const v = body.birthday.trim()
+    // Accept YYYY-MM-DD or empty to clear
+    if (v === '' || /^\d{4}-\d{2}-\d{2}$/.test(v)) prof.birthday = v || undefined
+  }
+  if (typeof body.hoodieSize === 'string') prof.hoodieSize = body.hoodieSize.trim().slice(0, 30) || undefined
+  if (typeof body.favouriteSnack === 'string') prof.favouriteSnack = body.favouriteSnack.trim().slice(0, 80) || undefined
+  if (typeof body.allergies === 'string') prof.allergies = body.allergies.trim().slice(0, 200) || undefined
+  if (typeof body.spark === 'string') prof.spark = body.spark.trim().slice(0, 200) || undefined
+  if (body.hypeSong && typeof body.hypeSong === 'object') {
+    const t = (body.hypeSong.title || '').toString().trim().slice(0, 120)
+    const a = (body.hypeSong.artist || '').toString().trim().slice(0, 80)
+    const sid = (body.hypeSong.spotifyId || '').toString().trim().slice(0, 40)
+    if (t && a) prof.hypeSong = { title: t, artist: a, spotifyId: sid || undefined }
+    else if (!t && !a) prof.hypeSong = undefined
+  }
+  return c.json({ ok: true, profile: prof })
+})
+
+// =========== 🎵 CREW PLAYLIST API ===========
+app.get('/api/playlist', (c) => c.json({ tracks: PLAYLIST.slice().sort((a,b)=>b.addedAt-a.addedAt) }))
+
+app.post('/api/playlist', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any))
+  const title = (body.title || '').toString().trim().slice(0, 120)
+  const artist = (body.artist || '').toString().trim().slice(0, 80)
+  if (!title || !artist) return c.json({ error: 'Title + artist required' }, 400)
+  // Accept either a bare spotify ID or a full URL — extract the ID
+  let spotifyId = (body.spotifyId || '').toString().trim()
+  const urlMatch = spotifyId.match(/track\/([a-zA-Z0-9]+)/)
+  if (urlMatch) spotifyId = urlMatch[1]
+  spotifyId = spotifyId.slice(0, 40)
+  const track: PlaylistTrack = {
+    id: 'track-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    title, artist,
+    spotifyId: spotifyId || undefined,
+    addedBy: (body.addedBy || 'crew').toString().slice(0, 40),
+    addedAt: Date.now(),
+    vibe: (body.vibe || '').toString().slice(0, 20),
+  }
+  PLAYLIST.unshift(track)
+  if (PLAYLIST.length > 50) PLAYLIST.length = 50
+  return c.json({ ok: true, track })
+})
+
+app.delete('/api/playlist/:id', (c) => {
+  const id = c.req.param('id')
+  const before = PLAYLIST.length
+  const idx = PLAYLIST.findIndex(t => t.id === id)
+  if (idx === -1) return c.json({ error: 'Not found' }, 404)
+  PLAYLIST.splice(idx, 1)
+  return c.json({ ok: true })
+})
+
+// =========== 🎟️ CONCERT WATCH API ===========
+app.get('/api/concert-watch', (c) => c.json({ watches: CONCERT_WATCHES }))
+
+app.post('/api/concert-watch', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any))
+  const artist = (body.artist || '').toString().trim().slice(0, 80)
+  if (!artist) return c.json({ error: 'Artist required' }, 400)
+  // Prevent duplicates
+  if (CONCERT_WATCHES.find(w => w.artist.toLowerCase() === artist.toLowerCase())) {
+    return c.json({ error: 'Already watching this artist!' }, 400)
+  }
+  const watch: ConcertWatch = {
+    artist,
+    addedBy: (body.addedBy || 'crew').toString().slice(0, 40),
+    addedAt: Date.now(),
+    status: 'watching',
+    notes: (body.notes || '').toString().slice(0, 300) || undefined,
+  }
+  CONCERT_WATCHES.unshift(watch)
+  return c.json({ ok: true, watch })
+})
+
+app.delete('/api/concert-watch/:artist', (c) => {
+  const artist = decodeURIComponent(c.req.param('artist'))
+  const idx = CONCERT_WATCHES.findIndex(w => w.artist === artist)
+  if (idx === -1) return c.json({ error: 'Not found' }, 404)
+  CONCERT_WATCHES.splice(idx, 1)
+  return c.json({ ok: true })
+})
+
+// =========== 🎲 PEBBLES PICKS (Decision Maker) ===========
+app.post('/api/pebbles-picks', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any))
+  const bucket = (body.bucket || 'activity').toString()
+  const pick = (arr: any[]) => arr[Math.floor(Math.random() * arr.length)]
+
+  if (bucket === 'activity') {
+    const a = pick(CLUB_INFO.activities)
+    return c.json({ bucket, pick: { label: `${a.emoji} ${a.name}`, category: a.category }, woof: `*excited tail wag* ${a.emoji} ${a.name}! Get the gear ready! 🐾` })
+  }
+  if (bucket === 'leader') {
+    const memberNames = CLUB_INFO.members.filter(m => m.name !== 'Pebbles').map(m => m.name)
+    const counts: Record<string, number> = {}
+    memberNames.forEach(n => counts[n] = 0)
+    EVENTS.forEach(e => { if (e.leader && counts[e.leader] !== undefined) counts[e.leader]++ })
+    // Fairest = led fewest times
+    const min = Math.min(...Object.values(counts))
+    const candidates = memberNames.filter(n => counts[n] === min)
+    const winner = pick(candidates)
+    return c.json({ bucket, pick: { label: `🎖️ ${winner}`, leader: winner }, woof: `${winner} hasn't led as much as the others — their turn! Fair's fair 🐾` })
+  }
+  if (bucket === 'snack') {
+    const profiles = KID_PROFILES
+    const snacks = Object.values(profiles)
+      .map(p => p.favouriteSnack)
+      .filter(s => s) as string[]
+    if (snacks.length === 0) {
+      return c.json({ bucket, pick: { label: '🍎 Mango + watermelon' }, woof: 'Nobody\'s filled in favourite snacks yet! Fill in profiles in the Parents\' Dashboard for better picks 🐾' })
+    }
+    return c.json({ bucket, pick: { label: '🍎 ' + pick(snacks) }, woof: 'A crew favourite! 🐾' })
+  }
+  if (bucket === 'slogan') {
+    const s: any = pick(FAB5_SLOGANS)
+    const text = typeof s === 'string' ? s : s.text
+    const emoji = typeof s === 'string' ? '💬' : (s.emoji || '💬')
+    return c.json({ bucket, pick: { label: `${emoji} "${text}"` }, woof: 'Live by it today! 💛🐾' })
+  }
+  if (bucket === 'song') {
+    if (PLAYLIST.length === 0) return c.json({ bucket, pick: { label: '🎵 Add songs to the Crew Playlist first!' }, woof: '*head tilt* No songs yet — add some! 🐾' })
+    const t = pick(PLAYLIST)
+    return c.json({ bucket, pick: { label: `🎵 "${t.title}" by ${t.artist}`, spotifyId: t.spotifyId }, woof: 'Press play and let\'s GO 🎧🐾' })
+  }
+  return c.json({ error: 'Unknown bucket' }, 400)
+})
+
+// =========== 🌦️ WEATHER BRAIN (free Open-Meteo API, no key needed) ===========
+app.get('/api/weather', async (c) => {
+  const date = c.req.query('date') || ''       // YYYY-MM-DD
+  const location = c.req.query('location') || 'Sunshine Coast'
+  if (!date) return c.json({ error: 'date query param required (YYYY-MM-DD)' }, 400)
+
+  // Geocode the location using Open-Meteo's free geocoder
+  let lat = -26.65, lon = 153.07, displayName = 'Sunshine Coast, QLD' // default Sunshine Coast
+  try {
+    const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&country=AU&count=1`)
+    if (geoRes.ok) {
+      const geo: any = await geoRes.json()
+      if (geo.results && geo.results[0]) {
+        lat = geo.results[0].latitude
+        lon = geo.results[0].longitude
+        displayName = `${geo.results[0].name}${geo.results[0].admin1 ? ', ' + geo.results[0].admin1 : ''}`
+      }
+    }
+  } catch {}
+
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,weather_code,wind_speed_10m_max&timezone=Australia%2FBrisbane&start_date=${date}&end_date=${date}`
+    const wRes = await fetch(url)
+    if (!wRes.ok) return c.json({ error: 'Weather lookup failed' }, 500)
+    const w: any = await wRes.json()
+    const d = w.daily
+    if (!d || !d.time || !d.time.length) return c.json({ error: 'No forecast available for that date' }, 400)
+
+    const tMax = d.temperature_2m_max[0]
+    const tMin = d.temperature_2m_min[0]
+    const rainMm = d.precipitation_sum[0]
+    const rainProb = d.precipitation_probability_max?.[0] ?? 0
+    const code = d.weather_code[0]
+    const wind = d.wind_speed_10m_max[0]
+
+    // WMO weather code → friendly description + emoji
+    const codeMap: Record<number, { emoji: string; desc: string }> = {
+      0: { emoji: '☀️', desc: 'Clear sky' },
+      1: { emoji: '🌤️', desc: 'Mainly clear' }, 2: { emoji: '⛅', desc: 'Partly cloudy' }, 3: { emoji: '☁️', desc: 'Overcast' },
+      45: { emoji: '🌫️', desc: 'Fog' }, 48: { emoji: '🌫️', desc: 'Freezing fog' },
+      51: { emoji: '🌦️', desc: 'Light drizzle' }, 53: { emoji: '🌦️', desc: 'Drizzle' }, 55: { emoji: '🌧️', desc: 'Heavy drizzle' },
+      61: { emoji: '🌦️', desc: 'Light rain' }, 63: { emoji: '🌧️', desc: 'Rain' }, 65: { emoji: '🌧️', desc: 'Heavy rain' },
+      80: { emoji: '🌦️', desc: 'Rain showers' }, 81: { emoji: '🌧️', desc: 'Rain showers' }, 82: { emoji: '⛈️', desc: 'Violent showers' },
+      95: { emoji: '⛈️', desc: 'Thunderstorm' }, 96: { emoji: '⛈️', desc: 'Thunderstorm + hail' }, 99: { emoji: '⛈️', desc: 'Severe thunderstorm' },
+    }
+    const cond = codeMap[code] || { emoji: '🌤️', desc: 'Mixed weather' }
+
+    // Verdict logic
+    let verdict: 'go' | 'maybe' | 'no' = 'go'
+    let verdictMsg = ''
+    if (code >= 95) { verdict = 'no'; verdictMsg = '⛈️ Storm warning — postpone or pick an indoor backup!' }
+    else if (rainMm > 15 || rainProb > 80) { verdict = 'no'; verdictMsg = '🌧️ Heavy rain expected — switch to indoor plan B' }
+    else if (rainMm > 5 || rainProb > 50) { verdict = 'maybe'; verdictMsg = '🌦️ Some rain likely — pack a backup plan + raincoats' }
+    else if (tMax >= 35) { verdict = 'maybe'; verdictMsg = '🥵 Hot day — early start, extra water, shade essential' }
+    else if (tMax >= 32) { verdict = 'go'; verdictMsg = '☀️ Hot but doable — slip slop slap, water bottles full!' }
+    else if (tMin < 8) { verdict = 'maybe'; verdictMsg = '🥶 Cold morning — layer up' }
+    else if (wind > 40) { verdict = 'maybe'; verdictMsg = '💨 Windy day — avoid kayaks/sails' }
+    else { verdict = 'go'; verdictMsg = '✅ Perfect adventure weather!' }
+
+    return c.json({
+      date,
+      location: displayName,
+      tempMax: tMax,
+      tempMin: tMin,
+      rainMm,
+      rainProb,
+      wind,
+      code,
+      condEmoji: cond.emoji,
+      condDesc: cond.desc,
+      verdict,
+      verdictMsg,
+    })
+  } catch (e: any) {
+    return c.json({ error: 'Weather lookup error: ' + e.message }, 500)
+  }
+})
 
 // =========== 🥤 BOTTLE FUND API ===========
 // GET — anyone logged in can see the goal + progress
 app.get('/api/bottle-fund', (c) => c.json(BOTTLE_FUND))
 
-// POST update the goal (mum can change what we're saving for)
+// POST update the goal (a parent can change what we're saving for)
 app.post('/api/bottle-fund/goal', async (c) => {
   const body = await c.req.json().catch(() => ({} as any))
   if (typeof body.title === 'string' && body.title.trim()) {
@@ -505,7 +802,7 @@ app.post('/api/bottle-fund/goal', async (c) => {
   return c.json({ ok: true, goal: BOTTLE_FUND.goal })
 })
 
-// POST update the raised total (mum types in the new total each month)
+// POST update the raised total (a parent types in the new total each month)
 app.post('/api/bottle-fund/raised', async (c) => {
   const body = await c.req.json().catch(() => ({} as any))
   if (typeof body.raisedAud !== 'number' || body.raisedAud < 0) {
@@ -744,13 +1041,26 @@ YOUR JOBS:
 7. Add CONCERTS the crew wants to see via add_concert tool
 8. ALWAYS uphold the Fab 5 Ways (our shared club wisdom)
 9. EXPLAIN the 🥤 Bottles for the Crew fundraiser when asked — see below
+10. USE KID PROFILES (loaded below) to personalise — mention favourite snacks for the pack, hype songs for adventures, sparks for birthday/postcard messages
+11. ⚠️ ALLERGY SAFETY — if a kid in an event has allergies listed, ALWAYS mention them when planning food/snacks. Never suggest a snack a kid is allergic to. This is non-negotiable.
+12. WRITE FAMILY INVITES when asked — warm, fun, mention what to bring (use the standard day pack!), and end with a Pebbles-style joke 🐾
+13. SPOT HEROES when asked — look at recent events and badge history, then suggest 1-3 kids with specific badges and one-sentence reasons. Mix the heroes — don't keep picking the same kid.
+14. WEATHER WISDOM — when asked about an adventure date, suggest they use the 🌦️ Weather Brain on the site (it pulls real Open-Meteo forecasts). For high-risk weather (storms, 35°+ heat, heavy rain), always offer a backup indoor plan.
+15. PLAYLIST CURATION — the crew has a 🎵 Crew Playlist with Spotify embeds. Founding tracks: "vampire" by Olivia Rodrigo and "Pink Pony Club" by Chappell Roan. Each kid can have a hype song in their profile.
+16. CONCERT WATCH — the crew watches artists for tour announcements. Olivia Rodrigo & Chappell Roan are on watch. If asked "is X touring?" — point them to the Concert Watch section.
+
+🌟 EGALITARIAN LANGUAGE (super important!):
+- ALWAYS say "parents" or "grown-ups" or "the family" — NEVER default to "mum" alone
+- Dads, step-parents, grandparents, aunts, uncles, carers — they all matter equally
+- Only use a specific person's name (like "Carla") if you're pointing to a real situation involving that real person — e.g. "ask Saia's mum because she's the safety contact for Saia"
+- If a kid says "I'll ask mum" — that's fine for them, but YOU stay neutral: "great, ask a grown-up!"
 
 🥤 BOTTLES FOR THE CREW (Containers for Change fundraiser):
 - The Fab 5 has a registered Queensland Containers for Change team called "fab5funclub"
 - Parents, family, friends, neighbours, even workplaces can join the team by clicking ONE link (it's on the website, behind the password, in the "🥤 Bottles for the Crew" section)
 - Once they've joined the team: every bottle/can they return at any QLD refund point can be credited to fab5funclub instead of cash for themselves
 - 10c per eligible container → adds up FAST when whole offices/families contribute
-- The money goes into a club account (mum holds it for the crew) and is used for crew goals like hoodies, gear, big adventures
+- The money goes into a club account (a parent holds it for the crew) and is used for crew goals like hoodies, gear, big adventures
 - The club is STILL completely free for kids — bottles money is bonus adventure money, never required
 - If a parent asks "how can I help the club?" — point them to the Bottles for the Crew section
 - If a kid asks "how do we raise money?" — explain bottle hunts! That's a Service badge waiting to happen 🏞️
@@ -862,6 +1172,19 @@ app.post('/api/pebbles/chat', async (c) => {
   EVENTS.forEach(e => { if (e.leader) counts[e.leader] = (counts[e.leader] || 0) + 1 })
   const sorted = MEMBER_NAMES.slice().sort((a, b) => counts[a] - counts[b])
 
+  // Build a compact kid-profile summary for Pebbles to use
+  const profileSummary = MEMBER_NAMES.map(n => {
+    const p = KID_PROFILES[n] || { name: n }
+    const bits: string[] = []
+    if (p.birthday) bits.push(`birthday ${p.birthday}`)
+    if (p.hoodieSize) bits.push(`hoodie ${p.hoodieSize}`)
+    if (p.favouriteSnack) bits.push(`fav snack: ${p.favouriteSnack}`)
+    if (p.allergies) bits.push(`⚠️ ALLERGIES: ${p.allergies}`)
+    if (p.spark) bits.push(`spark: "${p.spark}"`)
+    if (p.hypeSong) bits.push(`hype song: "${p.hypeSong.title}" by ${p.hypeSong.artist}`)
+    return `- ${n}: ${bits.length ? bits.join(' • ') : '(no profile data yet — a parent can fill it in via Parents\' Dashboard)'}`
+  }).join('\n')
+
   const systemMsg = {
     role: 'system',
     content: PEBBLES_SYSTEM_PROMPT +
@@ -870,7 +1193,8 @@ app.post('/api/pebbles/chat', async (c) => {
       `\nNext Saturday: ${getNextSaturday()}.` +
       `\nNext Sunday: ${getNextSunday()}.` +
       `\nLeader rotation counts so far: ${JSON.stringify(counts)}.` +
-      `\nFairest next leader (led fewest times): ${sorted[0]}.`
+      `\nFairest next leader (led fewest times): ${sorted[0]}.` +
+      `\n\n🧒 KID PROFILES (use these for personalised recommendations, NEVER ignore allergies!):\n${profileSummary}`
   }
 
   const apiKey = c.env?.OPENAI_API_KEY || ''
@@ -1470,14 +1794,108 @@ app.get('/', (c) => {
           </div>
         </section>
 
+        {/* 🎰 PEBBLES PICKS — Decision Maker */}
+        <section class="section pebbles-picks-section" id="pebbles-picks">
+          <h2 class="section-title">🎰 Pebbles, Pick for Us!</h2>
+          <p class="section-subtitle">Can't decide? Let Pebbles flip the coin 🐾</p>
+          <div class="picks-grid">
+            <button class="pick-btn" data-bucket="activity">🎯 Pick an activity</button>
+            <button class="pick-btn" data-bucket="leader">🎖️ Pick a leader</button>
+            <button class="pick-btn" data-bucket="snack">🍎 Pick a snack</button>
+            <button class="pick-btn" data-bucket="slogan">💬 Pick a slogan</button>
+            <button class="pick-btn" data-bucket="song">🎵 Pick a song</button>
+          </div>
+          <div id="pick-result" class="pick-result"></div>
+        </section>
+
+        {/* 🌦️ WEATHER BRAIN */}
+        <section class="section weather-brain-section" id="weather-brain">
+          <h2 class="section-title">🌦️ Weather Brain</h2>
+          <p class="section-subtitle">Will the adventure work? Pebbles checks the sky 🐾</p>
+          <form id="weather-form" class="weather-form">
+            <div class="form-row">
+              <label><span>📅 Date</span><input type="date" id="weather-date" required /></label>
+              <label><span>📍 Location</span><input type="text" id="weather-location" value="Sunshine Coast" placeholder="e.g. Noosa, Maleny, Brisbane" /></label>
+            </div>
+            <button type="submit" class="btn btn-secondary">🔮 Check the forecast</button>
+          </form>
+          <div id="weather-result" class="weather-result"></div>
+        </section>
+
+        {/* 💌 INVITE WRITER */}
+        <section class="section invite-writer-section" id="invite-writer">
+          <h2 class="section-title">💌 Pebbles Writes the Invite</h2>
+          <p class="section-subtitle">Tell Pebbles what you're planning, get a copy-paste invite for the family group chat 🐾</p>
+          <div class="invite-helper-card">
+            <p>To write an invite, just chat with Pebbles like this 👇</p>
+            <button class="btn btn-primary" id="invite-prompt-btn" data-prompt="Write me a fun family group-chat invite for our next adventure — make it warm, mention what to bring, end with a Pebbles-style joke 🐾">✍️ Ask Pebbles to write an invite</button>
+          </div>
+        </section>
+
+        {/* 🏆 HERO SPOTTER */}
+        <section class="section hero-spotter-section" id="hero-spotter">
+          <h2 class="section-title">🏆 Who's a Hero Today?</h2>
+          <p class="section-subtitle">After an adventure, ask Pebbles to spot the heroes and suggest badges 🌟</p>
+          <div class="invite-helper-card">
+            <button class="btn btn-tertiary" id="hero-spot-btn" data-prompt="Look at today's events and recent moments — who deserves a badge and why? Suggest 1-3 kids with the specific badge that fits and a one-sentence reason for each.">🔍 Spot today's heroes</button>
+          </div>
+        </section>
+
+        {/* 🎵 CREW PLAYLIST */}
+        <section class="section playlist-section" id="playlist">
+          <h2 class="section-title">🎵 Crew Playlist</h2>
+          <p class="section-subtitle">The Fab 5's official soundtrack 🎧✨</p>
+          <div id="playlist-tracks" class="playlist-tracks">
+            {/* populated by app.js */}
+          </div>
+          <details class="playlist-add">
+            <summary>➕ Add a song to the crew playlist</summary>
+            <form id="playlist-form" class="playlist-form">
+              <div class="form-row">
+                <label><span>🎵 Title</span><input type="text" id="track-title" required maxlength={120} placeholder="e.g. Pink Pony Club" /></label>
+                <label><span>🎤 Artist</span><input type="text" id="track-artist" required maxlength={80} placeholder="e.g. Chappell Roan" /></label>
+              </div>
+              <label><span>🔗 Spotify track URL or ID <em>(optional — for embed)</em></span><input type="text" id="track-spotify" maxlength={200} placeholder="e.g. https://open.spotify.com/track/0kfRfeQU0Aw1SOaiYS6Vg7" /></label>
+              <div class="form-row">
+                <label><span>👤 Added by</span><select id="track-by"><option>Ace</option><option>Charlotte</option><option>Elijah</option><option>Saia</option><option>Sienna</option><option>Parent</option></select></label>
+                <label><span>✨ Vibe</span><select id="track-vibe"><option value="">(none)</option><option value="hype">🔥 Hype</option><option value="chill">😌 Chill</option><option value="adventure">🛶 Adventure</option><option value="party">🎉 Party</option></select></label>
+              </div>
+              <button type="submit" class="btn btn-primary">🎶 Add to playlist</button>
+              <div id="playlist-msg"></div>
+              <p class="field-hint">💡 To find a Spotify track ID: open Spotify → right-click the song → "Share" → "Copy Song Link" → paste here.</p>
+            </form>
+          </details>
+        </section>
+
+        {/* 🎟️ CONCERT WATCH */}
+        <section class="section concert-watch-section" id="concert-watch">
+          <h2 class="section-title">🎟️ Pebbles Concert Watch</h2>
+          <p class="section-subtitle">Artists Pebbles is watching like a hawk 👀 — she'll alert when tour dates drop</p>
+          <div id="concert-watches-list" class="concert-watches-list">
+            {/* populated by app.js */}
+          </div>
+          <details class="concert-watch-add">
+            <summary>➕ Add an artist to watch</summary>
+            <form id="concert-watch-form" class="concert-watch-form">
+              <div class="form-row">
+                <label><span>🎤 Artist name</span><input type="text" id="watch-artist" required maxlength={80} placeholder="e.g. Sabrina Carpenter" /></label>
+                <label><span>👤 Added by</span><select id="watch-by"><option>The crew</option><option>Ace</option><option>Charlotte</option><option>Elijah</option><option>Saia</option><option>Sienna</option></select></label>
+              </div>
+              <label><span>📝 Notes (optional)</span><input type="text" id="watch-notes" maxlength={300} placeholder="e.g. Saia really wants to see this one!" /></label>
+              <button type="submit" class="btn btn-secondary">👀 Watch for tour dates</button>
+              <div id="watch-msg"></div>
+            </form>
+          </details>
+        </section>
+
         {/* PARENTS' SUGGESTION BOX */}
         <section class="section suggestion-box-section" id="suggestion-box">
           <h2 class="section-title">📬 Parents' Suggestion Box</h2>
-          <p class="section-subtitle">Got an idea, worry, or wish for the club? Mum and the crew read every single one. 💛</p>
+          <p class="section-subtitle">Got an idea, worry, or wish for the club? The grown-ups and the crew read every single one. 💛</p>
           <form id="suggestion-form" class="suggestion-form">
             <div class="form-row">
               <label><span>Your name (optional)</span>
-                <input type="text" id="sug-name" maxlength={80} placeholder="e.g. Sarah (Charlotte's mum)" />
+                <input type="text" id="sug-name" maxlength={80} placeholder="e.g. Sarah (Charlotte's mum) or Tom (Ace's dad)" />
               </label>
               <label><span>Topic</span>
                 <select id="sug-topic">
@@ -1600,7 +2018,7 @@ app.get('/', (c) => {
               <div class="loading">No heroes added yet — be the first! 🌟</div>
             </div>
             <details class="bottle-hero-form-wrap">
-              <summary>➕ Add a bottle hero (mum's admin)</summary>
+              <summary>➕ Add a bottle hero (parent admin)</summary>
               <form id="bottle-hero-form" class="bottle-hero-form">
                 <div class="form-row">
                   <label><span>Hero name</span><input type="text" id="hero-name" required maxlength={80} placeholder="e.g. Ace's grandma" /></label>
@@ -1614,7 +2032,7 @@ app.get('/', (c) => {
           </div>
 
           <details class="bottle-admin-card">
-            <summary>🔧 Update goal & total (mum's admin)</summary>
+            <summary>🔧 Update goal & total (parent admin)</summary>
             <div class="bottle-admin-body">
               <form id="bottle-goal-form" class="bottle-goal-form">
                 <h4>🎯 Change what we're saving up for</h4>
@@ -1631,11 +2049,36 @@ app.get('/', (c) => {
 
               <form id="bottle-raised-form" class="bottle-raised-form">
                 <h4>💰 Update how much we've raised</h4>
-                <p class="field-hint">Mum logs into Containers for Change once a month, checks the team total, and types it in here.</p>
+                <p class="field-hint">A parent logs into Containers for Change once a month, checks the team total, and types it in here.</p>
                 <label><span>Total raised $AUD</span><input type="number" id="raised-amount" min="0" step="0.01" placeholder="e.g. 87.50" /></label>
                 <button type="submit" class="btn btn-secondary">💾 Update total</button>
                 <div id="raised-msg"></div>
               </form>
+            </div>
+          </details>
+        </section>
+
+        {/* 📊 PARENTS' DASHBOARD — kid profiles, allergy safety, spending overview */}
+        <section class="section parents-dashboard-section" id="parents-dashboard">
+          <h2 class="section-title">📊 Parents' Dashboard</h2>
+          <p class="section-subtitle">Mums, dads, grown-ups — this is your space. Set up each kid once, and the whole site gets smarter. 💛</p>
+
+          <div class="dash-intro-card">
+            <p>
+              <strong>Why fill these in?</strong> When each kid has a profile, Pebbles can write personalised birthday messages,
+              the snack pack auto-fills with their favourites, allergy warnings appear on every event flyer 🛡️,
+              and the Crew Playlist gets each kid's hype song. <strong>One small form → six features get smarter.</strong>
+            </p>
+          </div>
+
+          <div id="kid-profiles-grid" class="kid-profiles-grid">
+            {/* Populated by app.js */}
+          </div>
+
+          <details class="dash-overview-card">
+            <summary>📈 Crew overview at a glance</summary>
+            <div class="dash-overview-body" id="dash-overview-body">
+              {/* Populated by app.js — totals, upcoming events count, photo count, etc */}
             </div>
           </details>
         </section>
