@@ -14,7 +14,15 @@ type Event = {
   id: string; title: string; activity: string; date: string;
   startTime: string; endTime: string; location: string;
   members: string[]; equipment: string[]; notes: string;
-  leader?: string; // Who's wearing the leader merch
+  leader?: string;              // Who's wearing the leader merch
+  flyer?: string;               // base64 data URL — optional event flyer/screenshot
+  flyerCaption?: string;        // optional caption for the flyer (e.g. "official flyer")
+  costPerPerson?: number;       // estimated cost per kid (we still show it, then say "Carla's got us!")
+  costNotes?: string;           // e.g. "$15 entry + $5 lunch"
+  transportPlan?: string;       // e.g. "Carla's ute, pickup 6:30am from Saia's"
+  parentPermissionNote?: string;// e.g. "Parents to sign waiver at the venue"
+  weatherWarning?: string;      // e.g. "Cancel if storm warning issued"
+  extraDayPack?: string[];      // event-specific items ON TOP of the standard day pack
   createdAt: number;
 }
 
@@ -113,6 +121,24 @@ function ensureSeeded() {
 }
 
 // =========== CLUB DATA ===========
+// Standard "Fab 5 Day Pack" — every kid brings these on every adventure 🎒
+const STANDARD_DAY_PACK = [
+  { item: 'Water bottle (1L)', emoji: '💧' },
+  { item: 'Sunscreen (50+ SPF)', emoji: '🧴' },
+  { item: 'Hat', emoji: '🧢' },
+  { item: 'Snacks for the day', emoji: '🍎' },
+  { item: 'Packed lunch', emoji: '🥪' },
+  { item: 'Towel', emoji: '🩴' },
+  { item: 'Spare change of clothes', emoji: '👕' },
+  { item: 'Phone (charged) + power bank', emoji: '📱' },
+  { item: 'First aid mini-kit (band-aids, panadol)', emoji: '⛑️' },
+  { item: 'Insect repellent', emoji: '🦟' },
+]
+
+// 💛 Carla's promise — the Fab 5 Fun Club is FREE for every friend
+const CARLA_COVERS_IT = true
+const CARLA_PROMISE = "Carla's got us! 💛 Every adventure is free for the Fab 5 — no kid pays a cent."
+
 const CLUB_INFO = {
   name: 'Fab 5 Fun Club',
   location: 'Sunshine Coast & Hinterlands, SE Queensland, Australia',
@@ -282,13 +308,26 @@ app.post('/api/events', async (c) => {
   const leader = body.leader || MEMBER_NAMES[LEADER_ROTATION_INDEX % MEMBER_NAMES.length]
   if (!body.leader) LEADER_ROTATION_INDEX++
 
+  // Cap flyer size at ~3MB (base64) — flyers should be small screenshots, not 4K photos
+  if (body.flyer && typeof body.flyer === 'string' && body.flyer.length > 4_000_000) {
+    return c.json({ error: 'Flyer image too big! Try a smaller screenshot (under ~3 MB) 📸' }, 400)
+  }
+
   const newEvent: Event = {
     id: 'evt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
     title: body.title, activity: body.activity, date: body.date,
     startTime: body.startTime || '07:00', endTime: body.endTime || '19:00',
     location: body.location || 'TBA',
     members: body.members || [], equipment: body.equipment || [],
-    notes: body.notes || '', leader, createdAt: Date.now()
+    notes: body.notes || '', leader, createdAt: Date.now(),
+    flyer: body.flyer || undefined,
+    flyerCaption: body.flyerCaption || undefined,
+    costPerPerson: typeof body.costPerPerson === 'number' ? body.costPerPerson : undefined,
+    costNotes: body.costNotes || undefined,
+    transportPlan: body.transportPlan || undefined,
+    parentPermissionNote: body.parentPermissionNote || undefined,
+    weatherWarning: body.weatherWarning || undefined,
+    extraDayPack: Array.isArray(body.extraDayPack) ? body.extraDayPack : undefined,
   }
   EVENTS.push(newEvent)
   return c.json({ event: newEvent }, 201)
@@ -326,7 +365,12 @@ app.get('/api/leader/next', (c) => {
   return c.json({ suggested: sorted[0], counts })
 })
 
-app.get('/api/club-info', (c) => c.json(CLUB_INFO))
+app.get('/api/club-info', (c) => c.json({
+  ...CLUB_INFO,
+  standardDayPack: STANDARD_DAY_PACK,
+  carlaCoversIt: CARLA_COVERS_IT,
+  carlaPromise: CARLA_PROMISE,
+}))
 
 // =========== GALLERY ===========
 app.get('/api/gallery', (c) => c.json({ items: GALLERY.sort((a, b) => b.createdAt - a.createdAt) }))
@@ -449,6 +493,26 @@ THE CLUB (EGALITARIAN — this is important!):
 - Weekend adventures every Saturday & Sunday, 7am – 7pm
 - Budget for gear & can hire equipment, travel in utes & trailers
 - Music: Olivia Rodrigo, Chappell Roan (Pink Pony Club!), love singing in the car
+
+💛 CARLA'S PROMISE — VERY IMPORTANT:
+- The Fab 5 Fun Club is COMPLETELY FREE for every friend. Carla (Saia's mum) covers ALL costs.
+- Whenever ANYONE asks "how much?" / "what's it cost?" / "how much do my parents need to pay?":
+  → ALWAYS estimate the real cost honestly (e.g. "Wakeboarding day at Lake MacDonald ≈ $45 per kid for hire + lunch")
+  → AND THEN say: "But guess what?! Carla's got us! 💛 Every adventure is free for the Fab 5 — no kid pays a cent!"
+- This is a kindness rule — nobody should ever feel awkward about money.
+- For parents who ask: reassure them their kid does NOT need to bring money.
+
+🎒 EVERY KID BRINGS THE STANDARD FAB 5 DAY PACK ON EVERY ADVENTURE:
+${STANDARD_DAY_PACK.map(p => `  ${p.emoji} ${p.item}`).join('\n')}
+- Activity-specific extras go ON TOP of the standard pack (e.g. snorkel mask for snorkeling day).
+
+📋 EVERY EVENT SHOULD COVER:
+- 💰 Estimated cost per person (then "Carla covers it!")
+- 🚗 Transport plan (who's driving, pickup time + place)
+- 🌦️ Weather check + backup plan if forecast looks bad
+- 📝 Parent permission note (if venue needs a signed waiver)
+- 🎒 The standard day pack + any extras
+- 🎖️ Who's wearing the leader merch
 
 YOUR JOBS:
 1. Plan adventures — activity, location, time, who's coming
@@ -753,6 +817,13 @@ app.get('/', (c) => {
             <p class="tagline">Ace • Charlotte • Elijah • Saia • Sienna</p>
             <p class="location">📍 Sunshine Coast & Hinterlands, QLD 🇦🇺</p>
             <p class="mascot-line">🐾 Mascot: Pebbles the Bull Arab</p>
+            <div class="free-club-badge">
+              <span class="free-badge-icon">💛</span>
+              <div>
+                <strong>FREE FOR ALL FRIENDS</strong>
+                <span class="free-badge-sub">Carla's got us — no kid pays a cent!</span>
+              </div>
+            </div>
             <div class="hero-buttons">
               <a href="#calendar" class="btn btn-primary">📅 Calendar</a>
               <a href="#merch" class="btn btn-secondary">👕 Merch</a>
@@ -776,6 +847,12 @@ app.get('/', (c) => {
             <h3>🤝 We Are Egalitarian</h3>
             <p class="big-quote">"We don't have roles.<br/>We just wear the merch for leader<br/>when we are the leader.<br/>Other than that we are just the Fab 5."</p>
             <p class="quote-credit">— the Fab 5 way 🌈</p>
+          </div>
+          <div class="values-card carla-promise">
+            <h3>💛 Carla's Promise — It's Free!</h3>
+            <p class="big-quote">"The Fab 5 Fun Club is FREE<br/>for every single friend.<br/>I've got you all — no kid<br/>ever has to pay a cent."</p>
+            <p class="quote-credit">— Carla 💛 (Saia's mum)</p>
+            <p class="promise-explainer">Every adventure shows the real estimated cost so everyone can see what it would normally cost — but Carla covers it all. Parents: your kids never need money for the club. 🌈</p>
           </div>
           <div class="values-card">
             <h3>💛 Carla's Three Rules</h3>
@@ -836,38 +913,113 @@ app.get('/', (c) => {
         <section class="section add-event-section" id="add-event">
           <h2 class="section-title">➕ Plan a New Adventure</h2>
           <p class="section-subtitle">Need help? Ask Pebbles! 🐾</p>
+          <div class="form-banner carla-banner">
+            💛 <strong>Reminder:</strong> The club is FREE — Carla covers all costs. Estimate the real cost so parents can see, but no kid ever pays!
+          </div>
           <form id="event-form" class="event-form">
-            <label><span>Event Title</span>
-              <input type="text" id="evt-title" required placeholder="e.g. Epic Wakeboard Day" />
-            </label>
-            <label><span>Activity</span>
-              <select id="evt-activity" required></select>
-            </label>
-            <div class="form-row">
-              <label><span>Date (Sat/Sun only!)</span><input type="date" id="evt-date" required /></label>
-              <label><span>Start Time</span><input type="time" id="evt-start" value="07:00" min="07:00" max="19:00" required /></label>
-              <label><span>End Time</span><input type="time" id="evt-end" value="12:00" min="07:00" max="19:00" required /></label>
-            </div>
-            <label><span>Location</span><input type="text" id="evt-location" placeholder="e.g. Lake MacDonald" /></label>
-            <label><span>🎖️ Leader of the Day (wears gold merch!)</span>
-              <select id="evt-leader">
-                <option value="">— Auto-rotate fairly —</option>
-                <option>Ace</option>
-                <option>Charlotte</option>
-                <option>Elijah</option>
-                <option>Saia</option>
-                <option>Sienna</option>
-              </select>
-            </label>
-            <label><span>Who's coming? (tick the crew)</span>
-              <div id="members-checks" class="checkbox-row"></div>
-            </label>
-            <label><span>Equipment to pack (comma separated)</span>
-              <textarea id="evt-equipment" rows={2} placeholder="bikes, helmets..."></textarea>
-            </label>
-            <label><span>Notes</span>
-              <textarea id="evt-notes" rows={2} placeholder="Meet at 6am..."></textarea>
-            </label>
+            <fieldset class="form-section">
+              <legend>🎯 The Basics</legend>
+              <label><span>Event Title</span>
+                <input type="text" id="evt-title" required placeholder="e.g. Epic Wakeboard Day" />
+              </label>
+              <label><span>Activity</span>
+                <select id="evt-activity" required></select>
+              </label>
+              <div class="form-row">
+                <label><span>Date (Sat/Sun only!)</span><input type="date" id="evt-date" required /></label>
+                <label><span>Start Time</span><input type="time" id="evt-start" value="07:00" min="07:00" max="19:00" required /></label>
+                <label><span>End Time</span><input type="time" id="evt-end" value="12:00" min="07:00" max="19:00" required /></label>
+              </div>
+              <label><span>Location</span><input type="text" id="evt-location" placeholder="e.g. Lake MacDonald" /></label>
+            </fieldset>
+
+            <fieldset class="form-section">
+              <legend>👥 The Crew</legend>
+              <label><span>🎖️ Leader of the Day (wears gold merch!)</span>
+                <select id="evt-leader">
+                  <option value="">— Auto-rotate fairly —</option>
+                  <option>Ace</option>
+                  <option>Charlotte</option>
+                  <option>Elijah</option>
+                  <option>Saia</option>
+                  <option>Sienna</option>
+                </select>
+              </label>
+              <label><span>Who's coming? (tick the crew)</span>
+                <div id="members-checks" class="checkbox-row"></div>
+              </label>
+            </fieldset>
+
+            <fieldset class="form-section">
+              <legend>📸 Flyer (optional) — show the glory!</legend>
+              <p class="field-hint">Got a flyer or screenshot of the event? Upload it here so everyone (and their parents!) can see what we're planning. Under ~3 MB. PNG/JPG.</p>
+              <label><span>Upload flyer/screenshot</span>
+                <input type="file" id="evt-flyer" accept="image/*" />
+              </label>
+              <label><span>Flyer caption (optional)</span>
+                <input type="text" id="evt-flyer-caption" placeholder="e.g. Official flyer from Aussie World" />
+              </label>
+              <div id="evt-flyer-preview" class="flyer-preview-wrap" style="display:none;">
+                <img id="evt-flyer-img" alt="Flyer preview" />
+                <button type="button" id="evt-flyer-clear" class="btn btn-small">✕ Remove flyer</button>
+              </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+              <legend>💰 Cost (always shown — Carla covers it!)</legend>
+              <p class="field-hint">Estimate the real cost per person so parents can see what it would normally cost. Carla covers everything — no kid pays a cent! 💛</p>
+              <div class="form-row">
+                <label><span>Estimated cost per person ($AUD)</span>
+                  <input type="number" id="evt-cost" min="0" step="1" placeholder="e.g. 45" />
+                </label>
+                <label><span>Cost breakdown (optional)</span>
+                  <input type="text" id="evt-cost-notes" placeholder="e.g. $35 hire + $10 lunch" />
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+              <legend>🚗 Transport Plan</legend>
+              <p class="field-hint">Who's driving? Where & when to be picked up? This is what parents really want to know!</p>
+              <label><span>Transport plan</span>
+                <textarea id="evt-transport" rows={2} placeholder="e.g. Carla's ute. Pickup 6:30am from Saia's house. Drop-off 5pm same place."></textarea>
+              </label>
+            </fieldset>
+
+            <fieldset class="form-section">
+              <legend>📝 Parent Permission</legend>
+              <p class="field-hint">Do parents need to sign anything? Any age rules from the venue? Note them here so nobody gets a surprise on the day.</p>
+              <label><span>Parent permission note</span>
+                <textarea id="evt-permission" rows={2} placeholder="e.g. Venue waiver signed at gate. Under-12s need guardian present."></textarea>
+              </label>
+            </fieldset>
+
+            <fieldset class="form-section">
+              <legend>🌦️ Weather Plan</legend>
+              <p class="field-hint">What's the weather backup plan? Storm? Heat over 35°C? Cancel or move it?</p>
+              <label><span>Weather warning / backup</span>
+                <textarea id="evt-weather" rows={2} placeholder="e.g. Cancel if storm warning issued. Move to indoor trampoline park if heavy rain."></textarea>
+              </label>
+            </fieldset>
+
+            <fieldset class="form-section">
+              <legend>🎒 What to Pack</legend>
+              <div class="standard-pack-card">
+                <h4>🎒 Standard Fab 5 Day Pack <span class="auto-included">— auto-included on every event</span></h4>
+                <div id="std-pack-list" class="std-pack-list">Loading...</div>
+              </div>
+              <label><span>Extra items just for THIS event (comma separated)</span>
+                <textarea id="evt-equipment" rows={2} placeholder="bikes, helmets, snorkel mask, fins..."></textarea>
+              </label>
+            </fieldset>
+
+            <fieldset class="form-section">
+              <legend>📋 Notes</legend>
+              <label><span>Anything else?</span>
+                <textarea id="evt-notes" rows={2} placeholder="Meet at the carpark, ride bikes from there..."></textarea>
+              </label>
+            </fieldset>
+
             <button type="submit" class="btn btn-primary btn-big">🎉 Add to Calendar</button>
             <div id="form-msg"></div>
           </form>

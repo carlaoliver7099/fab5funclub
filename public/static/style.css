@@ -1260,3 +1260,253 @@ body {
   .merch-grid { grid-template-columns: 1fr; }
   .member-avatar, .member-emoji { width: 78px; height: 78px; line-height: 78px; }
 }
+
+/* ===== FREE CLUB BADGE (hero) ===== */
+.free-club-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem auto 1.25rem;
+  padding: 0.7rem 1.25rem;
+  background: linear-gradient(135deg, #FFE66D 0%, #FFD3A5 50%, #FFB6E1 100%);
+  border: 3px solid var(--dark);
+  border-radius: 999px;
+  box-shadow: 4px 4px 0 var(--dark);
+  font-weight: 700;
+  text-align: left;
+  max-width: 380px;
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+.free-badge-icon { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
+.free-club-badge strong { display: block; font-family: 'Bungee', cursive; font-size: 0.95rem; letter-spacing: 1px; color: var(--dark); }
+.free-badge-sub { display: block; font-size: 0.8rem; font-weight: 500; color: #5b3a00; line-height: 1.2; margin-top: 2px; }
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 4px 4px 0 var(--dark); transform: scale(1); }
+  50% { box-shadow: 4px 4px 0 var(--dark), 0 0 30px rgba(255, 230, 109, 0.7); transform: scale(1.02); }
+}
+
+/* ===== CARLA'S PROMISE values card ===== */
+.values-card.carla-promise {
+  background: linear-gradient(135deg, #fffdf0 0%, #fff5e6 50%, #fff0f5 100%);
+  border-color: #d4a017;
+  border-width: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.values-card.carla-promise::before {
+  content: '💛';
+  position: absolute;
+  top: -10px; right: -10px;
+  font-size: 5rem;
+  opacity: 0.15;
+  transform: rotate(15deg);
+  pointer-events: none;
+}
+.values-card.carla-promise h3 { color: #8B4513; }
+.promise-explainer {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: #555;
+  line-height: 1.5;
+  border-top: 2px dashed rgba(0,0,0,0.15);
+  padding-top: 0.75rem;
+}
+
+/* ===== FORM SECTIONS (fieldset) ===== */
+.event-form .form-section {
+  border: 2px solid var(--dark);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  margin: 0 0 1rem 0;
+  background: #fffef8;
+}
+.event-form .form-section legend {
+  font-family: 'Bungee', cursive;
+  font-size: 0.95rem;
+  background: var(--yellow);
+  border: 2px solid var(--dark);
+  border-radius: 999px;
+  padding: 0.25rem 0.85rem;
+  letter-spacing: 0.5px;
+}
+.event-form .field-hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin: -0.1rem 0 0.6rem;
+  font-style: italic;
+}
+
+/* ===== FORM BANNERS ===== */
+.form-banner {
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  border: 2px solid var(--dark);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+.form-banner.carla-banner {
+  background: linear-gradient(90deg, #FFE66D 0%, #FFB6E1 100%);
+  box-shadow: 3px 3px 0 var(--dark);
+}
+
+/* ===== FLYER PREVIEW (in form) ===== */
+.flyer-preview-wrap {
+  margin-top: 0.6rem;
+  padding: 0.5rem;
+  background: white;
+  border: 3px dashed var(--turq);
+  border-radius: 12px;
+  text-align: center;
+}
+.flyer-preview-wrap img {
+  max-width: 100%;
+  max-height: 320px;
+  border-radius: 8px;
+  display: block;
+  margin: 0 auto 0.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* ===== STANDARD DAY PACK (in form) ===== */
+.standard-pack-card {
+  background: linear-gradient(135deg, #f0f9ff 0%, #fef3f9 100%);
+  border: 2px solid var(--turq);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.8rem;
+}
+.standard-pack-card h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: var(--dark);
+}
+.auto-included { font-size: 0.8rem; color: #008b8b; font-weight: 500; font-style: italic; }
+.std-pack-list, .day-pack-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.pack-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.65rem;
+  background: white;
+  border: 1.5px solid var(--dark);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ===== EVENT CARD: NEW FIELDS ===== */
+.event-flyer-wrap {
+  margin: 0.6rem 0;
+  text-align: center;
+}
+.event-flyer-img {
+  max-width: 100%;
+  max-height: 260px;
+  border-radius: 12px;
+  border: 3px solid var(--dark);
+  box-shadow: 4px 4px 0 var(--dark);
+  cursor: zoom-in;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.event-flyer-img:hover { transform: scale(1.02) rotate(-1deg); }
+.event-flyer-cap {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: #666;
+}
+
+/* Cost chip — special look */
+.chip.cost {
+  background: linear-gradient(90deg, #FFE66D, #FFB6E1);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.7rem;
+}
+.cost-strike { text-decoration: line-through; opacity: 0.7; }
+.cost-carla { font-weight: 700; color: #8B4513; }
+.cost-notes { font-size: 0.78rem; opacity: 0.75; font-style: italic; }
+
+/* Event detail rows (transport, permission, weather, notes) */
+.event-detail {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255,255,255,0.6);
+  border-left: 4px solid;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+.event-detail.transport-detail { border-left-color: #4ECDC4; }
+.event-detail.permission-detail { border-left-color: #FF6B9D; }
+.event-detail.weather-detail { border-left-color: #FFB347; }
+.event-detail.notes-detail { border-left-color: #B4F8C8; }
+
+/* Day pack collapsible inside event card */
+.day-pack-details {
+  margin-top: 0.6rem;
+  background: #fffef0;
+  border: 2px solid var(--dark);
+  border-radius: 10px;
+  padding: 0.4rem 0.75rem;
+}
+.day-pack-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0.2rem 0;
+  font-size: 0.92rem;
+  user-select: none;
+}
+.day-pack-details summary:hover { color: var(--pink); }
+.day-pack-details[open] .day-pack-items { margin-top: 0.6rem; }
+
+/* ===== LIGHTBOX (for flyers) ===== */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+  cursor: zoom-out;
+}
+.lightbox img {
+  max-width: 95vw;
+  max-height: 90vh;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+.lightbox-close {
+  position: fixed;
+  top: 1rem; right: 1rem;
+  background: white;
+  border: 3px solid var(--dark);
+  border-radius: 50%;
+  width: 44px; height: 44px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: 3px 3px 0 var(--dark);
+}
+
+/* Mobile tweaks for new bits */
+@media (max-width: 640px) {
+  .free-club-badge { font-size: 0.85rem; gap: 0.5rem; padding: 0.55rem 1rem; }
+  .free-badge-icon { font-size: 1.5rem; }
+  .event-form .form-section { padding: 0.85rem 0.85rem; }
+  .event-form .form-section legend { font-size: 0.85rem; padding: 0.2rem 0.7rem; }
+  .event-flyer-img { max-height: 200px; }
+}

@@ -72,7 +72,9 @@ async function initApp() {
     fillActivityDropdown();
     fillMemberCheckboxes();
     fillBadgeDropdown();
+    renderStandardDayPack();
     setupForm();
+    setupFlyerUpload();
     setupCalendarNav();
     setupAwardForm();
     setupGalleryForm();
@@ -85,6 +87,56 @@ async function initApp() {
     console.error('Init failed:', e);
     if (String(e.message).toLowerCase().includes('log in')) showLogin();
   }
+}
+
+// ---------- STANDARD DAY PACK ----------
+function renderStandardDayPack() {
+  const el = $('#std-pack-list');
+  if (!el || !CLUB?.standardDayPack) return;
+  el.innerHTML = CLUB.standardDayPack
+    .map(p => `<span class="pack-item">${p.emoji} ${escapeHtml(p.item)}</span>`)
+    .join('');
+}
+
+// ---------- FLYER UPLOAD ----------
+let CURRENT_FLYER_DATA_URL = null;
+function setupFlyerUpload() {
+  const input = $('#evt-flyer');
+  const previewWrap = $('#evt-flyer-preview');
+  const previewImg = $('#evt-flyer-img');
+  const clearBtn = $('#evt-flyer-clear');
+  if (!input) return;
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      flashMsg('Flyer too big! Pick something under 3 MB 📸', 'error');
+      input.value = '';
+      return;
+    }
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      CURRENT_FLYER_DATA_URL = dataUrl;
+      previewImg.src = dataUrl;
+      previewWrap.style.display = 'block';
+    } catch (e) {
+      flashMsg('Could not read that image 🐾', 'error');
+    }
+  });
+  clearBtn?.addEventListener('click', () => {
+    CURRENT_FLYER_DATA_URL = null;
+    input.value = '';
+    previewImg.src = '';
+    previewWrap.style.display = 'none';
+  });
+}
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
 }
 
 async function refreshAll() {
@@ -237,6 +289,28 @@ function renderEventsList() {
     const leaderHtml = e.leader
       ? `<div class="leader-badge">🎖️ Leader: ${escapeHtml(e.leader)} <button data-rotate="${e.id}" title="Rotate to next">🔄</button></div>`
       : '';
+    // Cost chip — always shows "Carla covers it!" message
+    const costChip = (typeof e.costPerPerson === 'number' && e.costPerPerson >= 0)
+      ? `<span class="chip cost"><span class="cost-strike">$${e.costPerPerson}/kid</span><span class="cost-carla">💛 Carla's got us — FREE!</span>${e.costNotes ? `<span class="cost-notes">(${escapeHtml(e.costNotes)})</span>` : ''}</span>`
+      : `<span class="chip cost"><span class="cost-carla">💛 FREE — Carla covers it!</span></span>`;
+
+    const flyerHtml = e.flyer
+      ? `<div class="event-flyer-wrap">
+           <img src="${e.flyer}" alt="Event flyer" class="event-flyer-img" data-flyer="${e.id}" />
+           ${e.flyerCaption ? `<div class="event-flyer-cap">📸 ${escapeHtml(e.flyerCaption)}</div>` : ''}
+         </div>`
+      : '';
+
+    const transportHtml = e.transportPlan
+      ? `<div class="event-detail transport-detail"><strong>🚗 Transport:</strong> ${escapeHtml(e.transportPlan)}</div>`
+      : '';
+    const permissionHtml = e.parentPermissionNote
+      ? `<div class="event-detail permission-detail"><strong>📝 Parents:</strong> ${escapeHtml(e.parentPermissionNote)}</div>`
+      : '';
+    const weatherHtml = e.weatherWarning
+      ? `<div class="event-detail weather-detail"><strong>🌦️ Weather plan:</strong> ${escapeHtml(e.weatherWarning)}</div>`
+      : '';
+
     return `
       <div class="event-card">
         <div class="event-date-badge">
@@ -248,15 +322,30 @@ function renderEventsList() {
           <h4>${emoji} ${escapeHtml(e.title)}</h4>
           <div class="meta">🎯 ${escapeHtml(e.activity)} • 🕐 ${e.startTime} - ${e.endTime} • 📍 ${escapeHtml(e.location)}</div>
           ${leaderHtml}
+          ${flyerHtml}
           <div class="meta-chips">
+            ${costChip}
             ${e.members.map(m => `<span class="chip member">👤 ${escapeHtml(m)}</span>`).join('')}
             ${e.equipment.map(eq => `<span class="chip equip">🎒 ${escapeHtml(eq)}</span>`).join('')}
-            ${e.notes ? `<span class="chip notes">📝 ${escapeHtml(e.notes)}</span>` : ''}
           </div>
+          ${transportHtml}
+          ${permissionHtml}
+          ${weatherHtml}
+          ${e.notes ? `<div class="event-detail notes-detail"><strong>📝 Notes:</strong> ${escapeHtml(e.notes)}</div>` : ''}
+          <details class="day-pack-details">
+            <summary>🎒 Standard Day Pack — what every kid brings</summary>
+            <div class="day-pack-items">
+              ${(CLUB?.standardDayPack || []).map(p => `<span class="pack-item">${p.emoji} ${escapeHtml(p.item)}</span>`).join('')}
+            </div>
+          </details>
         </div>
         <button class="event-delete" data-id="${e.id}" title="Delete">✕</button>
       </div>`;
   }).join('');
+  // Click flyer to view bigger (lightbox)
+  $$('img.event-flyer-img').forEach(img => {
+    img.addEventListener('click', () => openLightbox(img.src));
+  });
   $$('.event-delete').forEach(btn => btn.addEventListener('click', async () => {
     if (!confirm('Delete this event?')) return;
     try {
@@ -299,6 +388,7 @@ function setupForm() {
     if (day !== 0 && day !== 6) return flashMsg('Saturdays & Sundays only! 🌞', 'error');
     const members = Array.from($$('#members-checks input:checked')).map(cb => cb.value);
     const equipment = $('#evt-equipment').value.split(',').map(s => s.trim()).filter(Boolean);
+    const costRaw = $('#evt-cost')?.value;
     const body = {
       title: $('#evt-title').value.trim(),
       activity: $('#evt-activity').value,
@@ -308,7 +398,15 @@ function setupForm() {
       location: $('#evt-location').value.trim() || 'TBA',
       members, equipment,
       notes: $('#evt-notes').value.trim(),
-      leader: $('#evt-leader').value || undefined
+      leader: $('#evt-leader').value || undefined,
+      flyer: CURRENT_FLYER_DATA_URL || undefined,
+      flyerCaption: $('#evt-flyer-caption')?.value.trim() || undefined,
+      costPerPerson: costRaw ? Number(costRaw) : undefined,
+      costNotes: $('#evt-cost-notes')?.value.trim() || undefined,
+      transportPlan: $('#evt-transport')?.value.trim() || undefined,
+      parentPermissionNote: $('#evt-permission')?.value.trim() || undefined,
+      weatherWarning: $('#evt-weather')?.value.trim() || undefined,
+      extraDayPack: equipment,
     };
     try {
       const res = await api('/api/events', { method: 'POST', body });
@@ -318,6 +416,10 @@ function setupForm() {
       form.reset();
       $$('.member-check').forEach(l => l.classList.remove('checked'));
       $('#evt-start').value = '07:00'; $('#evt-end').value = '12:00';
+      // Reset flyer preview
+      CURRENT_FLYER_DATA_URL = null;
+      const fp = $('#evt-flyer-preview'); if (fp) fp.style.display = 'none';
+      const fi = $('#evt-flyer-img'); if (fi) fi.src = '';
       $('#calendar').scrollIntoView({ behavior: 'smooth' });
     } catch (err) { flashMsg('Oops: ' + err.message, 'error'); }
   });
@@ -591,6 +693,28 @@ function formatMessage(text) {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ---------- LIGHTBOX (for flyers + future gallery) ----------
+function openLightbox(src) {
+  let lb = document.getElementById('lightbox');
+  if (!lb) {
+    lb = document.createElement('div');
+    lb.id = 'lightbox';
+    lb.className = 'lightbox';
+    lb.innerHTML = '<img alt="Full view" /><button class="lightbox-close" aria-label="Close">✕</button>';
+    document.body.appendChild(lb);
+    lb.addEventListener('click', (e) => {
+      if (e.target === lb || e.target.classList.contains('lightbox-close')) {
+        lb.style.display = 'none';
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') lb.style.display = 'none';
+    });
+  }
+  lb.querySelector('img').src = src;
+  lb.style.display = 'flex';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
