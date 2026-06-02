@@ -2052,12 +2052,18 @@ function setupOnboardingWizard() {
   // Topnav "Take the tour" button
   tourBtn?.addEventListener('click', () => openWizard(true));
 
-  // Auto-open for first-time visitors
+  // Auto-open for first-time visitors — but ONLY if they're logged in
+  // (otherwise the wizard pops over the login screen which is confusing)
   let alreadyDone = false;
   try { alreadyDone = !!localStorage.getItem(WIZARD_STORAGE_KEY); } catch (e) {}
   if (!alreadyDone) {
-    // Slight delay so the page renders first
-    setTimeout(() => openWizard(true), 800);
+    setTimeout(() => {
+      const mainApp = document.getElementById('main-app');
+      const loginScreen = document.getElementById('login-screen');
+      const loggedIn = mainApp && mainApp.style.display !== 'none'
+                    && (!loginScreen || loginScreen.style.display === 'none');
+      if (loggedIn) openWizard(true);
+    }, 800);
   }
 }
 
