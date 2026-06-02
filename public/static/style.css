@@ -1510,3 +1510,367 @@ body {
   .event-form .form-section legend { font-size: 0.85rem; padding: 0.2rem 0.7rem; }
   .event-flyer-img { max-height: 200px; }
 }
+
+/* ============ SLOGAN OF THE WEEK BANNER ============ */
+.slogan-of-week {
+  background: linear-gradient(90deg, #fff4d6 0%, #ffe7c8 50%, #ffd6e7 100%);
+  border-bottom: 3px solid #f4c542;
+  padding: 0.85rem 1rem;
+  text-align: center;
+  position: sticky;
+  top: 56px;
+  z-index: 50;
+  box-shadow: 0 2px 12px rgba(244, 197, 66, 0.18);
+  animation: sotwFadeIn 0.6s ease-out;
+}
+.slogan-of-week.starred {
+  background: linear-gradient(90deg, #fff4d6 0%, #ffd86b 50%, #ffd6e7 100%);
+  border-bottom-color: #e0a800;
+}
+@keyframes sotwFadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sotw-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.sotw-label {
+  font-weight: 800;
+  color: #8a5a00;
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.6);
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.sotw-text {
+  font-size: 1.1rem;
+  color: #4a2c00;
+  font-weight: 600;
+  font-style: italic;
+}
+.sotw-text em { font-style: italic; }
+.sotw-star { color: #e0a800; }
+.sotw-category {
+  font-size: 0.8rem;
+  color: #8a5a00;
+  background: rgba(255,255,255,0.6);
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+/* ============ FAB 5 WAYS SECTION ============ */
+.fab5-ways-section { background: linear-gradient(180deg, #fff8e1 0%, #fff 100%); }
+.fab5-ways-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+.slogan-filter {
+  border: 2px solid #f4c542;
+  background: white;
+  color: #8a5a00;
+  font-weight: 600;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+.slogan-filter:hover { background: #fff4d6; transform: translateY(-1px); }
+.slogan-filter.active {
+  background: linear-gradient(135deg, #f4c542, #e0a800);
+  color: white;
+  border-color: #e0a800;
+  box-shadow: 0 3px 10px rgba(224, 168, 0, 0.35);
+}
+.fab5-ways-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.slogan-card {
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem 1.2rem 1.1rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  border: 2px solid #f0e6d0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.slogan-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+.slogan-card.starred {
+  background: linear-gradient(160deg, #fffaf0 0%, #fff4d6 100%);
+  border: 2px solid #f4c542;
+  box-shadow: 0 6px 18px rgba(244, 197, 66, 0.25);
+}
+.slogan-star-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #f4c542, #e0a800);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 6px rgba(224, 168, 0, 0.4);
+  white-space: nowrap;
+}
+.slogan-emoji { font-size: 2.2rem; margin-bottom: 0.6rem; line-height: 1; }
+.slogan-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #3a2a1a;
+  font-style: italic;
+  line-height: 1.4;
+  margin: 0 0 0.6rem 0;
+  quotes: none;
+}
+.slogan-cat {
+  font-size: 0.78rem;
+  color: #7a6a5a;
+  background: #f5efe2;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.slogan-card.starred .slogan-cat { background: rgba(244, 197, 66, 0.2); color: #6a4500; }
+/* Category color accents */
+.slogan-card.cat-kindness { border-top: 4px solid #ff8fa3; }
+.slogan-card.cat-team { border-top: 4px solid #5ec3ff; }
+.slogan-card.cat-leader { border-top: 4px solid #f4c542; }
+.slogan-card.cat-self-control { border-top: 4px solid #b08fff; }
+.slogan-card.cat-growth { border-top: 4px solid #6dd58c; }
+.slogan-card.cat-self { border-top: 4px solid #ffb86b; }
+.slogan-card.cat-fun { border-top: 4px solid #ff6fc7; }
+
+/* ============ PARENTS JOINING BADGE on event cards ============ */
+.parents-joining-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 12px;
+  margin: 0.6rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-left: 4px solid;
+}
+.parents-joining-badge.pj-yes      { background: #e7f7ee; color: #1e5a2e; border-color: #34a85a; }
+.parents-joining-badge.pj-no       { background: #f0f0f0; color: #444;    border-color: #888; }
+.parents-joining-badge.pj-maybe    { background: #fff5e0; color: #7a5400; border-color: #f4c542; }
+.parents-joining-badge.pj-required { background: #fde7e7; color: #842029; border-color: #dc3545; animation: pulseRequired 2s ease-in-out infinite; }
+@keyframes pulseRequired {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+  50%      { box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15); }
+}
+.pj-icon { font-size: 1.05rem; }
+.pj-note { font-weight: 500; color: inherit; opacity: 0.85; font-size: 0.85rem; }
+
+/* ============ PARENTS FAQ ACCORDION ============ */
+.parents-faq-section { background: linear-gradient(180deg, #eef7ff 0%, #fff 100%); }
+.parents-faq-list {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.faq-item {
+  background: white;
+  border-radius: 12px;
+  border: 2px solid #d6e9ff;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.faq-item[open] {
+  box-shadow: 0 4px 14px rgba(94, 195, 255, 0.18);
+  border-color: #5ec3ff;
+}
+.faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 1rem 1.2rem;
+  font-weight: 600;
+  color: #1a4a7a;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  user-select: none;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-q-icon { font-size: 1.3rem; flex-shrink: 0; }
+.faq-q-text { flex: 1; font-size: 1rem; }
+.faq-q-chev {
+  font-size: 1.1rem;
+  color: #5ec3ff;
+  transition: transform 0.25s;
+  flex-shrink: 0;
+}
+.faq-item[open] .faq-q-chev { transform: rotate(180deg); }
+.faq-answer {
+  padding: 0 1.2rem 1rem;
+  color: #3a4a5a;
+  line-height: 1.6;
+  font-size: 0.96rem;
+  border-top: 1px solid #eef7ff;
+  margin-top: 0.2rem;
+  padding-top: 0.9rem;
+}
+
+/* ============ PARENTS SUGGESTION BOX ============ */
+.suggestion-box-section { background: linear-gradient(180deg, #fff0f6 0%, #fff 100%); }
+.suggestion-form {
+  max-width: 720px;
+  margin: 0 auto 2rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(255, 111, 199, 0.12);
+  border: 2px solid #ffd6e7;
+}
+.suggestion-form label { display: block; margin-bottom: 0.8rem; }
+.suggestion-form label > span {
+  display: block;
+  font-weight: 600;
+  color: #6a2a4a;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+.suggestion-form input,
+.suggestion-form select,
+.suggestion-form textarea {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  border: 2px solid #ffd6e7;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fffbfd;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.suggestion-form input:focus,
+.suggestion-form select:focus,
+.suggestion-form textarea:focus {
+  outline: none;
+  border-color: #ff6fc7;
+  box-shadow: 0 0 0 3px rgba(255, 111, 199, 0.15);
+}
+.suggestion-list-title {
+  text-align: center;
+  margin: 2rem 0 1rem;
+  color: #6a2a4a;
+  font-size: 1.2rem;
+}
+.muted-small { font-size: 0.8rem; color: #8a6a7a; font-weight: 400; }
+.suggestions-list {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.suggestion-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  border-left: 4px solid #ff6fc7;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  position: relative;
+}
+.suggestion-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+.suggestion-topic {
+  background: #ffe6f1;
+  color: #a8246e;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+.suggestion-from { color: #6a4a5a; font-weight: 600; }
+.suggestion-date { color: #8a6a7a; margin-left: auto; font-size: 0.78rem; }
+.suggestion-delete {
+  background: none;
+  border: none;
+  color: #c44;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.suggestion-delete:hover { background: #fee; }
+.suggestion-message {
+  color: #3a2a3a;
+  line-height: 1.55;
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* ============ PACK EXPLAINER (parent-packed) ============ */
+.pack-explainer {
+  background: #fff8e1;
+  border-left: 3px solid #f4c542;
+  padding: 0.7rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #4a3a1a;
+  margin: 0.3rem 0 0.8rem;
+  line-height: 1.5;
+}
+.pack-explainer strong { color: #6a4500; }
+
+/* ============ MOBILE RESPONSIVE (new sections) ============ */
+@media (max-width: 680px) {
+  .slogan-of-week { padding: 0.7rem 0.7rem; top: 52px; }
+  .sotw-inner { gap: 0.4rem; }
+  .sotw-label { font-size: 0.72rem; padding: 0.15rem 0.5rem; }
+  .sotw-text { font-size: 0.95rem; }
+  .sotw-category { font-size: 0.72rem; }
+
+  .fab5-ways-grid { grid-template-columns: 1fr; gap: 0.8rem; }
+  .slogan-card { padding: 1.3rem 1rem 1rem; }
+  .slogan-text { font-size: 0.98rem; }
+  .slogan-filter { font-size: 0.82rem; padding: 0.35rem 0.75rem; }
+
+  .faq-item summary { padding: 0.85rem 0.95rem; }
+  .faq-q-text { font-size: 0.92rem; }
+  .faq-answer { padding: 0 0.95rem 0.9rem; font-size: 0.9rem; }
+
+  .suggestion-form { padding: 1.1rem; }
+  .suggestion-card { padding: 0.85rem 1rem; }
+  .suggestion-head { font-size: 0.78rem; gap: 0.4rem; }
+  .suggestion-date { margin-left: 0; width: 100%; }
+
+  .parents-joining-badge { font-size: 0.82rem; padding: 0.4rem 0.7rem; }
+  .pj-note { width: 100%; font-size: 0.78rem; }
+}

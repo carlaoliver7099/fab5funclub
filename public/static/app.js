@@ -4,6 +4,8 @@ let EVENTS = [];
 let AWARDS = [];
 let GALLERY = [];
 let CONCERTS = [];
+let SUGGESTIONS = [];
+let FAB5_WAYS_FILTER = 'All';
 let CALENDAR_DATE = new Date();
 CALENDAR_DATE.setDate(1);
 let CHAT_HISTORY = [];
@@ -58,7 +60,7 @@ function setupLogin() {
 }
 async function logout() {
   try { await api('/api/logout', { method: 'POST' }); } catch {}
-  CLUB = null; EVENTS = []; AWARDS = []; GALLERY = []; CONCERTS = []; CHAT_HISTORY = [];
+  CLUB = null; EVENTS = []; AWARDS = []; GALLERY = []; CONCERTS = []; SUGGESTIONS = []; CHAT_HISTORY = [];
   showLogin();
 }
 
@@ -73,6 +75,9 @@ async function initApp() {
     fillMemberCheckboxes();
     fillBadgeDropdown();
     renderStandardDayPack();
+    renderSloganOfWeek();
+    renderFab5Ways();
+    renderParentsFaq();
     setupForm();
     setupFlyerUpload();
     setupCalendarNav();
@@ -80,6 +85,7 @@ async function initApp() {
     setupGalleryForm();
     setupConcertForm();
     setupPebblesChat();
+    setupSuggestionForm();
     $('#logout-btn').addEventListener('click', logout);
 
     await refreshAll();
@@ -140,19 +146,22 @@ function fileToDataUrl(file) {
 }
 
 async function refreshAll() {
-  const [ev, aw, gal, con] = await Promise.all([
+  const [ev, aw, gal, con, sug] = await Promise.all([
     api('/api/events').catch(() => ({ events: [] })),
     api('/api/awards').catch(() => ({ awards: [] })),
     api('/api/gallery').catch(() => ({ items: [] })),
-    api('/api/concerts').catch(() => ({ concerts: [] }))
+    api('/api/concerts').catch(() => ({ concerts: [] })),
+    api('/api/suggestions').catch(() => ({ suggestions: [] }))
   ]);
   EVENTS = ev.events; AWARDS = aw.awards; GALLERY = gal.items; CONCERTS = con.concerts;
+  SUGGESTIONS = sug.suggestions || [];
   renderCalendar();
   renderEventsList();
   renderRotation();
   renderAwards();
   renderGallery();
   renderConcerts();
+  renderSuggestionsList();
 }
 
 // ---------- MEMBERS ----------
@@ -311,6 +320,21 @@ function renderEventsList() {
       ? `<div class="event-detail weather-detail"><strong>🌦️ Weather plan:</strong> ${escapeHtml(e.weatherWarning)}</div>`
       : '';
 
+    const parentsJoiningMap = {
+      yes:      { emoji: '✅', label: 'Parents welcome',       cls: 'pj-yes' },
+      no:       { emoji: '🚫', label: 'Kids only',             cls: 'pj-no' },
+      maybe:    { emoji: '🤔', label: 'Parents — your call',   cls: 'pj-maybe' },
+      required: { emoji: '❗', label: 'A parent MUST come',    cls: 'pj-required' },
+    };
+    const pj = e.parentsJoining && parentsJoiningMap[e.parentsJoining];
+    const parentsJoiningHtml = pj
+      ? `<div class="parents-joining-badge ${pj.cls}">
+           <span class="pj-icon">${pj.emoji}</span>
+           <span class="pj-label">👨‍👩‍👧 ${pj.label}</span>
+           ${e.parentsJoiningNote ? `<span class="pj-note">— ${escapeHtml(e.parentsJoiningNote)}</span>` : ''}
+         </div>`
+      : '';
+
     return `
       <div class="event-card">
         <div class="event-date-badge">
@@ -322,6 +346,7 @@ function renderEventsList() {
           <h4>${emoji} ${escapeHtml(e.title)}</h4>
           <div class="meta">🎯 ${escapeHtml(e.activity)} • 🕐 ${e.startTime} - ${e.endTime} • 📍 ${escapeHtml(e.location)}</div>
           ${leaderHtml}
+          ${parentsJoiningHtml}
           ${flyerHtml}
           <div class="meta-chips">
             ${costChip}
@@ -333,7 +358,7 @@ function renderEventsList() {
           ${weatherHtml}
           ${e.notes ? `<div class="event-detail notes-detail"><strong>📝 Notes:</strong> ${escapeHtml(e.notes)}</div>` : ''}
           <details class="day-pack-details">
-            <summary>🎒 Standard Day Pack — what every kid brings</summary>
+            <summary>👨‍👩‍👧 Parent-Packed Essentials — what every parent sends with their kid</summary>
             <div class="day-pack-items">
               ${(CLUB?.standardDayPack || []).map(p => `<span class="pack-item">${p.emoji} ${escapeHtml(p.item)}</span>`).join('')}
             </div>
@@ -406,6 +431,8 @@ function setupForm() {
       transportPlan: $('#evt-transport')?.value.trim() || undefined,
       parentPermissionNote: $('#evt-permission')?.value.trim() || undefined,
       weatherWarning: $('#evt-weather')?.value.trim() || undefined,
+      parentsJoining: $('#evt-parents-joining')?.value || undefined,
+      parentsJoiningNote: $('#evt-parents-joining-note')?.value.trim() || undefined,
       extraDayPack: equipment,
     };
     try {
@@ -715,6 +742,155 @@ function openLightbox(src) {
   }
   lb.querySelector('img').src = src;
   lb.style.display = 'flex';
+}
+
+// ---------- SLOGAN OF THE WEEK ----------
+function renderSloganOfWeek() {
+  const banner = document.getElementById('slogan-of-week');
+  const text = document.getElementById('sotw-text');
+  const cat = document.getElementById('sotw-category');
+  if (!banner || !text || !CLUB?.sloganOfTheWeek) return;
+  const s = CLUB.sloganOfTheWeek;
+  text.innerHTML = `${s.emoji || '🌟'} <em>"${escapeHtml(s.text)}"</em>${s.star ? ' <span class="sotw-star" title="Carla family classic">⭐</span>' : ''}`;
+  if (cat) cat.textContent = s.category ? `#${s.category}` : '';
+  banner.classList.add('loaded');
+  if (s.star) banner.classList.add('starred');
+}
+
+// ---------- FAB 5 WAYS (slogans grid) ----------
+const SLOGAN_CATEGORIES = [
+  { id: 'All',          emoji: '🌟', label: 'All' },
+  { id: 'kindness',     emoji: '💛', label: 'Kindness' },
+  { id: 'team',         emoji: '🤝', label: 'Team' },
+  { id: 'leader',       emoji: '🎖️', label: 'Leader' },
+  { id: 'self-control', emoji: '💆', label: 'Self-control' },
+  { id: 'growth',       emoji: '🌱', label: 'Growth' },
+  { id: 'self',         emoji: '✨', label: 'Self' },
+  { id: 'fun',          emoji: '🎉', label: 'Fun' },
+];
+
+function renderFab5Ways() {
+  const grid = $('#fab5-ways-grid');
+  const filters = $('#fab5-ways-filters');
+  if (!grid || !CLUB?.slogans) return;
+
+  if (filters && !filters.dataset.ready) {
+    const seen = new Set(CLUB.slogans.map(s => s.category));
+    const cats = SLOGAN_CATEGORIES.filter(c => c.id === 'All' || seen.has(c.id));
+    filters.innerHTML = cats.map(c => `
+      <button class="slogan-filter ${c.id === FAB5_WAYS_FILTER ? 'active' : ''}" data-cat="${c.id}">
+        ${c.emoji} ${c.label}
+      </button>
+    `).join('');
+    filters.dataset.ready = '1';
+    filters.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-cat]');
+      if (!btn) return;
+      FAB5_WAYS_FILTER = btn.dataset.cat;
+      filters.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.cat === FAB5_WAYS_FILTER));
+      renderFab5Ways();
+    });
+  }
+
+  const list = FAB5_WAYS_FILTER === 'All'
+    ? CLUB.slogans
+    : CLUB.slogans.filter(s => s.category === FAB5_WAYS_FILTER);
+
+  if (!list.length) {
+    grid.innerHTML = `<div class="loading">No slogans here yet 🐾</div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(s => `
+    <div class="slogan-card ${s.star ? 'starred' : ''} cat-${escapeHtml(s.category || 'general')}">
+      ${s.star ? '<div class="slogan-star-badge" title="Carla family classic">⭐ Carla classic</div>' : ''}
+      <div class="slogan-emoji">${s.emoji || '🌟'}</div>
+      <blockquote class="slogan-text">"${escapeHtml(s.text)}"</blockquote>
+      <div class="slogan-cat">#${escapeHtml(s.category || 'general')}</div>
+    </div>
+  `).join('');
+}
+
+// ---------- PARENTS FAQ ----------
+function renderParentsFaq() {
+  const list = $('#parents-faq-list');
+  if (!list || !Array.isArray(CLUB?.parentsFaq)) return;
+  list.innerHTML = CLUB.parentsFaq.map((qa, i) => `
+    <details class="faq-item" ${i === 0 ? 'open' : ''}>
+      <summary>
+        <span class="faq-q-icon">${escapeHtml(qa.emoji || '❓')}</span>
+        <span class="faq-q-text">${escapeHtml(qa.q)}</span>
+        <span class="faq-q-chev">▾</span>
+      </summary>
+      <div class="faq-answer">${escapeHtml(qa.a)}</div>
+    </details>
+  `).join('');
+}
+
+// ---------- SUGGESTION BOX ----------
+function setupSuggestionForm() {
+  const form = $('#suggestion-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const body = {
+      fromName: $('#sug-name').value.trim(),
+      topic: $('#sug-topic').value,
+      message: $('#sug-message').value.trim(),
+    };
+    if (!body.message) {
+      flashSugMsg('Type a message first! 📝', 'error');
+      return;
+    }
+    try {
+      const res = await api('/api/suggestions', { method: 'POST', body });
+      SUGGESTIONS.unshift(res.suggestion);
+      renderSuggestionsList();
+      form.reset();
+      flashSugMsg('💛 Thank you! Carla will see your message.', 'success');
+    } catch (err) {
+      flashSugMsg('Oops: ' + err.message, 'error');
+    }
+  });
+}
+
+function flashSugMsg(text, type) {
+  const m = $('#sug-msg'); if (!m) return;
+  m.textContent = text;
+  m.className = type === 'success' ? 'msg-success' : 'msg-error';
+  setTimeout(() => { if (m.textContent === text) m.textContent = ''; }, 5000);
+}
+
+function renderSuggestionsList() {
+  const el = $('#suggestions-list');
+  if (!el) return;
+  if (!SUGGESTIONS.length) {
+    el.innerHTML = `<div class="loading">No suggestions yet — be the first to share an idea! 💡</div>`;
+    return;
+  }
+  el.innerHTML = SUGGESTIONS.map(s => {
+    const when = new Date(s.createdAt);
+    const dateStr = when.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+    return `
+      <article class="suggestion-card">
+        <header class="suggestion-head">
+          <span class="suggestion-topic">${escapeHtml(s.topic || 'General')}</span>
+          <span class="suggestion-from">— ${escapeHtml(s.fromName || 'Anonymous parent')}</span>
+          <span class="suggestion-date">${dateStr}</span>
+          <button class="suggestion-delete" data-id="${s.id}" title="Delete">✕</button>
+        </header>
+        <p class="suggestion-message">${escapeHtml(s.message)}</p>
+      </article>
+    `;
+  }).join('');
+  $$('.suggestion-delete').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm('Delete this suggestion?')) return;
+    try {
+      await api('/api/suggestions/' + btn.dataset.id, { method: 'DELETE' });
+      SUGGESTIONS = SUGGESTIONS.filter(s => s.id !== btn.dataset.id);
+      renderSuggestionsList();
+    } catch (e) { alert('Failed: ' + e.message); }
+  }));
 }
 
 document.addEventListener('DOMContentLoaded', () => {

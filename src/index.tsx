@@ -23,6 +23,8 @@ type Event = {
   parentPermissionNote?: string;// e.g. "Parents to sign waiver at the venue"
   weatherWarning?: string;      // e.g. "Cancel if storm warning issued"
   extraDayPack?: string[];      // event-specific items ON TOP of the standard day pack
+  parentsJoining?: 'yes' | 'no' | 'maybe' | 'required';  // are parents coming too?
+  parentsJoiningNote?: string;  // optional context e.g. "Carla + 1 other parent"
   createdAt: number;
 }
 
@@ -121,23 +123,106 @@ function ensureSeeded() {
 }
 
 // =========== CLUB DATA ===========
-// Standard "Fab 5 Day Pack" — every kid brings these on every adventure 🎒
+// 🎒 PARENT-PACKED ESSENTIALS — parents pack these for their kid for every adventure
+// (Carla covers event costs. Parents look after their own kid's food, drink, and clothes.)
 const STANDARD_DAY_PACK = [
-  { item: 'Water bottle (1L)', emoji: '💧' },
-  { item: 'Sunscreen (50+ SPF)', emoji: '🧴' },
-  { item: 'Hat', emoji: '🧢' },
-  { item: 'Snacks for the day', emoji: '🍎' },
-  { item: 'Packed lunch', emoji: '🥪' },
-  { item: 'Towel', emoji: '🩴' },
-  { item: 'Spare change of clothes', emoji: '👕' },
-  { item: 'Phone (charged) + power bank', emoji: '📱' },
-  { item: 'First aid mini-kit (band-aids, panadol)', emoji: '⛑️' },
-  { item: 'Insect repellent', emoji: '🦟' },
+  { item: 'Water bottle (1L+ filled before pickup)', emoji: '💧', who: 'parent' },
+  { item: 'Sunscreen (50+ SPF)', emoji: '🧴', who: 'parent' },
+  { item: 'Hat', emoji: '🧢', who: 'parent' },
+  { item: 'Snacks for the day', emoji: '🍎', who: 'parent' },
+  { item: 'Packed lunch', emoji: '🥪', who: 'parent' },
+  { item: 'Towel', emoji: '🩴', who: 'parent' },
+  { item: 'Spare change of clothes', emoji: '👕', who: 'parent' },
+  { item: 'Phone (charged) + power bank', emoji: '📱', who: 'parent' },
+  { item: 'Personal first aid + any medication', emoji: '⛑️', who: 'parent' },
+  { item: 'Insect repellent', emoji: '🦟', who: 'parent' },
 ]
 
 // 💛 Carla's promise — the Fab 5 Fun Club is FREE for every friend
 const CARLA_COVERS_IT = true
 const CARLA_PROMISE = "Carla's got us! 💛 Every adventure is free for the Fab 5 — no kid pays a cent."
+
+// 🌟 FAB 5 WAYS — family slogans + bonus values Saia & I picked together
+// (Carla-isms are starred ⭐ — the rest are bonus picks)
+const FAB5_SLOGANS = [
+  // ⭐ Carla family classics
+  { id: 'lower-voice', text: "We lower our voice to be heard, not raise it.", category: 'kindness', star: true, emoji: '🤫' },
+  { id: 'lifting-others', text: "We rise by lifting others.", category: 'kindness', star: true, emoji: '🌟' },
+  { id: 'calm-gets-calm', text: "Calm gets calm. Anger gets anger.", category: 'self-control', star: true, emoji: '💆' },
+  { id: 'upstairs-downstairs', text: "Upstairs (brain) for thinking. Downstairs (feet) for dancing.", category: 'self-control', star: true, emoji: '🧠💃' },
+  // 🤝 Team & kindness
+  { id: 'slowest-kid', text: "We move at the pace of the slowest kid — nobody gets left behind.", category: 'team', emoji: '🤝' },
+  { id: 'see-something', text: "If you see something, say something — kindly.", category: 'kindness', emoji: '👁️' },
+  { id: 'friend-on-hard-day', text: "Be the friend you wish you had on a hard day.", category: 'kindness', emoji: '💛' },
+  { id: 'hard-on-problem', text: "Hard on the problem, soft on each other.", category: 'team', emoji: '🤲' },
+  { id: 'disagree', text: "Disagree without being disagreeable.", category: 'team', emoji: '💬' },
+  // 🎖️ Leadership
+  { id: 'more-leaders', text: "A great leader makes more leaders, not more followers.", category: 'leader', emoji: '🎖️' },
+  { id: 'heaviest-backpack', text: "The leader carries the heaviest backpack, not the loudest voice.", category: 'leader', emoji: '🎒' },
+  { id: 'team-needs', text: "Ask 'what does the team need?' before 'what do I want?'", category: 'leader', emoji: '🤔' },
+  // 💪 Bravery & growth
+  { id: 'brave-scared', text: "Brave isn't 'no fear' — brave is 'scared, and doing it anyway'.", category: 'growth', emoji: '🦁' },
+  { id: 'mistakes-grow', text: "Mistakes are how the brain grows.", category: 'growth', emoji: '🧠' },
+  { id: 'not-stuck', text: "You're not stuck — you're learning.", category: 'growth', emoji: '📈' },
+  // 🌈 Mum-vibe
+  { id: 'kind-brave-useful', text: "Be kind. Be brave. Be useful. Be you.", category: 'self', emoji: '🌈' },
+  { id: 'yesterday-self', text: "We don't compare. We compete with yesterday's version of ourselves.", category: 'growth', emoji: '🪞' },
+  { id: 'tone-first', text: "Tone goes first. Words come second.", category: 'kindness', emoji: '🎵' },
+  { id: 'hands-helping', text: "Hands are for helping, not hurting.", category: 'kindness', emoji: '🤲' },
+  // 🎉 Fun
+  { id: 'find-fun', text: "If it's not fun, we'll find a way to make it fun.", category: 'fun', emoji: '🎶' },
+  { id: 'vibe-rule', text: "The vibe is the rule.", category: 'fun', emoji: '✨' },
+]
+
+// Pick "Slogan of the Week" deterministically based on the ISO week number
+// (so it changes every Monday and is the same for everyone all week)
+function getSloganOfTheWeek() {
+  const now = new Date()
+  // ISO week calculation
+  const target = new Date(now.valueOf())
+  const dayNumber = (now.getDay() + 6) % 7 // Monday=0
+  target.setDate(target.getDate() - dayNumber + 3)
+  const firstThursday = target.valueOf()
+  target.setMonth(0, 1)
+  if (target.getDay() !== 4) {
+    target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7)
+  }
+  const weekNumber = 1 + Math.ceil((firstThursday - target.valueOf()) / (7 * 24 * 3600 * 1000))
+  const idx = weekNumber % FAB5_SLOGANS.length
+  return FAB5_SLOGANS[idx]
+}
+
+// ❓ Parents FAQ — common questions Saia's mum (Carla) thinks parents will ask
+const PARENTS_FAQ = [
+  { emoji: '💰', q: "How much does this cost my family?",
+    a: "Nothing! 💛 The Fab 5 Fun Club is completely free — Carla (Saia's mum) covers all event costs (hire, entry fees, transport, fuel). Each parent just packs their own kid's water, food, sunscreen, hat, towel, and any medication — same as a normal day out. No money ever changes hands." },
+  { emoji: '⛑️', q: "Is it safe? Who's supervising my kid?",
+    a: "Every adventure has at least one adult present (usually Carla, sometimes other club parents) plus the venue's own staff for paid activities. Events are planned in advance with the location, transport, weather plan, and parent permission notes shared on this site. You can always come along — see the 'Parents joining?' field on each event card." },
+  { emoji: '🎒', q: "What do I need to pack for my kid?",
+    a: "The 'Parent-Packed Essentials' list is on every event card. It's the standard parent-job stuff: water bottle, sunscreen, hat, snacks, packed lunch, towel, spare clothes, phone + power bank, personal first-aid / medication, and insect repellent. Some events have extras (like a snorkel mask for snorkeling day) — those will be listed on the event." },
+  { emoji: '👨‍👩‍👧', q: "Can I come along to events?",
+    a: "100% yes! Every event has a 'Parents joining?' option. You can come every time, sometimes, or never — totally up to you. Some events (like under-12 venues or concerts) actually require a guardian present. Look at each event card for the parent permission note." },
+  { emoji: '📞', q: "How do I contact the other parents?",
+    a: "Mum's currently building a parent contact list — for now, please message Carla directly and she'll loop you in. We're working on a parent group chat soon." },
+  { emoji: '🏥', q: "What happens if my kid gets hurt or wants to come home?",
+    a: "Carla (or whichever adult is supervising) will call you immediately. We have at least one first-aid trained adult on every adventure, the kids carry their own personal first-aid kit in their day pack, and we never leave a kid alone. Kids can always tap out and go home — no questions, no shame, no pressure." },
+  { emoji: '🚪', q: "What if my kid wants to leave the club?",
+    a: "Totally fine — and zero hard feelings. The Fab 5 is about kids choosing to be friends, not being trapped in something. Just let Carla know and we'll quietly remove your child's profile. They're welcome back anytime." },
+  { emoji: '📬', q: "How do I make a suggestion or raise a concern?",
+    a: "There's a 'Parents' Suggestion Box' on this site — drop your idea anytime, anonymously if you want. Mum reads them and acts on the good ones! For urgent stuff, please contact Carla directly." },
+  { emoji: '🤝', q: "Why is the club egalitarian — no leader?",
+    a: "We believe every kid should learn to BOTH lead and follow. There's a rotating 'Leader of the Day' role (the kid wearing the gold merch) — they ask the team-leader questions and make decisions for that one event. Then it rotates fairly to the next kid. No founder, no captain — everyone equal. It's a kindness AND a leadership skill at the same time." },
+]
+
+// 📬 Parents' Suggestion Box — in-memory for now, will move to D1 later
+type Suggestion = {
+  id: string
+  text: string
+  fromName?: string   // optional — parents can be anonymous
+  isAnonymous: boolean
+  createdAt: number
+}
+const SUGGESTIONS: Suggestion[] = []
 
 const CLUB_INFO = {
   name: 'Fab 5 Fun Club',
@@ -328,6 +413,8 @@ app.post('/api/events', async (c) => {
     parentPermissionNote: body.parentPermissionNote || undefined,
     weatherWarning: body.weatherWarning || undefined,
     extraDayPack: Array.isArray(body.extraDayPack) ? body.extraDayPack : undefined,
+    parentsJoining: ['yes','no','maybe','required'].includes(body.parentsJoining as string) ? body.parentsJoining : undefined,
+    parentsJoiningNote: body.parentsJoiningNote || undefined,
   }
   EVENTS.push(newEvent)
   return c.json({ event: newEvent }, 201)
@@ -370,6 +457,9 @@ app.get('/api/club-info', (c) => c.json({
   standardDayPack: STANDARD_DAY_PACK,
   carlaCoversIt: CARLA_COVERS_IT,
   carlaPromise: CARLA_PROMISE,
+  slogans: FAB5_SLOGANS,
+  sloganOfTheWeek: getSloganOfTheWeek(),
+  parentsFaq: PARENTS_FAQ,
 }))
 
 // =========== GALLERY ===========
@@ -473,6 +563,42 @@ app.delete('/api/concerts/:id', (c) => {
   return c.json({ ok: true })
 })
 
+// =========== PARENTS' SUGGESTION BOX ===========
+app.get('/api/suggestions', (c) => {
+  // newest first
+  const sorted = [...SUGGESTIONS].sort((a, b) => b.createdAt - a.createdAt)
+  return c.json({ suggestions: sorted })
+})
+
+app.post('/api/suggestions', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any))
+  const message = (body.message || '').toString().trim()
+  if (!message) return c.json({ error: 'Message is required' }, 400)
+  if (message.length > 2000) return c.json({ error: 'Keep it under 2000 characters please!' }, 400)
+  const fromName = (body.fromName || '').toString().trim().slice(0, 80) || 'Anonymous parent'
+  const topic = (body.topic || '').toString().trim().slice(0, 60) || 'General'
+  const suggestion: Suggestion = {
+    id: crypto.randomUUID(),
+    fromName,
+    topic,
+    message,
+    createdAt: Date.now(),
+  }
+  SUGGESTIONS.push(suggestion)
+  return c.json({ ok: true, suggestion })
+})
+
+app.delete('/api/suggestions/:id', (c) => {
+  const id = c.req.param('id')
+  const before = SUGGESTIONS.length
+  const next = SUGGESTIONS.filter(s => s.id !== id)
+  // mutate in place to keep the const reference
+  SUGGESTIONS.length = 0
+  SUGGESTIONS.push(...next)
+  if (SUGGESTIONS.length === before) return c.json({ error: 'Not found' }, 404)
+  return c.json({ ok: true })
+})
+
 // =========== PEBBLES AI CHAT ===========
 const PEBBLES_SYSTEM_PROMPT = `You are PEBBLES 🐾 — the AI mascot of the Fab 5 Fun Club!
 
@@ -495,16 +621,30 @@ THE CLUB (EGALITARIAN — this is important!):
 - Music: Olivia Rodrigo, Chappell Roan (Pink Pony Club!), love singing in the car
 
 💛 CARLA'S PROMISE — VERY IMPORTANT:
-- The Fab 5 Fun Club is COMPLETELY FREE for every friend. Carla (Saia's mum) covers ALL costs.
+- The Fab 5 Fun Club is COMPLETELY FREE for every friend. Carla (Saia's mum) covers ALL event costs (entry, hire gear, fuel, etc).
 - Whenever ANYONE asks "how much?" / "what's it cost?" / "how much do my parents need to pay?":
   → ALWAYS estimate the real cost honestly (e.g. "Wakeboarding day at Lake MacDonald ≈ $45 per kid for hire + lunch")
   → AND THEN say: "But guess what?! Carla's got us! 💛 Every adventure is free for the Fab 5 — no kid pays a cent!"
 - This is a kindness rule — nobody should ever feel awkward about money.
 - For parents who ask: reassure them their kid does NOT need to bring money.
 
-🎒 EVERY KID BRINGS THE STANDARD FAB 5 DAY PACK ON EVERY ADVENTURE:
+🎒 WHO PACKS WHAT — IMPORTANT! (don't get this wrong):
+- ⭐ PARENTS pack their own kid's food, drink, and clothes. That's a parent's job, not the club's.
+- ⭐ CARLA / THE CLUB covers all EVENT costs (entry fees, hire gear, transport, fuel).
+- This is the "Parent-Packed Essentials" list — parents prep this before every adventure:
 ${STANDARD_DAY_PACK.map(p => `  ${p.emoji} ${p.item}`).join('\n')}
-- Activity-specific extras go ON TOP of the standard pack (e.g. snorkel mask for snorkeling day).
+- Activity-specific extras (like a snorkel mask) — the club can sort those, OR parents pack from home if they own one.
+- If a parent asks "what do I need to send?": the answer is the Parent-Packed Essentials list above. No money. No tickets. Just food/drink/clothes/sun-safety.
+
+👨‍👩‍👧 PARENTS COMING ALONG:
+- Some events parents are welcome at, some they need to be at (e.g. concerts for under-18s).
+- When you add an event, decide if parents are: 'yes' (welcome), 'no' (kids-only adventure), 'maybe' (their call), or 'required' (must come — e.g. concerts).
+- ALWAYS tell parents clearly so they can plan their weekend too.
+
+🌟 THE FAB 5 WAYS — THE SLOGANS WE LIVE BY (you can quote these any time, especially the ⭐ Carla family classics):
+${FAB5_SLOGANS.map(s => `  ${s.star ? '⭐ ' : ''}${s.emoji} "${s.text}" (${s.category})`).join('\n')}
+- If someone asks "how do I be a Fab 5 kid?", teach them with these slogans! Pick 2-3 that fit the moment.
+- The 4 ⭐ Carla classics are SACRED — they come from Saia's mum and they're the heart of the club.
 
 📋 EVERY EVENT SHOULD COVER:
 - 💰 Estimated cost per person (then "Carla covers it!")
@@ -570,7 +710,9 @@ const PEBBLES_TOOLS = [
           members:   { type: 'array', items: { type: 'string' } },
           equipment: { type: 'array', items: { type: 'string' } },
           notes:     { type: 'string' },
-          leader:    { type: 'string', description: 'Who wears the Leader merch that day. If unsure, omit and we auto-rotate.' }
+          leader:    { type: 'string', description: 'Who wears the Leader merch that day. If unsure, omit and we auto-rotate.' },
+          parentsJoining:     { type: 'string', enum: ['yes','no','maybe','required'], description: 'Are parents coming/welcome? yes=welcome, no=kids-only, maybe=optional, required=must attend (e.g. concert)' },
+          parentsJoiningNote: { type: 'string', description: 'Optional short note for parents about joining (pickup time, dress code, etc.)' }
         },
         required: ['title', 'activity', 'date']
       }
@@ -708,7 +850,9 @@ app.post('/api/pebbles/chat', async (c) => {
               location: args.location || 'TBA',
               members: Array.isArray(args.members) ? args.members : [],
               equipment: Array.isArray(args.equipment) ? args.equipment : [],
-              notes: args.notes || '', leader, createdAt: Date.now()
+              notes: args.notes || '', leader, createdAt: Date.now(),
+              parentsJoining: ['yes','no','maybe','required'].includes(args.parentsJoining) ? args.parentsJoining : undefined,
+              parentsJoiningNote: args.parentsJoiningNote || undefined,
             }
             EVENTS.push(ev)
             createdEvents.push(ev)
@@ -800,14 +944,23 @@ app.get('/', (c) => {
           </a>
           <div class="topnav-links">
             <a href="#calendar">📅 Calendar</a>
+            <a href="#fab5-ways">🌟 Fab 5 Ways</a>
             <a href="#merch">👕 Merch</a>
             <a href="#awards">🏆 Awards</a>
             <a href="#gallery">📸 Gallery</a>
-            <a href="#concerts">🎵 Concerts</a>
-            <a href="#values">🌟 Values</a>
+            <a href="#parents-faq">❓ Parents</a>
           </div>
           <button id="logout-btn" class="logout-btn" title="Log out">🚪</button>
         </nav>
+
+        {/* SLOGAN OF THE WEEK BANNER */}
+        <div id="slogan-of-week" class="slogan-of-week" role="region" aria-label="Slogan of the Week">
+          <div class="sotw-inner">
+            <span class="sotw-label">🌟 Slogan of the Week</span>
+            <span id="sotw-text" class="sotw-text">Loading our weekly Fab 5 wisdom…</span>
+            <span id="sotw-category" class="sotw-category"></span>
+          </div>
+        </div>
 
         <header class="hero" id="hero">
           <div class="hero-bg"></div>
@@ -892,6 +1045,16 @@ app.get('/', (c) => {
               <li>Did we leave the place cleaner than we found it?</li>
               <li>End of day: peer feedback — what did the leader do well? What could be even better next time?</li>
             </ul>
+          </div>
+        </section>
+
+        {/* FAB 5 WAYS — the slogans we live by */}
+        <section class="section fab5-ways-section" id="fab5-ways">
+          <h2 class="section-title">🌟 The Fab 5 Ways</h2>
+          <p class="section-subtitle">The slogans we live by. ⭐ = Carla family classics — the heart of the club 💛</p>
+          <div class="fab5-ways-filters" id="fab5-ways-filters"></div>
+          <div id="fab5-ways-grid" class="fab5-ways-grid">
+            <div class="loading">Loading slogans...</div>
           </div>
         </section>
 
@@ -995,6 +1158,25 @@ app.get('/', (c) => {
             </fieldset>
 
             <fieldset class="form-section">
+              <legend>👨‍👩‍👧 Parents Coming Too?</legend>
+              <p class="field-hint">So parents know clearly — do they need or want to come along for this one?</p>
+              <div class="form-row">
+                <label><span>Parents joining?</span>
+                  <select id="evt-parents-joining">
+                    <option value="">— not sure yet —</option>
+                    <option value="no">🚫 No — kids-only adventure</option>
+                    <option value="yes">✅ Yes — parents are welcome</option>
+                    <option value="maybe">🤔 Maybe — totally their call</option>
+                    <option value="required">❗ Required — a parent MUST come (e.g. concert)</option>
+                  </select>
+                </label>
+                <label><span>Note for parents (optional)</span>
+                  <input type="text" id="evt-parents-joining-note" placeholder="e.g. Welcome to join us at the BBQ from 12pm" />
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset class="form-section">
               <legend>🌦️ Weather Plan</legend>
               <p class="field-hint">What's the weather backup plan? Storm? Heat over 35°C? Cancel or move it?</p>
               <label><span>Weather warning / backup</span>
@@ -1003,9 +1185,10 @@ app.get('/', (c) => {
             </fieldset>
 
             <fieldset class="form-section">
-              <legend>🎒 What to Pack</legend>
+              <legend>🎒 What Parents Pack</legend>
               <div class="standard-pack-card">
-                <h4>🎒 Standard Fab 5 Day Pack <span class="auto-included">— auto-included on every event</span></h4>
+                <h4>👨‍👩‍👧 Parent-Packed Essentials <span class="auto-included">— parents pack these for their own kid, every event</span></h4>
+                <p class="pack-explainer">💛 <strong>Carla covers all event costs</strong> (entry, hire gear, transport). <strong>Parents look after their own kid's food, drink, and clothes.</strong> Here's the standard list every parent packs:</p>
                 <div id="std-pack-list" class="std-pack-list">Loading...</div>
               </div>
               <label><span>Extra items just for THIS event (comma separated)</span>
@@ -1181,6 +1364,50 @@ app.get('/', (c) => {
           <div id="activities-grid" class="activities-grid"></div>
         </section>
 
+        {/* PARENTS FAQ */}
+        <section class="section parents-faq-section" id="parents-faq">
+          <h2 class="section-title">❓ Parents FAQ</h2>
+          <p class="section-subtitle">Everything parents usually ask — answered. 💛</p>
+          <div id="parents-faq-list" class="parents-faq-list">
+            <div class="loading">Loading questions...</div>
+          </div>
+        </section>
+
+        {/* PARENTS' SUGGESTION BOX */}
+        <section class="section suggestion-box-section" id="suggestion-box">
+          <h2 class="section-title">📬 Parents' Suggestion Box</h2>
+          <p class="section-subtitle">Got an idea, worry, or wish for the club? Carla reads every single one. 💛</p>
+          <form id="suggestion-form" class="suggestion-form">
+            <div class="form-row">
+              <label><span>Your name (optional)</span>
+                <input type="text" id="sug-name" maxlength={80} placeholder="e.g. Sarah (Charlotte's mum)" />
+              </label>
+              <label><span>Topic</span>
+                <select id="sug-topic">
+                  <option value="General">💭 General</option>
+                  <option value="Safety">⛑️ Safety</option>
+                  <option value="Event idea">🎯 Event idea</option>
+                  <option value="Food / Allergies">🥪 Food / Allergies</option>
+                  <option value="Transport">🚗 Transport</option>
+                  <option value="Inclusion">🤝 Inclusion</option>
+                  <option value="Praise">💛 Praise</option>
+                  <option value="Concern">⚠️ Concern</option>
+                </select>
+              </label>
+            </div>
+            <label><span>Your suggestion or question</span>
+              <textarea id="sug-message" rows={4} maxlength={2000} placeholder="Type anything — an idea, a worry, a thank you, a question..." required></textarea>
+            </label>
+            <button type="submit" class="btn btn-primary btn-big">📬 Send to Carla</button>
+            <div id="sug-msg"></div>
+          </form>
+
+          <h3 class="suggestion-list-title">📜 Recent suggestions <span class="muted-small">(visible to the crew so we can all learn)</span></h3>
+          <div id="suggestions-list" class="suggestions-list">
+            <div class="loading">Loading suggestions...</div>
+          </div>
+        </section>
+
         <footer class="footer">
           <p>Made with 🌈 for the Fab 5 Fun Club</p>
           <p>Sunshine Coast & Hinterlands • SE Queensland 🇦🇺</p>
@@ -1201,6 +1428,7 @@ app.get('/', (c) => {
           </div>
           <div id="pebbles-messages" class="pebbles-messages"></div>
           <div class="pebbles-quick" id="pebbles-quick">
+            <button data-prompt="How do I be a Fab 5 kid? Teach me the Fab 5 Ways and pick your favourite Carla family slogans for me.">🐾 How to be a Fab 5 kid</button>
             <button data-prompt="Plan a kayaking trip next Saturday at Lake MacDonald with all 5 of us">🛶 Plan kayak</button>
             <button data-prompt="Who should be Leader of the Day next? Check the rotation fairness.">🎖️ Next leader</button>
             <button data-prompt="Award Ace the Kind Heart badge — he shared his snacks with the crew when someone forgot lunch">🏆 Award badge</button>
