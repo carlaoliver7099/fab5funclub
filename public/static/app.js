@@ -104,16 +104,24 @@ async function refreshAll() {
 }
 
 // ---------- MEMBERS ----------
+// Members with cartoon avatar files (everyone except Pebbles has an avatar PNG)
+const AVATAR_MEMBERS = ['Ace', 'Charlotte', 'Elijah', 'Saia', 'Sienna'];
 function renderMembers() {
   const grid = $('#members-grid');
   grid.innerHTML = CLUB.members.map(m => {
     const isPebbles = m.name === 'Pebbles';
-    const emojiHtml = isPebbles
-      ? `<span class="member-emoji pebbles-pic" style="background:${m.color}"><img src="/static/pebbles.png" alt="Pebbles" /></span>`
-      : `<span class="member-emoji" style="background:${m.color}">${m.emoji}</span>`;
+    const hasAvatar = AVATAR_MEMBERS.includes(m.name);
+    let avatarHtml;
+    if (isPebbles) {
+      avatarHtml = `<span class="member-avatar pebbles-pic" style="background:${m.color}"><img src="/static/pebbles.png" alt="Pebbles" /></span>`;
+    } else if (hasAvatar) {
+      avatarHtml = `<span class="member-avatar cartoon-pic" style="background:${m.color}"><img src="/static/avatars/${m.name.toLowerCase()}.png" alt="${m.name}" /></span>`;
+    } else {
+      avatarHtml = `<span class="member-avatar" style="background:${m.color}">${m.emoji}</span>`;
+    }
     return `
       <div class="member-card ${isPebbles ? 'mascot' : ''}" style="background: linear-gradient(180deg, white 60%, ${m.color})">
-        ${emojiHtml}
+        ${avatarHtml}
         <div class="member-name">${m.name}</div>
         <div class="member-role">${m.role}</div>
       </div>`;

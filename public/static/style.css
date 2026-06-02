@@ -330,16 +330,30 @@ body {
 }
 .member-card:hover { transform: translateY(-6px) rotate(-2deg); }
 .member-card.mascot { border-color: var(--orange); border-width: 4px; }
-.member-emoji {
+.member-emoji,
+.member-avatar {
   font-size: 3rem;
   display: inline-block;
-  width: 80px; height: 80px;
-  line-height: 80px;
+  width: 110px; height: 110px;
+  line-height: 110px;
   border-radius: 50%;
-  border: 3px solid var(--dark);
-  margin-bottom: 0.5rem;
+  border: 4px solid var(--dark);
+  margin-bottom: 0.6rem;
   overflow: hidden;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.15), 0 0 0 6px rgba(255,255,255,0.6);
+  transition: transform 0.25s ease;
 }
+.member-card:hover .member-avatar { transform: scale(1.08) rotate(3deg); }
+.member-avatar.pebbles-pic,
+.member-avatar.cartoon-pic { padding: 0; }
+.member-avatar.pebbles-pic img,
+.member-avatar.cartoon-pic img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Legacy class fallback for any old usage */
 .member-emoji.pebbles-pic { padding: 0; }
 .member-emoji.pebbles-pic img { width: 100%; height: 100%; object-fit: cover; }
 .member-name { font-size: 1.3rem; font-weight: 700; }
