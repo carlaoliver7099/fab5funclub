@@ -1877,7 +1877,7 @@ app.get('/', (c) => {
             <a href="#gallery">📸 Gallery</a>
             <a href="#parents-faq">❓ Parents</a>
           </div>
-          <button id="take-tour-btn" class="take-tour-btn" title="Take the tour">🎓 Tour</button>
+          <button id="take-tour-btn" class="take-tour-btn" title="Start here!">🎈 Start here!</button>
           <button id="logout-btn" class="logout-btn" title="Log out">🚪</button>
         </nav>
 

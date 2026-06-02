@@ -3018,18 +3018,24 @@ body {
   color: #2d1b00;
   border: none;
   font-family: inherit;
-  font-weight: 800;
-  font-size: 0.95rem;
-  padding: 8px 14px;
+  font-weight: 900;
+  font-size: 1rem;
+  padding: 9px 16px;
   border-radius: 999px;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(255, 150, 113, 0.4);
+  box-shadow: 0 3px 12px rgba(255, 150, 113, 0.5);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   margin-right: 6px;
+  animation: tourPulse 2.4s ease-in-out infinite;
 }
 .take-tour-btn:hover {
   transform: translateY(-2px) scale(1.05);
   box-shadow: 0 5px 14px rgba(255, 150, 113, 0.55);
+  animation: none;
+}
+@keyframes tourPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 3px 12px rgba(255, 150, 113, 0.5); }
+  50% { transform: scale(1.06); box-shadow: 0 6px 18px rgba(255, 150, 113, 0.75); }
 }
 
 /* ============================================================
@@ -3422,8 +3428,8 @@ body {
    ============================================================ */
 @media (max-width: 680px) {
   .take-tour-btn {
-    font-size: 0.82rem;
-    padding: 6px 10px;
+    font-size: 0.85rem;
+    padding: 7px 11px;
     margin-right: 4px;
   }
   .member-tap-hint {
