@@ -102,6 +102,8 @@ async function initApp() {
     setupCaptionBattleStarter();
     setupPostcardGenerator();
     setupVoicePebbles();
+    setupKidProfileModal();
+    setupOnboardingWizard();
     $('#logout-btn').addEventListener('click', logout);
 
     await refreshAll();
@@ -211,12 +213,17 @@ function renderMembers() {
       avatarHtml = `<span class="member-avatar" style="background:${m.color}">${m.emoji}</span>`;
     }
     return `
-      <div class="member-card ${isPebbles ? 'mascot' : ''}" style="background: linear-gradient(180deg, white 60%, ${m.color})">
+      <button type="button" class="member-card ${isPebbles ? 'mascot' : ''}" data-member-name="${m.name}" style="background: linear-gradient(180deg, white 60%, ${m.color})" aria-label="Open ${m.name}'s profile">
         ${avatarHtml}
         <div class="member-name">${m.name}</div>
         <div class="member-role">${m.role}</div>
-      </div>`;
+        <span class="member-tap-hint">tap to open 👉</span>
+      </button>`;
   }).join('');
+  // Wire click handlers
+  document.querySelectorAll('.member-card[data-member-name]').forEach(card => {
+    card.addEventListener('click', () => openKidProfileModal(card.dataset.memberName));
+  });
 }
 
 // ---------- ACTIVITIES ----------
@@ -1757,6 +1764,301 @@ function setupVoicePebbles() {
       if (statusEl) statusEl.textContent = '❌ Could not start mic: ' + e.message;
     }
   });
+}
+
+// ---------- 👤 KID PROFILE MODAL (opens when a crew card is tapped) ----------
+function openKidProfileModal(name) {
+  const overlay = $('#kid-profile-modal');
+  const content = $('#kp-modal-content');
+  if (!overlay || !content || !CLUB) return;
+
+  const member = CLUB.members.find(m => m.name === name);
+  if (!member) return;
+
+  const isPebbles = name === 'Pebbles';
+  const avatarSrc = isPebbles ? '/static/pebbles.png?v=2' : `/static/avatars/${name.toLowerCase()}.png?v=2`;
+  const hasAvatar = isPebbles || ['Ace', 'Charlotte', 'Elijah', 'Saia', 'Sienna'].includes(name);
+
+  // Pull stats from existing data
+  const profile = (CLUB.kidProfiles || []).find(p => p.name === name) || {};
+  const ledEvents = (EVENTS || []).filter(e => e.leader === name);
+  const memberEvents = (EVENTS || []).filter(e => Array.isArray(e.members) && e.members.includes(name));
+  const myAwards = (AWARDS || []).filter(a => a.member === name);
+  const myPhotos = (GALLERY || []).filter(g => Array.isArray(g.members) && g.members.includes(name));
+  const myPostcards = (CLUB.postcards || []).filter(p => p.toMember === name);
+
+  // Find badge details for each award
+  const badgeMap = Object.fromEntries((CLUB.badges || []).map(b => [b.id, b]));
+
+  const avatarHtml = hasAvatar
+    ? `<div class="kp-modal-avatar" style="background:${member.color}"><img src="${avatarSrc}" alt="${escapeHtml(name)}" /></div>`
+    : `<div class="kp-modal-avatar" style="background:${member.color}"><span style="font-size:5rem">${member.emoji}</span></div>`;
+
+  let extraSections = '';
+
+  if (isPebbles) {
+    extraSections = `
+      <div class="kp-modal-section">
+        <h3>🐾 About me</h3>
+        <p>G'day! I'm <strong>Pebbles</strong> — the Fab 5 Fun Club mascot. I'm a young pup with a white coat, dark ears, and a black patch over one eye. I love going on every adventure with the crew, and I'm also their AI helper! Ask me anything in the chat. 💛</p>
+      </div>
+      <div class="kp-modal-section">
+        <h3>✨ What I'm good at</h3>
+        <ul class="kp-list">
+          <li>🎯 Helping pick activities and events</li>
+          <li>📝 Writing diary entries from your adventures</li>
+          <li>💌 Writing postcards to kids who missed out</li>
+          <li>📸 Coming up with funny photo captions</li>
+          <li>🌦️ Checking the weather before adventures</li>
+          <li>🗳️ Deciding who leads the day (Pebbles Picks)</li>
+        </ul>
+      </div>
+    `;
+  } else {
+    // Kid profile: birthday, allergies, the spark, snacks
+    const fav = profile.theSpark ? `<p class="kp-fact"><strong>✨ The Spark:</strong> ${escapeHtml(profile.theSpark)}</p>` : '';
+    const allergies = profile.allergies ? `<p class="kp-fact kp-allergies"><strong>⚠️ Allergies / dietary:</strong> ${escapeHtml(profile.allergies)}</p>` : '';
+    const snacks = profile.favouriteSnacks ? `<p class="kp-fact"><strong>🍎 Favourite snacks:</strong> ${escapeHtml(profile.favouriteSnacks)}</p>` : '';
+    const bday = profile.birthday ? `<p class="kp-fact"><strong>🎂 Birthday:</strong> ${escapeHtml(profile.birthday)}</p>` : '';
+
+    let profileFacts = '';
+    if (fav || allergies || snacks || bday) {
+      profileFacts = `
+        <div class="kp-modal-section">
+          <h3>💛 About ${escapeHtml(name)}</h3>
+          ${bday}${fav}${snacks}${allergies}
+        </div>`;
+    } else {
+      profileFacts = `
+        <div class="kp-modal-section">
+          <h3>💛 About ${escapeHtml(name)}</h3>
+          <p class="kp-empty">No profile info yet! A parent or grown-up can fill this in from the Parents' Dashboard. 🐾</p>
+        </div>`;
+    }
+
+    // Stats grid
+    const statsHtml = `
+      <div class="kp-modal-section">
+        <h3>🌟 ${escapeHtml(name)}'s crew stats</h3>
+        <div class="kp-stats">
+          <div class="kp-stat"><span>🛶</span><strong>${memberEvents.length}</strong><em>adventures</em></div>
+          <div class="kp-stat"><span>🎖️</span><strong>${ledEvents.length}</strong><em>days as leader</em></div>
+          <div class="kp-stat"><span>🏆</span><strong>${myAwards.length}</strong><em>badges</em></div>
+          <div class="kp-stat"><span>📸</span><strong>${myPhotos.length}</strong><em>photos</em></div>
+        </div>
+      </div>`;
+
+    // Badges
+    const badgesHtml = myAwards.length > 0 ? `
+      <div class="kp-modal-section">
+        <h3>🏆 Badges earned</h3>
+        <div class="kp-badges">
+          ${myAwards.map(a => {
+            const b = badgeMap[a.badgeId] || { emoji: '🏅', name: a.badgeId };
+            return `<div class="kp-badge"><span class="kp-badge-emoji">${b.emoji}</span><div><strong>${escapeHtml(b.name)}</strong><small>${escapeHtml(a.note || '')}</small></div></div>`;
+          }).join('')}
+        </div>
+      </div>` : '';
+
+    // Recent adventures (max 5)
+    const advHtml = memberEvents.length > 0 ? `
+      <div class="kp-modal-section">
+        <h3>🛶 Recent adventures</h3>
+        <ul class="kp-list">
+          ${memberEvents.slice(0, 5).map(e => `<li><strong>${escapeHtml(e.date)}</strong> — ${escapeHtml(e.title)} ${e.leader === name ? '<span class="kp-led-tag">🎖️ Led</span>' : ''}</li>`).join('')}
+        </ul>
+      </div>` : '';
+
+    // Postcards
+    const pcHtml = myPostcards.length > 0 ? `
+      <div class="kp-modal-section">
+        <h3>💌 Postcards for ${escapeHtml(name)}</h3>
+        <p class="kp-meta">${myPostcards.length} postcard${myPostcards.length === 1 ? '' : 's'} written by Pebbles 🐾</p>
+      </div>` : '';
+
+    extraSections = profileFacts + statsHtml + badgesHtml + advHtml + pcHtml;
+  }
+
+  content.innerHTML = `
+    <div class="kp-modal-header" style="border-color:${member.color}">
+      ${avatarHtml}
+      <div class="kp-modal-meta">
+        <h2 id="kp-modal-name">${escapeHtml(name)}</h2>
+        <p class="kp-modal-role">${escapeHtml(member.role)}</p>
+      </div>
+    </div>
+    ${extraSections}
+  `;
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeKidProfileModal() {
+  const overlay = $('#kid-profile-modal');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function setupKidProfileModal() {
+  const overlay = $('#kid-profile-modal');
+  const closeBtn = $('#kp-modal-close');
+  if (!overlay || !closeBtn) return;
+  closeBtn.addEventListener('click', closeKidProfileModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeKidProfileModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.style.display !== 'none') closeKidProfileModal();
+  });
+}
+
+// ---------- 🪄 ONBOARDING WIZARD ----------
+const WIZARD_STORAGE_KEY = 'fab5_tour_completed_v1';
+let WIZARD_STEP = 0;
+
+const WIZARD_STEPS = [
+  {
+    emoji: '🎉',
+    title: "G'day! I'm Pebbles 🐾",
+    body: `Welcome to the <strong>Fab 5 Fun Club</strong>! We're five mates plus one good dog (that's me) having the best adventures on the Sunshine Coast.<br><br>This little tour will show you around. It takes about 1 minute. Ready?`,
+    img: '/static/pebbles.png?v=2',
+    imgAlt: 'Pebbles the dog'
+  },
+  {
+    emoji: '👋',
+    title: 'Meet the crew',
+    body: `Five legends. Each one good at their own thing. Tap any card on the homepage to open their full profile — birthday, badges, things they love, adventures they've been on.`,
+    img: '/static/fab5-group.png?v=2',
+    imgAlt: 'The Fab 5 crew'
+  },
+  {
+    emoji: '🌟',
+    title: 'What we DO',
+    body: `We do everything fun on the Sunshine Coast. <strong>And I mean everything</strong>:`,
+    activities: true
+  },
+  {
+    emoji: '🐾',
+    title: 'Ask me anything',
+    body: `I'm your AI mate! Tap the floating <strong>🐾 chat button</strong> in the corner any time to ask me:<br><br>
+      • What should I wear on Saturday?<br>
+      • Who should lead the next adventure?<br>
+      • Write me a diary about our beach day<br>
+      • What's the weather like for Sunday?<br>
+      • Pick a Crew Challenge for this week<br><br>
+      I never get tired of helping! 💛`
+  },
+  {
+    emoji: '🚀',
+    title: "You're ready! Let's go!",
+    body: `Some good places to start:`,
+    quickLinks: [
+      { emoji: '📅', label: 'See the calendar', href: '#calendar' },
+      { emoji: '👋', label: 'Meet the crew', href: '#members' },
+      { emoji: '🎯', label: 'This week\'s challenge', href: '#challenge' },
+      { emoji: '🗺️', label: 'Adventure map', href: '#adventure-map' },
+      { emoji: '🎤', label: 'Talk to Pebbles', href: '#voice-pebbles' }
+    ]
+  }
+];
+
+function renderWizardStep() {
+  const content = $('#wizard-content');
+  const dots = $('#wizard-dots');
+  const backBtn = $('#wizard-back');
+  const nextBtn = $('#wizard-next');
+  if (!content || !dots) return;
+
+  const step = WIZARD_STEPS[WIZARD_STEP];
+  const isLast = WIZARD_STEP === WIZARD_STEPS.length - 1;
+
+  // Build extras (activities grid or quick-link buttons)
+  let extra = '';
+  if (step.activities && CLUB?.activities) {
+    extra = `<div class="wizard-activities">${CLUB.activities.map(a => `<div class="wizard-activity">${a.emoji} <span>${escapeHtml(a.name)}</span></div>`).join('')}</div>`;
+  } else if (step.quickLinks) {
+    extra = `<div class="wizard-quicklinks">${step.quickLinks.map(q => `<a href="${q.href}" class="wizard-quicklink" data-wizard-close>${q.emoji} ${escapeHtml(q.label)}</a>`).join('')}</div>`;
+  }
+
+  const imgHtml = step.img ? `<img class="wizard-img" src="${step.img}" alt="${escapeHtml(step.imgAlt || '')}" />` : '';
+
+  content.innerHTML = `
+    <div class="wizard-step">
+      <div class="wizard-step-emoji">${step.emoji}</div>
+      <h2 class="wizard-step-title">${escapeHtml(step.title)}</h2>
+      ${imgHtml}
+      <div class="wizard-step-body">${step.body}</div>
+      ${extra}
+    </div>
+  `;
+
+  // Dots
+  dots.innerHTML = WIZARD_STEPS.map((_, i) => `<span class="wizard-dot ${i === WIZARD_STEP ? 'active' : ''}"></span>`).join('');
+
+  // Buttons
+  if (backBtn) backBtn.style.display = WIZARD_STEP === 0 ? 'none' : 'inline-block';
+  if (nextBtn) nextBtn.textContent = isLast ? "🌟 Let's go!" : 'Next →';
+
+  // Quick-link close handlers (close wizard when a quick link is tapped)
+  content.querySelectorAll('[data-wizard-close]').forEach(el => {
+    el.addEventListener('click', () => closeWizard(true));
+  });
+}
+
+function openWizard(fromStart = true) {
+  WIZARD_STEP = 0;
+  const overlay = $('#onboarding-wizard');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  renderWizardStep();
+}
+
+function closeWizard(markCompleted = true) {
+  const overlay = $('#onboarding-wizard');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+  document.body.style.overflow = '';
+  if (markCompleted) {
+    try { localStorage.setItem(WIZARD_STORAGE_KEY, '1'); } catch (e) {}
+  }
+}
+
+function setupOnboardingWizard() {
+  const overlay = $('#onboarding-wizard');
+  const skipBtn = $('#wizard-skip');
+  const backBtn = $('#wizard-back');
+  const nextBtn = $('#wizard-next');
+  const tourBtn = $('#take-tour-btn');
+  if (!overlay) return;
+
+  skipBtn?.addEventListener('click', () => closeWizard(true));
+  backBtn?.addEventListener('click', () => {
+    if (WIZARD_STEP > 0) { WIZARD_STEP--; renderWizardStep(); }
+  });
+  nextBtn?.addEventListener('click', () => {
+    if (WIZARD_STEP < WIZARD_STEPS.length - 1) {
+      WIZARD_STEP++;
+      renderWizardStep();
+    } else {
+      closeWizard(true);
+    }
+  });
+  // ESC to close
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.style.display !== 'none') closeWizard(true);
+  });
+  // Topnav "Take the tour" button
+  tourBtn?.addEventListener('click', () => openWizard(true));
+
+  // Auto-open for first-time visitors
+  let alreadyDone = false;
+  try { alreadyDone = !!localStorage.getItem(WIZARD_STORAGE_KEY); } catch (e) {}
+  if (!alreadyDone) {
+    // Slight delay so the page renders first
+    setTimeout(() => openWizard(true), 800);
+  }
 }
 
 // ---------- KID PROFILES (Parents' Dashboard) ----------

@@ -1877,8 +1877,32 @@ app.get('/', (c) => {
             <a href="#gallery">📸 Gallery</a>
             <a href="#parents-faq">❓ Parents</a>
           </div>
+          <button id="take-tour-btn" class="take-tour-btn" title="Take the tour">🎓 Tour</button>
           <button id="logout-btn" class="logout-btn" title="Log out">🚪</button>
         </nav>
+
+        {/* 🪄 ONBOARDING WIZARD — first-visit welcome tour */}
+        <div id="onboarding-wizard" class="wizard-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="wizard-title">
+          <div class="wizard-card">
+            <button id="wizard-skip" class="wizard-skip" title="Skip tour">✕</button>
+            <div id="wizard-content" class="wizard-content"></div>
+            <div class="wizard-footer">
+              <div id="wizard-dots" class="wizard-dots"></div>
+              <div class="wizard-buttons">
+                <button id="wizard-back" class="btn btn-tertiary" style="display:none">← Back</button>
+                <button id="wizard-next" class="btn btn-primary">Next →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 👤 KID PROFILE MODAL — opens when a crew card is tapped */}
+        <div id="kid-profile-modal" class="kp-modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="kp-modal-name">
+          <div class="kp-modal-card">
+            <button id="kp-modal-close" class="kp-modal-close" title="Close">✕</button>
+            <div id="kp-modal-content" class="kp-modal-content"></div>
+          </div>
+        </div>
 
         {/* SLOGAN OF THE WEEK BANNER */}
         <div id="slogan-of-week" class="slogan-of-week" role="region" aria-label="Slogan of the Week">

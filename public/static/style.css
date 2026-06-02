@@ -2975,3 +2975,496 @@ body {
   .postcard { padding: 14px; }
   .map-legend { font-size: 0.82rem; gap: 10px; }
 }
+
+/* ============================================================
+   PHASE E — TAPPABLE CREW CARDS + ONBOARDING WIZARD
+   ============================================================ */
+
+/* ----- Member card tap hint + button reset ----- */
+.member-card {
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  text-align: center;
+  position: relative;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.member-card:hover,
+.member-card:focus-visible {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.15);
+  outline: none;
+}
+.member-card:focus-visible {
+  outline: 3px solid var(--turq, #00bcd4);
+  outline-offset: 3px;
+}
+.member-tap-hint {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #ff6f91, #ff9671);
+  border-radius: 999px;
+  opacity: 0.92;
+  letter-spacing: 0.3px;
+}
+
+/* ----- 🎓 Tour button in topnav ----- */
+.take-tour-btn {
+  background: linear-gradient(135deg, #ffd166, #ff9671);
+  color: #2d1b00;
+  border: none;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(255, 150, 113, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  margin-right: 6px;
+}
+.take-tour-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 5px 14px rgba(255, 150, 113, 0.55);
+}
+
+/* ============================================================
+   👤 KID PROFILE MODAL
+   ============================================================ */
+.kp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 10, 40, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: kpFadeIn 0.25s ease;
+}
+@keyframes kpFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.kp-modal-card {
+  background: linear-gradient(180deg, #fffdf7 0%, #fef4f8 100%);
+  border-radius: 28px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35);
+  animation: kpPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes kpPopIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.kp-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.08);
+  color: #333;
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 5;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.kp-modal-close:hover {
+  background: rgba(255, 107, 145, 0.9);
+  color: #fff;
+  transform: rotate(90deg);
+}
+.kp-modal-content {
+  padding: 28px 28px 30px;
+}
+.kp-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 18px;
+  border-bottom: 2px dashed rgba(0,0,0,0.08);
+  margin-bottom: 18px;
+}
+.kp-modal-avatar {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.kp-modal-meta { flex: 1; min-width: 0; }
+.kp-modal-meta h2 {
+  margin: 0 0 4px;
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: #2d1b4e;
+}
+.kp-modal-role {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #00bcd4, #4dd0e1);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.kp-modal-section {
+  margin-bottom: 20px;
+}
+.kp-modal-section h3 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ff6f91;
+  letter-spacing: 0.3px;
+}
+.kp-fact {
+  margin: 6px 0;
+  font-size: 0.96rem;
+  color: #333;
+  line-height: 1.5;
+}
+.kp-fact strong { color: #2d1b4e; }
+.kp-allergies {
+  background: #fff3cd;
+  border-left: 4px solid #ffd166;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-top: 8px;
+  font-size: 0.92rem;
+}
+.kp-empty {
+  font-style: italic;
+  color: #999;
+  font-size: 0.92rem;
+}
+.kp-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.kp-stat {
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px 6px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.kp-stat-num {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #00bcd4;
+  line-height: 1;
+}
+.kp-stat-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.kp-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.kp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #ffe66d, #ffd166);
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #5d4500;
+  box-shadow: 0 2px 6px rgba(255, 209, 102, 0.4);
+}
+.kp-badge-emoji { font-size: 1.05rem; }
+.kp-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.kp-list li {
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  background: #fff;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.kp-led-tag {
+  background: #ff6f91;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: auto;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.kp-meta {
+  font-size: 0.82rem;
+  color: #888;
+  margin-left: auto;
+}
+
+/* ============================================================
+   🪄 ONBOARDING WIZARD
+   ============================================================ */
+.wizard-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 107, 145, 0.85), rgba(0, 188, 212, 0.85));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: kpFadeIn 0.3s ease;
+}
+.wizard-card {
+  background: #fffdf7;
+  border-radius: 32px;
+  max-width: 580px;
+  width: 100%;
+  max-height: 92vh;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 30px 70px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  animation: kpPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.wizard-skip {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.08);
+  color: #333;
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 5;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.wizard-skip:hover {
+  background: rgba(255, 107, 145, 0.9);
+  color: #fff;
+  transform: rotate(90deg);
+}
+.wizard-content {
+  padding: 36px 30px 20px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+.wizard-step {
+  text-align: center;
+  animation: wizSlide 0.35s ease;
+}
+@keyframes wizSlide {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.wizard-step-emoji {
+  font-size: 3.4rem;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.wizard-step-title {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: #2d1b4e;
+  margin: 0 0 10px;
+}
+.wizard-step-body {
+  font-size: 1.02rem;
+  color: #444;
+  line-height: 1.55;
+  margin: 0 auto 14px;
+  max-width: 460px;
+}
+.wizard-img {
+  display: block;
+  margin: 14px auto;
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 20px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+  object-fit: cover;
+}
+.wizard-activities {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 6px 4px;
+}
+.wizard-activity {
+  background: linear-gradient(135deg, #fff, #fef4f8);
+  border-radius: 12px;
+  padding: 10px 6px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #2d1b4e;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.15s ease;
+}
+.wizard-activity:hover { transform: translateY(-2px) scale(1.03); }
+.wizard-activity-emoji { font-size: 1.5rem; line-height: 1; }
+.wizard-quicklinks {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+.wizard-quicklink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  background: linear-gradient(135deg, #00bcd4, #4dd0e1);
+  color: #fff;
+  border-radius: 16px;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 0.92rem;
+  box-shadow: 0 4px 12px rgba(0, 188, 212, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+.wizard-quicklink:nth-child(2n) {
+  background: linear-gradient(135deg, #ff6f91, #ff9671);
+  box-shadow: 0 4px 12px rgba(255, 111, 145, 0.4);
+}
+.wizard-quicklink:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+}
+.wizard-quicklink-emoji { font-size: 1.7rem; line-height: 1; }
+.wizard-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px 22px;
+  border-top: 2px dashed rgba(0,0,0,0.08);
+  gap: 12px;
+  background: rgba(255, 253, 247, 0.95);
+}
+.wizard-dots {
+  display: flex;
+  gap: 6px;
+}
+.wizard-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.15);
+  transition: all 0.2s ease;
+}
+.wizard-dot.active {
+  background: linear-gradient(135deg, #ff6f91, #00bcd4);
+  width: 26px;
+  border-radius: 999px;
+}
+.wizard-buttons {
+  display: flex;
+  gap: 8px;
+}
+.wizard-buttons .btn {
+  padding: 9px 18px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  border-radius: 999px;
+}
+
+/* ============================================================
+   📱 MOBILE RESPONSIVE — Phase E
+   ============================================================ */
+@media (max-width: 680px) {
+  .take-tour-btn {
+    font-size: 0.82rem;
+    padding: 6px 10px;
+    margin-right: 4px;
+  }
+  .member-tap-hint {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+  }
+
+  .kp-modal-overlay { padding: 10px; }
+  .kp-modal-card { border-radius: 22px; max-height: 94vh; }
+  .kp-modal-content { padding: 22px 18px 22px; }
+  .kp-modal-header { gap: 12px; }
+  .kp-modal-avatar { width: 72px; height: 72px; }
+  .kp-modal-meta h2 { font-size: 1.35rem; }
+  .kp-modal-role { font-size: 0.78rem; padding: 3px 10px; }
+  .kp-modal-section h3 { font-size: 0.98rem; }
+  .kp-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .kp-stat { padding: 10px 4px; }
+  .kp-stat-num { font-size: 1.35rem; }
+  .kp-stat-label { font-size: 0.66rem; }
+  .kp-badge { font-size: 0.8rem; padding: 5px 10px; }
+  .kp-list li { font-size: 0.86rem; padding: 7px 10px; }
+
+  .wizard-overlay { padding: 10px; }
+  .wizard-card { border-radius: 24px; max-height: 96vh; }
+  .wizard-content { padding: 30px 20px 16px; }
+  .wizard-step-emoji { font-size: 2.6rem; }
+  .wizard-step-title { font-size: 1.35rem; }
+  .wizard-step-body { font-size: 0.96rem; }
+  .wizard-img { max-height: 160px; border-radius: 16px; }
+  .wizard-activities {
+    grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+    gap: 6px;
+    max-height: 240px;
+  }
+  .wizard-activity { font-size: 0.78rem; padding: 8px 4px; }
+  .wizard-activity-emoji { font-size: 1.25rem; }
+  .wizard-quicklinks { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .wizard-quicklink { padding: 12px 6px; font-size: 0.85rem; }
+  .wizard-quicklink-emoji { font-size: 1.45rem; }
+  .wizard-footer { padding: 12px 16px 16px; }
+  .wizard-buttons .btn { padding: 8px 14px; font-size: 0.88rem; }
+  .wizard-dot { width: 8px; height: 8px; }
+  .wizard-dot.active { width: 22px; }
+}
