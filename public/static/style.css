@@ -1235,9 +1235,28 @@ body {
 
 @media (max-width: 640px) {
   .topnav-links { font-size: 0.75rem; }
+  .topnav-links a { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
   .topnav-logo span { display: none; }
   .merch-grid { grid-template-columns: 1fr 1fr; }
   .merch-card h4 { font-size: 0.95rem; }
   .concert-card { grid-template-columns: 1fr; }
   .concert-delete { justify-self: end; }
+  /* Section padding tighter on mobile */
+  .section { padding: 2rem 1rem; }
+  .section-title { font-size: 1.5rem; }
+  /* Avatars slightly smaller on phones so 5 fit nicely */
+  .member-avatar, .member-emoji { width: 88px; height: 88px; line-height: 88px; font-size: 2.4rem; border-width: 3px; }
+  .members-grid { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.8rem; }
+  /* Hero text and image tighter */
+  .hero-group { max-width: 100%; }
+  .tagline { font-size: 1rem; }
+  /* Buttons full-width-ish on tiny screens */
+  .btn-big { width: 100%; }
+  /* Form inputs comfortable size for thumbs */
+  input, select, textarea { font-size: 16px; } /* 16px prevents iOS zoom-on-focus */
+}
+/* Extra-small phones */
+@media (max-width: 380px) {
+  .merch-grid { grid-template-columns: 1fr; }
+  .member-avatar, .member-emoji { width: 78px; height: 78px; line-height: 78px; }
 }
