@@ -17,7 +17,7 @@ type Event = {
   leader?: string;              // Who's wearing the leader merch
   flyer?: string;               // base64 data URL — optional event flyer/screenshot
   flyerCaption?: string;        // optional caption for the flyer (e.g. "official flyer")
-  costPerPerson?: number;       // estimated cost per kid (we still show it, then say "Carla's got us!")
+  costPerPerson?: number;       // estimated cost per kid (we still show it, then say "The club's got us!")
   costNotes?: string;           // e.g. "$15 entry + $5 lunch"
   transportPlan?: string;       // e.g. "Carla's ute, pickup 6:30am from Saia's"
   parentPermissionNote?: string;// e.g. "Parents to sign waiver at the venue"
@@ -124,7 +124,7 @@ function ensureSeeded() {
 
 // =========== CLUB DATA ===========
 // 🎒 PARENT-PACKED ESSENTIALS — parents pack these for their kid for every adventure
-// (Carla covers event costs. Parents look after their own kid's food, drink, and clothes.)
+// (The club covers event costs. Parents look after their own kid's food, drink, and clothes.)
 const STANDARD_DAY_PACK = [
   { item: 'Water bottle (1L+ filled before pickup)', emoji: '💧', who: 'parent' },
   { item: 'Sunscreen (50+ SPF)', emoji: '🧴', who: 'parent' },
@@ -138,14 +138,14 @@ const STANDARD_DAY_PACK = [
   { item: 'Insect repellent', emoji: '🦟', who: 'parent' },
 ]
 
-// 💛 Carla's promise — the Fab 5 Fun Club is FREE for every friend
+// 💛 Our Free Club Promise — the Fab 5 Fun Club is FREE for every friend (the club covers all event costs)
 const CARLA_COVERS_IT = true
-const CARLA_PROMISE = "Carla's got us! 💛 Every adventure is free for the Fab 5 — no kid pays a cent."
+const CARLA_PROMISE = "The club's got us! 💛 Every adventure is free for the Fab 5 — no kid pays a cent."
 
 // 🌟 FAB 5 WAYS — family slogans + bonus values Saia & I picked together
-// (Carla-isms are starred ⭐ — the rest are bonus picks)
+// (Family-classics are starred ⭐ — the rest are bonus picks)
 const FAB5_SLOGANS = [
-  // ⭐ Carla family classics
+  // ⭐ Family classics (passed down from Saia's family — now belong to the whole crew)
   { id: 'lower-voice', text: "We lower our voice to be heard, not raise it.", category: 'kindness', star: true, emoji: '🤫' },
   { id: 'lifting-others', text: "We rise by lifting others.", category: 'kindness', star: true, emoji: '🌟' },
   { id: 'calm-gets-calm', text: "Calm gets calm. Anger gets anger.", category: 'self-control', star: true, emoji: '💆' },
@@ -192,10 +192,10 @@ function getSloganOfTheWeek() {
   return FAB5_SLOGANS[idx]
 }
 
-// ❓ Parents FAQ — common questions Saia's mum (Carla) thinks parents will ask
+// ❓ Parents FAQ — common questions parents typically ask
 const PARENTS_FAQ = [
   { emoji: '💰', q: "How much does this cost my family?",
-    a: "Nothing! 💛 The Fab 5 Fun Club is completely free — Carla (Saia's mum) covers all event costs (hire, entry fees, transport, fuel). Each parent just packs their own kid's water, food, sunscreen, hat, towel, and any medication — same as a normal day out. No money ever changes hands." },
+    a: "Nothing! 💛 The Fab 5 Fun Club is completely free — the club covers all event costs (hire, entry fees, transport, fuel). Each parent just packs their own kid's water, food, sunscreen, hat, towel, and any medication — same as a normal day out. No money ever changes hands." },
   { emoji: '⛑️', q: "Is it safe? Who's supervising my kid?",
     a: "Every adventure has at least one adult present (usually Carla, sometimes other club parents) plus the venue's own staff for paid activities. Events are planned in advance with the location, transport, weather plan, and parent permission notes shared on this site. You can always come along — see the 'Parents joining?' field on each event card." },
   { emoji: '🎒', q: "What do I need to pack for my kid?",
@@ -270,9 +270,9 @@ const CLUB_INFO = {
     { id: 'adventure',  name: 'Adventurer',       emoji: '🏞️', color: '#B4F8C8', category: 'Duke of Ed', desc: 'Tried something new and exciting outdoors.' },
     { id: 'service',    name: 'Service Star',     emoji: '❤️', color: '#FF6B9D', category: 'Duke of Ed', desc: 'Helped someone — cleaned up, taught a friend, helped a stranger.' },
     // Fab 5 Special Values
-    { id: 'team',       name: 'Team Player',      emoji: '🤝', color: '#A06CD5', category: 'Fab 5 Values', desc: '"If you\'re not a team player, you\'re not in the team." — Carla' },
+    { id: 'team',       name: 'Team Player',      emoji: '🤝', color: '#A06CD5', category: 'Fab 5 Values', desc: '"If you\'re not a team player, you\'re not in the team." — Fab 5 team rule' },
     { id: 'mentor',     name: 'Peer Mentor',      emoji: '👯', color: '#FFE66D', category: 'Fab 5 Values', desc: 'Guided a friend with kindness — not bossy, but supportive.' },
-    { id: 'kind',       name: 'Kind Heart',       emoji: '💛', color: '#FF4E8D', category: 'Fab 5 Values', desc: 'Not selfish, not greedy, not impatient — Carla\'s 3 rules in action!' },
+    { id: 'kind',       name: 'Kind Heart',       emoji: '💛', color: '#FF4E8D', category: 'Fab 5 Values', desc: 'Not selfish, not greedy, not impatient — our 3 club rules in action!' },
     { id: 'safety',     name: 'Safety Champ',     emoji: '⛑️', color: '#FFA500', category: 'Fab 5 Values', desc: 'Looked after the team — packed first aid, checked weather, kept everyone safe.' }
   ]
 }
@@ -297,10 +297,12 @@ aqua park $30–45; go karting $40–60; theme park $90–110; caving guided $80
 `
 
 const VALUES = `
-THE FAB 5 FUN CLUB VALUES:
-Carla's Rules: "Don't be selfish, greedy, or impatient — then everything will be ok."
-Carla's Team Rule: "If you're not a team player, then you're not in the team."
-Mum's Storytelling Wisdom: "We have the pen in our hands — we can write our own life stories."
+THE FAB 5 FUN CLUB VALUES (passed down from family, now belonging to the whole crew):
+Our Three Club Rules: "Don't be selfish, greedy, or impatient — then everything will be ok."
+Our Team Rule: "If you're not a team player, then you're not in the team."
+Our Story Wisdom: "We have the pen in our hands — we can write our own life stories."
+
+NOTE: These rules came from Saia's family originally, but on the public site we call them "Our Rules / Our Wisdom" — they belong to all of us now. Don't spotlight one person as the source. Speak of them as the club's shared values.
 
 PEER GUIDANCE (not bossiness):
 - Peer = people your own age. Peer guidance = friends helping friends grow.
@@ -620,13 +622,14 @@ THE CLUB (EGALITARIAN — this is important!):
 - Budget for gear & can hire equipment, travel in utes & trailers
 - Music: Olivia Rodrigo, Chappell Roan (Pink Pony Club!), love singing in the car
 
-💛 CARLA'S PROMISE — VERY IMPORTANT:
-- The Fab 5 Fun Club is COMPLETELY FREE for every friend. Carla (Saia's mum) covers ALL event costs (entry, hire gear, fuel, etc).
+💛 OUR FREE CLUB PROMISE — VERY IMPORTANT:
+- The Fab 5 Fun Club is COMPLETELY FREE for every friend. The club covers ALL event costs (entry, hire gear, fuel, etc).
 - Whenever ANYONE asks "how much?" / "what's it cost?" / "how much do my parents need to pay?":
   → ALWAYS estimate the real cost honestly (e.g. "Wakeboarding day at Lake MacDonald ≈ $45 per kid for hire + lunch")
-  → AND THEN say: "But guess what?! Carla's got us! 💛 Every adventure is free for the Fab 5 — no kid pays a cent!"
+  → AND THEN say: "But guess what?! The club's got us! 💛 Every adventure is free for the Fab 5 — no kid pays a cent!"
 - This is a kindness rule — nobody should ever feel awkward about money.
 - For parents who ask: reassure them their kid does NOT need to bring money.
+- IMPORTANT TONE: don't spotlight one specific adult as paying. Speak of "the club" or "we". The free-club promise belongs to the whole Fab 5.
 
 🎒 WHO PACKS WHAT — IMPORTANT! (don't get this wrong):
 - ⭐ PARENTS pack their own kid's food, drink, and clothes. That's a parent's job, not the club's.
@@ -641,13 +644,13 @@ ${STANDARD_DAY_PACK.map(p => `  ${p.emoji} ${p.item}`).join('\n')}
 - When you add an event, decide if parents are: 'yes' (welcome), 'no' (kids-only adventure), 'maybe' (their call), or 'required' (must come — e.g. concerts).
 - ALWAYS tell parents clearly so they can plan their weekend too.
 
-🌟 THE FAB 5 WAYS — THE SLOGANS WE LIVE BY (you can quote these any time, especially the ⭐ Carla family classics):
+🌟 THE FAB 5 WAYS — THE SLOGANS WE LIVE BY (you can quote these any time, especially the ⭐ family classics):
 ${FAB5_SLOGANS.map(s => `  ${s.star ? '⭐ ' : ''}${s.emoji} "${s.text}" (${s.category})`).join('\n')}
 - If someone asks "how do I be a Fab 5 kid?", teach them with these slogans! Pick 2-3 that fit the moment.
-- The 4 ⭐ Carla classics are SACRED — they come from Saia's mum and they're the heart of the club.
+- The 4 ⭐ family classics are SACRED — they were passed down to the Fab 5 from family and they're the heart of the club. (Don't keep saying who they came from — they belong to the whole crew now.)
 
 📋 EVERY EVENT SHOULD COVER:
-- 💰 Estimated cost per person (then "Carla covers it!")
+- 💰 Estimated cost per person (then "The club covers it!")
 - 🚗 Transport plan (who's driving, pickup time + place)
 - 🌦️ Weather check + backup plan if forecast looks bad
 - 📝 Parent permission note (if venue needs a signed waiver)
@@ -662,7 +665,7 @@ YOUR JOBS:
 5. ADD events to calendar via create_event tool (always confirm first)
 6. AWARD BADGES to crew members for great behavior via award_badge tool
 7. Add CONCERTS the crew wants to see via add_concert tool
-8. ALWAYS uphold Carla's wisdom
+8. ALWAYS uphold the Fab 5 Ways (our shared club wisdom)
 
 ${LOCATION_GUIDE}
 ${VALUES}
@@ -680,7 +683,7 @@ Duke of Ed inspired:
 - adventure (🏞️ Adventurer) — tried something new outdoors
 - service (❤️ Service Star) — helped someone
 Fab 5 Values:
-- team (🤝 Team Player) — Carla's "no team player → not in team"
+- team (🤝 Team Player) — our team rule: "no team player → not in team"
 - mentor (👯 Peer Mentor) — guided a friend with kindness
 - kind (💛 Kind Heart) — not selfish, greedy, or impatient
 - safety (⛑️ Safety Champ) — kept the team safe
@@ -974,7 +977,7 @@ app.get('/', (c) => {
               <span class="free-badge-icon">💛</span>
               <div>
                 <strong>FREE FOR ALL FRIENDS</strong>
-                <span class="free-badge-sub">Carla's got us — no kid pays a cent!</span>
+                <span class="free-badge-sub">The club's got us — no kid pays a cent!</span>
               </div>
             </div>
             <div class="hero-buttons">
@@ -995,33 +998,37 @@ app.get('/', (c) => {
 
         <section class="section values-section" id="values">
           <h2 class="section-title">🌟 Our Team Charter</h2>
-          <p class="section-subtitle">The way we roll — wisdom from Carla & the Fab 5</p>
+          <p class="section-subtitle">The way we roll — wisdom we live by as a crew 🌈</p>
           <div class="values-card egalitarian-rule">
             <h3>🤝 We Are Egalitarian</h3>
             <p class="big-quote">"We don't have roles.<br/>We just wear the merch for leader<br/>when we are the leader.<br/>Other than that we are just the Fab 5."</p>
             <p class="quote-credit">— the Fab 5 way 🌈</p>
           </div>
           <div class="values-card carla-promise">
-            <h3>💛 Carla's Promise — It's Free!</h3>
-            <p class="big-quote">"The Fab 5 Fun Club is FREE<br/>for every single friend.<br/>I've got you all — no kid<br/>ever has to pay a cent."</p>
-            <p class="quote-credit">— Carla 💛 (Saia's mum)</p>
-            <p class="promise-explainer">Every adventure shows the real estimated cost so everyone can see what it would normally cost — but Carla covers it all. Parents: your kids never need money for the club. 🌈</p>
+            <h3>💛 Our Free Club Promise</h3>
+            <p class="big-quote">"The Fab 5 Fun Club is FREE<br/>for every single friend.<br/>No kid ever has to pay a cent —<br/>we've got each other."</p>
+            <p class="quote-credit">— the Fab 5 way 🌈</p>
+            <p class="promise-explainer">Every adventure shows the real estimated cost so everyone can see what it would normally cost — but the club covers it all. Parents: your kids never need money for the club. 🌈</p>
           </div>
           <div class="values-card">
-            <h3>💛 Carla's Three Rules</h3>
+            <h3>💛 Our Three Club Rules</h3>
             <p class="big-quote">"Don't be selfish.<br/>Don't be greedy.<br/>Don't be impatient.<br/>Then everything will be ok."</p>
           </div>
           <div class="values-card team-rule">
-            <h3>🤝 Carla's Team Rule</h3>
+            <h3>🤝 Our Team Rule</h3>
             <p class="big-quote">"If you're not a team player,<br/>then you're not in the team."</p>
           </div>
           <div class="values-card story-rule">
-            <h3>✍️ Carla's Story Wisdom</h3>
+            <h3>✍️ Our Story Wisdom</h3>
             <p class="big-quote">"We have the pen in our hands —<br/>we can write our own life stories!"</p>
+          </div>
+          <div class="values-card family-origin-card">
+            <h3>🌱 Where these came from</h3>
+            <p class="family-origin-text">These rules and wisdom were passed down to the Fab 5 from family. We live by them now — they belong to all of us. 💛</p>
           </div>
           <div class="duke-card">
             <h3>🏅 Duke of Edinburgh-Style Adventures</h3>
-            <p>Carla did the real Duke of Ed Award. It's been running since 1956 in 130+ countries and it works! Real DofE starts at 14 — until then we practise here. Every great adventure has 4 ingredients:</p>
+            <p>The Duke of Ed Award has been running since 1956 in 130+ countries and it works! Real DofE starts at 14 — until then we practise here. Every great adventure has 4 ingredients:</p>
             <div class="duke-grid">
               <div class="duke-item"><span class="duke-emoji">🧠</span><strong>SKILL</strong><p>Learn something new</p></div>
               <div class="duke-item"><span class="duke-emoji">💪</span><strong>PHYSICAL</strong><p>Get the body moving</p></div>
@@ -1051,7 +1058,7 @@ app.get('/', (c) => {
         {/* FAB 5 WAYS — the slogans we live by */}
         <section class="section fab5-ways-section" id="fab5-ways">
           <h2 class="section-title">🌟 The Fab 5 Ways</h2>
-          <p class="section-subtitle">The slogans we live by. ⭐ = Carla family classics — the heart of the club 💛</p>
+          <p class="section-subtitle">The slogans we live by. ⭐ = family classics — the heart of the club 💛</p>
           <div class="fab5-ways-filters" id="fab5-ways-filters"></div>
           <div id="fab5-ways-grid" class="fab5-ways-grid">
             <div class="loading">Loading slogans...</div>
@@ -1077,7 +1084,7 @@ app.get('/', (c) => {
           <h2 class="section-title">➕ Plan a New Adventure</h2>
           <p class="section-subtitle">Need help? Ask Pebbles! 🐾</p>
           <div class="form-banner carla-banner">
-            💛 <strong>Reminder:</strong> The club is FREE — Carla covers all costs. Estimate the real cost so parents can see, but no kid ever pays!
+            💛 <strong>Reminder:</strong> The club is FREE — the club covers all costs. Estimate the real cost so parents can see, but no kid ever pays!
           </div>
           <form id="event-form" class="event-form">
             <fieldset class="form-section">
@@ -1129,8 +1136,8 @@ app.get('/', (c) => {
             </fieldset>
 
             <fieldset class="form-section">
-              <legend>💰 Cost (always shown — Carla covers it!)</legend>
-              <p class="field-hint">Estimate the real cost per person so parents can see what it would normally cost. Carla covers everything — no kid pays a cent! 💛</p>
+              <legend>💰 Cost (always shown — the club covers it!)</legend>
+              <p class="field-hint">Estimate the real cost per person so parents can see what it would normally cost. The club covers everything — no kid pays a cent! 💛</p>
               <div class="form-row">
                 <label><span>Estimated cost per person ($AUD)</span>
                   <input type="number" id="evt-cost" min="0" step="1" placeholder="e.g. 45" />
@@ -1188,7 +1195,7 @@ app.get('/', (c) => {
               <legend>🎒 What Parents Pack</legend>
               <div class="standard-pack-card">
                 <h4>👨‍👩‍👧 Parent-Packed Essentials <span class="auto-included">— parents pack these for their own kid, every event</span></h4>
-                <p class="pack-explainer">💛 <strong>Carla covers all event costs</strong> (entry, hire gear, transport). <strong>Parents look after their own kid's food, drink, and clothes.</strong> Here's the standard list every parent packs:</p>
+                <p class="pack-explainer">💛 <strong>The club covers all event costs</strong> (entry, hire gear, transport). <strong>Parents look after their own kid's food, drink, and clothes.</strong> Here's the standard list every parent packs:</p>
                 <div id="std-pack-list" class="std-pack-list">Loading...</div>
               </div>
               <label><span>Extra items just for THIS event (comma separated)</span>
@@ -1304,7 +1311,7 @@ app.get('/', (c) => {
         {/* GALLERY SECTION */}
         <section class="section gallery-section" id="gallery">
           <h2 class="section-title">📸 Gallery — Our Story</h2>
-          <p class="section-subtitle">"We have the pen in our hands — we can write our own life stories!" — Carla</p>
+          <p class="section-subtitle">"We have the pen in our hands — we can write our own life stories!" 🌈</p>
 
           <div class="gallery-upload">
             <h3>⬆️ Add a Memory</h3>
@@ -1376,7 +1383,7 @@ app.get('/', (c) => {
         {/* PARENTS' SUGGESTION BOX */}
         <section class="section suggestion-box-section" id="suggestion-box">
           <h2 class="section-title">📬 Parents' Suggestion Box</h2>
-          <p class="section-subtitle">Got an idea, worry, or wish for the club? Carla reads every single one. 💛</p>
+          <p class="section-subtitle">Got an idea, worry, or wish for the club? Mum and the crew read every single one. 💛</p>
           <form id="suggestion-form" class="suggestion-form">
             <div class="form-row">
               <label><span>Your name (optional)</span>
@@ -1398,7 +1405,7 @@ app.get('/', (c) => {
             <label><span>Your suggestion or question</span>
               <textarea id="sug-message" rows={4} maxlength={2000} placeholder="Type anything — an idea, a worry, a thank you, a question..." required></textarea>
             </label>
-            <button type="submit" class="btn btn-primary btn-big">📬 Send to Carla</button>
+            <button type="submit" class="btn btn-primary btn-big">📬 Send to the Fab 5 crew</button>
             <div id="sug-msg"></div>
           </form>
 
@@ -1428,7 +1435,7 @@ app.get('/', (c) => {
           </div>
           <div id="pebbles-messages" class="pebbles-messages"></div>
           <div class="pebbles-quick" id="pebbles-quick">
-            <button data-prompt="How do I be a Fab 5 kid? Teach me the Fab 5 Ways and pick your favourite Carla family slogans for me.">🐾 How to be a Fab 5 kid</button>
+            <button data-prompt="How do I be a Fab 5 kid? Teach me the Fab 5 Ways and pick your favourite family-classic slogans for me.">🐾 How to be a Fab 5 kid</button>
             <button data-prompt="Plan a kayaking trip next Saturday at Lake MacDonald with all 5 of us">🛶 Plan kayak</button>
             <button data-prompt="Who should be Leader of the Day next? Check the rotation fairness.">🎖️ Next leader</button>
             <button data-prompt="Award Ace the Kind Heart badge — he shared his snacks with the crew when someone forgot lunch">🏆 Award badge</button>

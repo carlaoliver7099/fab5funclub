@@ -27,9 +27,9 @@ A **private, AI-powered adventure-planning website** for 5 friends — **Ace, Ch
 ✅ **The Crew** — 5 friends with their cartoon avatars + Pebbles (real photo)
 ✅ **Team Charter / Values section** with:
    - 🤝 Egalitarian rule (top of section)
-   - Carla's 3 rules (not selfish/greedy/impatient)
-   - Carla's team rule ("if you're not a team player, you're not in the team")
-   - Carla's story wisdom ("we have the pen in our hands")
+   - Our 3 club rules (not selfish/greedy/impatient)
+   - Our team rule ("if you're not a team player, you're not in the team")
+   - Our story wisdom ("we have the pen in our hands")
    - Duke of Edinburgh 4-pillar framework with link to dukeofed.com.au
    - Peer-guidance explanation + Team Leader questions
 ✅ **Calendar** — month nav, weekend-only Sat/Sun events, leader badge per event, click rotate button
@@ -86,7 +86,7 @@ All `/api/*` (except `/api/login`, `/api/logout`, `/api/me`) require login cooki
 - 🏞️ Adventurer — tried something exciting outdoors
 - ❤️ Service Star — helped someone
 
-**Fab 5 Values (Carla-inspired):**
+**Fab 5 Values (passed down to the crew from family):**
 - 🤝 Team Player — "no team player → not in team"
 - 👯 Peer Mentor — guided a friend with kindness
 - 💛 Kind Heart — not selfish, greedy, or impatient

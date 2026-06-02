@@ -298,10 +298,10 @@ function renderEventsList() {
     const leaderHtml = e.leader
       ? `<div class="leader-badge">🎖️ Leader: ${escapeHtml(e.leader)} <button data-rotate="${e.id}" title="Rotate to next">🔄</button></div>`
       : '';
-    // Cost chip — always shows "Carla covers it!" message
+    // Cost chip — always shows "The club's got us!" message
     const costChip = (typeof e.costPerPerson === 'number' && e.costPerPerson >= 0)
-      ? `<span class="chip cost"><span class="cost-strike">$${e.costPerPerson}/kid</span><span class="cost-carla">💛 Carla's got us — FREE!</span>${e.costNotes ? `<span class="cost-notes">(${escapeHtml(e.costNotes)})</span>` : ''}</span>`
-      : `<span class="chip cost"><span class="cost-carla">💛 FREE — Carla covers it!</span></span>`;
+      ? `<span class="chip cost"><span class="cost-strike">$${e.costPerPerson}/kid</span><span class="cost-carla">💛 The club's got us — FREE!</span>${e.costNotes ? `<span class="cost-notes">(${escapeHtml(e.costNotes)})</span>` : ''}</span>`
+      : `<span class="chip cost"><span class="cost-carla">💛 FREE — the club covers it!</span></span>`;
 
     const flyerHtml = e.flyer
       ? `<div class="event-flyer-wrap">
@@ -751,7 +751,7 @@ function renderSloganOfWeek() {
   const cat = document.getElementById('sotw-category');
   if (!banner || !text || !CLUB?.sloganOfTheWeek) return;
   const s = CLUB.sloganOfTheWeek;
-  text.innerHTML = `${s.emoji || '🌟'} <em>"${escapeHtml(s.text)}"</em>${s.star ? ' <span class="sotw-star" title="Carla family classic">⭐</span>' : ''}`;
+  text.innerHTML = `${s.emoji || '🌟'} <em>"${escapeHtml(s.text)}"</em>${s.star ? ' <span class="sotw-star" title="Family classic">⭐</span>' : ''}`;
   if (cat) cat.textContent = s.category ? `#${s.category}` : '';
   banner.classList.add('loaded');
   if (s.star) banner.classList.add('starred');
@@ -803,7 +803,7 @@ function renderFab5Ways() {
 
   grid.innerHTML = list.map(s => `
     <div class="slogan-card ${s.star ? 'starred' : ''} cat-${escapeHtml(s.category || 'general')}">
-      ${s.star ? '<div class="slogan-star-badge" title="Carla family classic">⭐ Carla classic</div>' : ''}
+      ${s.star ? '<div class="slogan-star-badge" title="Family classic — passed down to the Fab 5">⭐ Family classic</div>' : ''}
       <div class="slogan-emoji">${s.emoji || '🌟'}</div>
       <blockquote class="slogan-text">"${escapeHtml(s.text)}"</blockquote>
       <div class="slogan-cat">#${escapeHtml(s.category || 'general')}</div>
@@ -847,7 +847,7 @@ function setupSuggestionForm() {
       SUGGESTIONS.unshift(res.suggestion);
       renderSuggestionsList();
       form.reset();
-      flashSugMsg('💛 Thank you! Carla will see your message.', 'success');
+      flashSugMsg('💛 Thank you! The Fab 5 crew will see your message.', 'success');
     } catch (err) {
       flashSugMsg('Oops: ' + err.message, 'error');
     }

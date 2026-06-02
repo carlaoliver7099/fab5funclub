@@ -1285,7 +1285,7 @@ body {
   50% { box-shadow: 4px 4px 0 var(--dark), 0 0 30px rgba(255, 230, 109, 0.7); transform: scale(1.02); }
 }
 
-/* ===== CARLA'S PROMISE values card ===== */
+/* ===== OUR FREE CLUB PROMISE values card ===== */
 .values-card.carla-promise {
   background: linear-gradient(135deg, #fffdf0 0%, #fff5e6 50%, #fff0f5 100%);
   border-color: #d4a017;
@@ -1873,4 +1873,22 @@ body {
 
   .parents-joining-badge { font-size: 0.82rem; padding: 0.4rem 0.7rem; }
   .pj-note { width: 100%; font-size: 0.78rem; }
+}
+
+/* ===== Family-origin gentle credit card ===== */
+.values-card.family-origin-card {
+  background: linear-gradient(135deg, #fff8e1 0%, #fff0f6 100%);
+  border: 2px dashed #f4c542;
+  text-align: center;
+}
+.values-card.family-origin-card h3 {
+  color: #8a5a00;
+  font-size: 1.1rem;
+}
+.family-origin-text {
+  color: #5a4a2a;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  font-style: italic;
+  margin: 0;
 }
