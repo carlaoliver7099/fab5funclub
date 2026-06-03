@@ -7,6 +7,7 @@ type Bindings = {
   OPENAI_API_KEY: string
   OPENAI_BASE_URL: string
   CLUB_PASSWORD: string
+  PROFILES_KV: KVNamespace
 }
 
 // =========== TYPES ===========
@@ -713,7 +714,10 @@ app.get('/api/leader/next', (c) => {
   return c.json({ suggested: sorted[0], counts })
 })
 
-app.get('/api/club-info', (c) => c.json({
+app.get('/api/club-info', async (c) => {
+  // Hydrate persisted profile edits from KV before returning to the frontend
+  await hydrateProfilesFromKV(c.env)
+  return c.json({
   ...CLUB_INFO,
   standardDayPack: STANDARD_DAY_PACK,
   carlaCoversIt: CARLA_COVERS_IT,
@@ -730,14 +734,48 @@ app.get('/api/club-info', (c) => c.json({
   challenges: CHALLENGES,
   captionBattles: CAPTION_BATTLES,
   postcards: POSTCARDS,
-}))
+  })
+})
 
 // =========== 🧒 KID PROFILES API ===========
+// KV-backed persistence — without this, profile edits vanish on cold start.
+// Strategy: on every read, hydrate KV overrides into in-memory KID_PROFILES.
+// Only hydrate ONCE per worker instance (KV reads cost money + add latency).
+let KV_HYDRATED = false
+async function hydrateProfilesFromKV(env: Bindings) {
+  if (KV_HYDRATED || !env.PROFILES_KV) return
+  KV_HYDRATED = true
+  try {
+    for (const name of Object.keys(KID_PROFILES)) {
+      const stored = await env.PROFILES_KV.get('profile:' + name, 'json') as Partial<KidProfile> | null
+      if (stored && typeof stored === 'object') {
+        // Merge stored fields over the seeded defaults (stored wins)
+        Object.assign(KID_PROFILES[name], stored)
+      }
+    }
+  } catch (e) {
+    console.error('[KV] hydrate failed', e)
+  }
+}
+
+async function saveProfileToKV(env: Bindings, name: string) {
+  if (!env.PROFILES_KV) return
+  try {
+    await env.PROFILES_KV.put('profile:' + name, JSON.stringify(KID_PROFILES[name]))
+  } catch (e) {
+    console.error('[KV] save failed for', name, e)
+  }
+}
+
 // GET all profiles
-app.get('/api/kid-profiles', (c) => c.json({ profiles: KID_PROFILES }))
+app.get('/api/kid-profiles', async (c) => {
+  await hydrateProfilesFromKV(c.env)
+  return c.json({ profiles: KID_PROFILES })
+})
 
 // PATCH a single kid's profile — only existing members can be updated (no new kids via API)
 app.patch('/api/kid-profiles/:name', async (c) => {
+  await hydrateProfilesFromKV(c.env)
   const name = c.req.param('name')
   if (!KID_PROFILES[name]) return c.json({ error: 'Unknown member' }, 404)
   const body = await c.req.json().catch(() => ({} as any))
@@ -776,6 +814,10 @@ app.patch('/api/kid-profiles/:name', async (c) => {
   if (typeof body.favouriteSport === 'string')   prof.favouriteSport = body.favouriteSport.trim().slice(0, 60) || undefined
   if (typeof body.superpower === 'string')       prof.superpower = body.superpower.trim().slice(0, 120) || undefined
   if (typeof body.dreamHoliday === 'string')     prof.dreamHoliday = body.dreamHoliday.trim().slice(0, 120) || undefined
+
+  // 💾 Persist to KV so edits survive cold starts + deploys
+  await saveProfileToKV(c.env, name)
+
   return c.json({ ok: true, profile: prof })
 })
 
