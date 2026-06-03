@@ -755,10 +755,27 @@ app.patch('/api/kid-profiles/:name', async (c) => {
   if (body.hypeSong && typeof body.hypeSong === 'object') {
     const t = (body.hypeSong.title || '').toString().trim().slice(0, 120)
     const a = (body.hypeSong.artist || '').toString().trim().slice(0, 80)
-    const sid = (body.hypeSong.spotifyId || '').toString().trim().slice(0, 40)
+    let sid = (body.hypeSong.spotifyId || '').toString().trim()
+    // Accept a full Spotify URL and extract just the ID
+    const urlMatch = sid.match(/track\/([a-zA-Z0-9]+)/)
+    if (urlMatch) sid = urlMatch[1]
+    sid = sid.slice(0, 40)
     if (t && a) prof.hypeSong = { title: t, artist: a, spotifyId: sid || undefined }
     else if (!t && !a) prof.hypeSong = undefined
   }
+  // ----- FUN FACTS (Saia's request — kids can edit their own card) -----
+  if (typeof body.favouriteColour === 'string') prof.favouriteColour = body.favouriteColour.trim().slice(0, 40) || undefined
+  if (typeof body.favouriteColourHex === 'string') {
+    const v = body.favouriteColourHex.trim()
+    // Only accept valid hex colours (#rgb or #rrggbb)
+    if (v === '' || /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(v)) prof.favouriteColourHex = v || undefined
+  }
+  if (typeof body.favouriteFood === 'string')    prof.favouriteFood = body.favouriteFood.trim().slice(0, 80) || undefined
+  if (typeof body.favouriteAnimal === 'string')  prof.favouriteAnimal = body.favouriteAnimal.trim().slice(0, 60) || undefined
+  if (typeof body.favouriteMovie === 'string')   prof.favouriteMovie = body.favouriteMovie.trim().slice(0, 80) || undefined
+  if (typeof body.favouriteSport === 'string')   prof.favouriteSport = body.favouriteSport.trim().slice(0, 60) || undefined
+  if (typeof body.superpower === 'string')       prof.superpower = body.superpower.trim().slice(0, 120) || undefined
+  if (typeof body.dreamHoliday === 'string')     prof.dreamHoliday = body.dreamHoliday.trim().slice(0, 120) || undefined
   return c.json({ ok: true, profile: prof })
 })
 

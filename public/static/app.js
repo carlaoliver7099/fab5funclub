@@ -1854,7 +1854,16 @@ function openKidProfileModal(name) {
       </ul>
     </div>` : '';
 
-  const extraSections = factsHtml + songHtml + pebblesExtras;
+  // ✏️ Edit my card button — kids only (not Pebbles)
+  const editBtnHtml = !isPebbles ? `
+    <div class="kp-modal-section kp-edit-cta">
+      <button type="button" class="btn btn-primary kp-edit-btn" data-edit-name="${escapeHtml(name)}">
+        ✏️ Edit my card
+      </button>
+      <p class="kp-edit-hint">Make it really YOU — change your favourite stuff anytime 💛</p>
+    </div>` : '';
+
+  const extraSections = factsHtml + songHtml + pebblesExtras + editBtnHtml;
 
   content.innerHTML = `
     <div class="kp-modal-header" style="border-color:${member.color}">
@@ -1888,6 +1897,201 @@ function setupKidProfileModal() {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && overlay.style.display !== 'none') closeKidProfileModal();
   });
+
+  // Event delegation for edit / cancel / submit buttons inside the modal
+  // (innerHTML is regenerated each open, so we can't bind directly)
+  document.addEventListener('click', (e) => {
+    const editBtn = e.target.closest && e.target.closest('.kp-edit-btn');
+    if (editBtn) {
+      e.preventDefault();
+      renderKidProfileEditForm(editBtn.dataset.editName);
+      return;
+    }
+    const cancelBtn = e.target.closest && e.target.closest('.kp-edit-cancel');
+    if (cancelBtn) {
+      e.preventDefault();
+      openKidProfileModal(cancelBtn.dataset.editName);
+      return;
+    }
+  });
+}
+
+// ---------- ✏️ EDIT MY CARD ----------
+function renderKidProfileEditForm(name) {
+  const content = $('#kp-modal-content');
+  if (!content || !CLUB) return;
+  const member = CLUB.members.find(m => m.name === name);
+  if (!member) return;
+
+  const profile = (CLUB.kidProfiles && CLUB.kidProfiles[name]) || {};
+  const hypeSong = profile.hypeSong || {};
+
+  // Default colour swatch for the picker (must be valid 6-char hex)
+  let defaultHex = '#ffd166';
+  if (profile.favouriteColourHex && /^#[0-9a-fA-F]{6}$/.test(profile.favouriteColourHex)) {
+    defaultHex = profile.favouriteColourHex;
+  }
+
+  const v = (s) => s == null ? '' : escapeHtml(String(s));
+
+  content.innerHTML = `
+    <div class="kp-modal-header" style="border-color:${member.color}">
+      <div class="kp-modal-avatar" style="background:${member.color}">
+        <img src="/static/avatars/${name.toLowerCase()}.png?v=2" alt="${v(name)}" onerror="this.style.display='none'" />
+      </div>
+      <div class="kp-modal-meta">
+        <h2>✏️ Editing ${v(name)}'s card</h2>
+        <p class="kp-modal-role">Fill in your favourite stuff 💛</p>
+      </div>
+    </div>
+    <form id="kp-edit-form" class="kp-edit-form" data-edit-name="${v(name)}" autocomplete="off">
+      <div class="kp-edit-form-row">
+        <label for="kpe-colour">🎨 Favourite colour <span class="kpe-hint">(e.g. "ocean blue")</span></label>
+        <div class="kpe-colour-row">
+          <input type="text" id="kpe-colour" name="favouriteColour" maxlength="40" value="${v(profile.favouriteColour)}" placeholder="ocean blue" />
+          <input type="color" id="kpe-colour-hex" name="favouriteColourHex" value="${defaultHex}" title="Pick the exact shade" />
+        </div>
+      </div>
+
+      <div class="kp-edit-form-row">
+        <label for="kpe-food">🍕 Favourite food</label>
+        <input type="text" id="kpe-food" name="favouriteFood" maxlength="80" value="${v(profile.favouriteFood)}" placeholder="pizza, sushi, mango..." />
+      </div>
+
+      <div class="kp-edit-form-row">
+        <label for="kpe-animal">🐾 Favourite animal</label>
+        <input type="text" id="kpe-animal" name="favouriteAnimal" maxlength="60" value="${v(profile.favouriteAnimal)}" placeholder="dolphin, koala, dog..." />
+      </div>
+
+      <div class="kp-edit-form-row">
+        <label for="kpe-sport">⚡ Favourite sport</label>
+        <input type="text" id="kpe-sport" name="favouriteSport" maxlength="60" value="${v(profile.favouriteSport)}" placeholder="surfing, footy, dance..." />
+      </div>
+
+      <div class="kp-edit-form-row">
+        <label for="kpe-movie">🎬 Favourite movie</label>
+        <input type="text" id="kpe-movie" name="favouriteMovie" maxlength="80" value="${v(profile.favouriteMovie)}" placeholder="Moana, Spiderverse..." />
+      </div>
+
+      <div class="kp-edit-form-row">
+        <label for="kpe-superpower">🦸 Superpower</label>
+        <input type="text" id="kpe-superpower" name="superpower" maxlength="120" value="${v(profile.superpower)}" placeholder="what makes you AWESOME" />
+      </div>
+
+      <div class="kp-edit-form-row">
+        <label for="kpe-holiday">🏝️ Dream holiday</label>
+        <input type="text" id="kpe-holiday" name="dreamHoliday" maxlength="120" value="${v(profile.dreamHoliday)}" placeholder="Japan, Fiji, Hawaii..." />
+      </div>
+
+      <div class="kp-edit-form-row">
+        <label for="kpe-birthday">🎂 Birthday</label>
+        <input type="date" id="kpe-birthday" name="birthday" value="${v(profile.birthday)}" />
+      </div>
+
+      <div class="kp-edit-form-section">
+        <h3 class="kpe-section-title">🎵 Your hype song</h3>
+
+        <div class="kp-edit-form-row">
+          <label for="kpe-song-title">Song title</label>
+          <input type="text" id="kpe-song-title" name="hypeSongTitle" maxlength="80" value="${v(hypeSong.title)}" placeholder="Levitating" />
+        </div>
+
+        <div class="kp-edit-form-row">
+          <label for="kpe-song-artist">Artist</label>
+          <input type="text" id="kpe-song-artist" name="hypeSongArtist" maxlength="80" value="${v(hypeSong.artist)}" placeholder="Dua Lipa" />
+        </div>
+
+        <div class="kp-edit-form-row">
+          <label for="kpe-song-spotify">Spotify link <span class="kpe-hint">(paste from Spotify → Share → Copy link)</span></label>
+          <input type="text" id="kpe-song-spotify" name="hypeSongSpotify" maxlength="200" value="${v(hypeSong.spotifyId ? 'https://open.spotify.com/track/' + hypeSong.spotifyId : '')}" placeholder="https://open.spotify.com/track/..." />
+        </div>
+      </div>
+
+      <p class="kp-saving-msg" id="kpe-msg" aria-live="polite"></p>
+
+      <div class="kp-edit-form-actions">
+        <button type="button" class="btn btn-secondary kp-edit-cancel" data-edit-name="${v(name)}">Cancel</button>
+        <button type="submit" class="btn btn-primary kp-edit-save">💾 Save my card</button>
+      </div>
+    </form>
+  `;
+
+  // Wire submit + colour-picker live-sync (one-time per render)
+  const form = $('#kp-edit-form');
+  if (form) {
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      submitKidProfileEdit(name);
+    });
+  }
+  // Make the text colour name sync with the picker so kids see what they're choosing
+  const colourText = $('#kpe-colour');
+  const colourHex = $('#kpe-colour-hex');
+  if (colourText && colourHex && !colourText.value.trim()) {
+    // If they pick a colour but haven't typed a name, leave the text field blank — that's fine.
+  }
+}
+
+async function submitKidProfileEdit(name) {
+  const form = document.getElementById('kp-edit-form');
+  if (!form) return;
+  const msg = document.getElementById('kpe-msg');
+  const saveBtn = form.querySelector('.kp-edit-save');
+  const cancelBtn = form.querySelector('.kp-edit-cancel');
+
+  const fd = new FormData(form);
+  const payload = {
+    favouriteColour:    (fd.get('favouriteColour')    || '').toString(),
+    favouriteColourHex: (fd.get('favouriteColourHex') || '').toString(),
+    favouriteFood:      (fd.get('favouriteFood')      || '').toString(),
+    favouriteAnimal:    (fd.get('favouriteAnimal')    || '').toString(),
+    favouriteSport:     (fd.get('favouriteSport')     || '').toString(),
+    favouriteMovie:     (fd.get('favouriteMovie')     || '').toString(),
+    superpower:         (fd.get('superpower')         || '').toString(),
+    dreamHoliday:       (fd.get('dreamHoliday')       || '').toString(),
+    birthday:           (fd.get('birthday')           || '').toString(),
+    hypeSong: {
+      title:     (fd.get('hypeSongTitle')   || '').toString(),
+      artist:    (fd.get('hypeSongArtist')  || '').toString(),
+      spotifyId: (fd.get('hypeSongSpotify') || '').toString()  // backend parses full URL or bare ID
+    }
+  };
+
+  // If the user didn't type a colour name but did pick a hex, only send the hex
+  if (!payload.favouriteColour.trim()) {
+    // keep hex only — leave name empty (backend treats '' as clear)
+  }
+
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+  if (cancelBtn) cancelBtn.disabled = true;
+  if (msg) { msg.textContent = '💾 Saving your card...'; msg.style.color = '#666'; }
+
+  try {
+    const res = await fetch(`/api/kid-profiles/${encodeURIComponent(name)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '');
+      throw new Error(`Save failed (${res.status}) ${errText}`);
+    }
+    const updated = await res.json();
+
+    // Update local CLUB.kidProfiles so the modal re-render shows new values
+    if (!CLUB.kidProfiles) CLUB.kidProfiles = {};
+    CLUB.kidProfiles[name] = updated.profile || updated;
+
+    if (msg) { msg.textContent = '✅ Saved! Looking good 💛'; msg.style.color = '#2a9d4a'; }
+
+    // Re-render the read-only card after a short beat so the kid sees the success
+    setTimeout(() => openKidProfileModal(name), 600);
+  } catch (err) {
+    console.error('[kp-edit] save failed', err);
+    if (msg) { msg.textContent = '⚠️ Couldn\'t save. Try again?'; msg.style.color = '#c33'; }
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Save my card'; }
+    if (cancelBtn) cancelBtn.disabled = false;
+  }
 }
 
 // ---------- 🪄 ONBOARDING WIZARD ----------
