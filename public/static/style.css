@@ -4251,3 +4251,253 @@ body {
 @media (max-width: 360px) {
   .whoami-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ============ 🏅 DUKE OF EDINBURGH JOURNEY ============ */
+.dofe-journey-section {
+  background: linear-gradient(135deg, #FFF8E7 0%, #FFE4F1 100%);
+  border-radius: 24px;
+  padding: 2rem 1.5rem;
+  margin: 2rem auto;
+}
+.dofe-journey-intro {
+  background: white;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.dofe-journey-intro p { margin: 0.4rem 0; }
+.dofe-journey-parent-link { font-size: 0.95rem; color: #555; }
+.dofe-journey-parent-link a { color: #A06CD5; font-weight: 600; }
+.dofe-journey-content { margin: 1rem 0; }
+.dofe-journey-card {
+  background: white;
+  border-radius: 18px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+.dofe-journey-nudge {
+  text-align: center;
+  border: 2px dashed #A06CD5;
+  background: white;
+}
+.dofe-journey-nudge p:first-child { font-size: 1.1rem; }
+
+/* ── Pillar bars ── */
+.kp-pillars, .dofe-pillars { display: flex; flex-direction: column; gap: 0.6rem; margin: 0.75rem 0; }
+.kp-pillar-row { display: flex; flex-direction: column; gap: 0.25rem; }
+.kp-pillar-label {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.95rem; font-weight: 600;
+}
+.kp-pillar-emoji { font-size: 1.15rem; }
+.kp-pillar-name { flex: 1; }
+.kp-pillar-hours { color: #777; font-weight: 500; font-size: 0.85rem; }
+.kp-pillar-bar {
+  height: 14px;
+  background: #F0F0F0;
+  border-radius: 7px;
+  overflow: hidden;
+  position: relative;
+}
+.kp-pillar-bar-fill {
+  height: 100%;
+  border-radius: 7px;
+  transition: width 0.6s ease;
+  min-width: 4px;
+}
+
+/* ── DofE stage badge inside profile modal ── */
+.kp-dofe-stage {
+  display: flex; align-items: center; gap: 0.85rem;
+  background: linear-gradient(135deg, #FFF8E7, #FFE4F1);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.85rem;
+}
+.kp-dofe-stage-emoji { font-size: 2.4rem; line-height: 1; }
+.kp-dofe-stage-label { margin: 0; font-size: 1rem; }
+.kp-dofe-stage-desc { margin: 0.15rem 0 0; font-size: 0.85rem; color: #555; }
+.kp-dofe-totals {
+  background: #F8F8FA;
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 0.5rem 0;
+}
+.kp-dofe-thisweek {
+  background: white;
+  border: 2px solid #FFD56B;
+  border-radius: 12px;
+  padding: 0.85rem;
+  margin-top: 0.75rem;
+}
+.kp-dofe-thisweek-title { margin: 0 0 0.25rem; font-size: 0.9rem; color: #555; font-weight: 600; }
+.kp-dofe-thisweek-act { margin: 0.25rem 0; font-size: 1.05rem; }
+.kp-dofe-thisweek-why { margin: 0.4rem 0 0; font-size: 0.95rem; color: #333; }
+.kp-dofe-tip { font-size: 0.85rem; text-align: center; margin: 0.5rem 0 0; }
+
+/* ── This-weekend home card ── */
+.dofe-this-week { margin-top: 1.5rem; }
+.dofe-this-week h3 { margin: 0 0 0.6rem; font-size: 1.15rem; }
+.dofe-week-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.1rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border-left: 6px solid #FFD56B;
+}
+.dofe-week-bronze { border-left-color: #CD7F32; }
+.dofe-week-silver { border-left-color: #C0C0C0; }
+.dofe-week-gold   { border-left-color: #FFD700; }
+.dofe-week-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+.dofe-week-num { font-size: 0.85rem; color: #777; font-weight: 600; text-transform: uppercase; }
+.dofe-week-card h4 { margin: 0.25rem 0 0.5rem; font-size: 1.2rem; }
+.dofe-week-pillars { margin: 0.4rem 0; }
+.dofe-week-why { font-size: 1rem; margin: 0.5rem 0; }
+.dofe-week-pebbles-cta { font-size: 0.85rem; margin: 0.5rem 0 0; }
+
+/* Pillar chip — used both modal + page */
+.dofe-pillar-chip {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin: 0.15rem 0.2rem 0.15rem 0;
+}
+
+/* ============ 📋 PARENT DOFE SYLLABUS PAGE ============ */
+.dofe-parent-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #F8F9FB 0%, #EFF2F7 100%);
+  font-family: 'Fredoka', sans-serif;
+}
+.dofe-parent-hero {
+  background: linear-gradient(135deg, #2C3E50 0%, #4A6FA5 100%);
+  color: white;
+  padding: 2.5rem 1.5rem 2rem;
+}
+.dofe-parent-hero-inner { max-width: 1100px; margin: 0 auto; }
+.dofe-parent-back {
+  display: inline-block;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+.dofe-parent-back:hover { color: white; }
+.dofe-parent-hero h1 { font-size: 2.2rem; margin: 0.5rem 0; }
+.dofe-parent-sub { font-size: 1.05rem; opacity: 0.92; margin: 0; }
+
+.dofe-parent-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+.dofe-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.dofe-card h2 { margin-top: 0; color: #2C3E50; font-size: 1.5rem; }
+
+.dofe-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.dofe-pillar-card {
+  background: #FAFBFD;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+}
+.dofe-pillar-card h3 { margin: 0 0 0.4rem; font-size: 1.1rem; }
+.dofe-pillar-kid { font-size: 0.9rem; color: #4A6FA5; margin: 0.3rem 0; }
+
+.dofe-stage-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-size: 0.95rem;
+}
+.dofe-stage-table th, .dofe-stage-table td {
+  padding: 0.8rem 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid #ECECEC;
+}
+.dofe-stage-table th {
+  background: #F4F6FA;
+  font-weight: 700;
+  color: #2C3E50;
+}
+
+.dofe-current-marker {
+  background: #FFF8E1;
+  border-left: 4px solid #FFD700;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+.dofe-plan-table-wrap { overflow-x: auto; }
+.dofe-plan-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+.dofe-plan-table th, .dofe-plan-table td {
+  padding: 0.6rem 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid #EEE;
+  vertical-align: top;
+}
+.dofe-plan-table th {
+  background: #F4F6FA;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.dofe-plan-bronze { background: #FFF8F0; }
+.dofe-plan-silver { background: #F8F8F8; }
+.dofe-plan-gold   { background: #FFFBE6; }
+.dofe-plan-current {
+  background: #FFE4F1 !important;
+  font-weight: 600;
+  outline: 3px solid #FF6B9D;
+}
+.dofe-stage-cell { font-weight: 600; text-transform: capitalize; white-space: nowrap; }
+.dofe-plan-why { color: #555; font-size: 0.85rem; max-width: 320px; }
+
+.dofe-support-list { padding-left: 0; list-style: none; }
+.dofe-support-list li {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #F0F0F0;
+  font-size: 1rem;
+}
+.dofe-support-list li:last-child { border-bottom: none; }
+
+.dofe-parent-footer {
+  text-align: center;
+  padding: 2rem 1rem 1rem;
+  color: #555;
+}
+.dofe-parent-footer a { color: #4A6FA5; }
+
+@media (max-width: 600px) {
+  .dofe-parent-hero h1 { font-size: 1.6rem; }
+  .dofe-card { padding: 1.1rem; }
+  .dofe-card h2 { font-size: 1.25rem; }
+  .dofe-stage-table th, .dofe-stage-table td { padding: 0.55rem 0.5rem; font-size: 0.85rem; }
+  .dofe-plan-table th, .dofe-plan-table td { padding: 0.45rem 0.5rem; font-size: 0.82rem; }
+  .dofe-plan-why { max-width: none; }
+  .dofe-journey-section { padding: 1.25rem 1rem; }
+}

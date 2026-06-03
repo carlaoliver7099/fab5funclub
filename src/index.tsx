@@ -497,44 +497,283 @@ const CLUB_INFO = {
     { name: 'Pebbles',   role: 'Events Mascot 🐾', emoji: '🐶', color: '#D2691E' }
   ],
   activities: [
-    { name: 'Motocross (MX)', emoji: '🏍️', category: 'Wheels' },
-    { name: 'Enduro Trails', emoji: '🌲', category: 'Wheels' },
-    { name: 'Go Karting', emoji: '🏎️', category: 'Wheels' },
-    { name: 'Skateboarding', emoji: '🛹', category: 'Wheels' },
-    { name: 'Rollerskating', emoji: '🛼', category: 'Wheels' },
-    { name: 'Kayaking', emoji: '🛶', category: 'Water' },
-    { name: 'Snorkeling', emoji: '🤿', category: 'Water' },
-    { name: 'Stand Up Paddle Boarding', emoji: '🏄', category: 'Water' },
-    { name: 'Wakeboarding', emoji: '🌊', category: 'Water' },
-    { name: 'Water Skiing', emoji: '🎿', category: 'Water' },
-    { name: 'Jet Skiing', emoji: '🚤', category: 'Water' },
-    { name: 'Sailing', emoji: '⛵', category: 'Water' },
-    { name: '6HP Boating', emoji: '🚣', category: 'Water' },
-    { name: 'Aqua Park Inflatables', emoji: '🎈', category: 'Water' },
-    { name: 'Waterfalls & Creeks', emoji: '💦', category: 'Adventure' },
-    { name: 'Canyoning', emoji: '🏞️', category: 'Adventure' },
-    { name: 'Caving', emoji: '🕳️', category: 'Adventure' },
-    { name: 'Abseiling', emoji: '🧗', category: 'Adventure' },
-    { name: 'Trekking', emoji: '🥾', category: 'Adventure' },
-    { name: 'Camping', emoji: '⛺', category: 'Adventure' },
-    { name: 'First Aid Training', emoji: '⛑️', category: 'Skills' },
-    { name: 'Survival Skills', emoji: '🧭', category: 'Skills' },
-    { name: 'Theme Parks', emoji: '🎢', category: 'Fun' },
-    { name: 'Pig Races', emoji: '🐷', category: 'Fun' },
-    { name: 'Outback Festivals', emoji: '🤠', category: 'Fun' }
+    // pillars = which DofE sections this counts toward. Hours = typical duration.
+    // Pillars: 'physical' | 'skills' | 'service' | 'adventure'
+    { name: 'Motocross (MX)', emoji: '🏍️', category: 'Wheels', pillars: ['physical', 'skills'], hours: 3 },
+    { name: 'Enduro Trails', emoji: '🌲', category: 'Wheels', pillars: ['physical', 'adventure'], hours: 3 },
+    { name: 'Go Karting', emoji: '🏎️', category: 'Wheels', pillars: ['skills'], hours: 2 },
+    { name: 'Skateboarding', emoji: '🛹', category: 'Wheels', pillars: ['physical', 'skills'], hours: 2 },
+    { name: 'Rollerskating', emoji: '🛼', category: 'Wheels', pillars: ['physical'], hours: 2 },
+    { name: 'Kayaking', emoji: '🛶', category: 'Water', pillars: ['physical', 'adventure'], hours: 3 },
+    { name: 'Snorkeling', emoji: '🤿', category: 'Water', pillars: ['physical', 'adventure'], hours: 2 },
+    { name: 'Stand Up Paddle Boarding', emoji: '🏄', category: 'Water', pillars: ['physical'], hours: 2 },
+    { name: 'Wakeboarding', emoji: '🌊', category: 'Water', pillars: ['physical', 'skills'], hours: 2 },
+    { name: 'Water Skiing', emoji: '🎿', category: 'Water', pillars: ['physical', 'skills'], hours: 2 },
+    { name: 'Jet Skiing', emoji: '🚤', category: 'Water', pillars: ['skills'], hours: 2 },
+    { name: 'Sailing', emoji: '⛵', category: 'Water', pillars: ['skills', 'adventure'], hours: 3 },
+    { name: '6HP Boating', emoji: '🚣', category: 'Water', pillars: ['skills'], hours: 3 },
+    { name: 'Aqua Park Inflatables', emoji: '🎈', category: 'Water', pillars: ['physical'], hours: 2 },
+    { name: 'Waterfalls & Creeks', emoji: '💦', category: 'Adventure', pillars: ['physical', 'adventure'], hours: 4 },
+    { name: 'Canyoning', emoji: '🏞️', category: 'Adventure', pillars: ['physical', 'adventure'], hours: 5 },
+    { name: 'Caving', emoji: '🕳️', category: 'Adventure', pillars: ['adventure', 'skills'], hours: 4 },
+    { name: 'Abseiling', emoji: '🧗', category: 'Adventure', pillars: ['physical', 'skills', 'adventure'], hours: 3 },
+    { name: 'Trekking', emoji: '🥾', category: 'Adventure', pillars: ['physical', 'adventure'], hours: 4 },
+    { name: 'Camping', emoji: '⛺', category: 'Adventure', pillars: ['skills', 'adventure'], hours: 12 },
+    { name: 'First Aid Training', emoji: '⛑️', category: 'Skills', pillars: ['skills', 'service'], hours: 2 },
+    { name: 'Survival Skills', emoji: '🧭', category: 'Skills', pillars: ['skills', 'adventure'], hours: 3 },
+    { name: 'Theme Parks', emoji: '🎢', category: 'Fun', pillars: [], hours: 6 },
+    { name: 'Pig Races', emoji: '🐷', category: 'Fun', pillars: [], hours: 3 },
+    { name: 'Outback Festivals', emoji: '🤠', category: 'Fun', pillars: ['skills'], hours: 4 },
+    // NEW DofE-aligned activities so we can fill every weekend
+    { name: 'Beach Cleanup', emoji: '🏖️', category: 'Service', pillars: ['service'], hours: 2 },
+    { name: 'Helping at Animal Shelter', emoji: '🐶', category: 'Service', pillars: ['service'], hours: 2 },
+    { name: 'Cooking a Family Meal', emoji: '🍳', category: 'Skills', pillars: ['skills', 'service'], hours: 2 },
+    { name: 'Photography Walk', emoji: '📸', category: 'Skills', pillars: ['skills'], hours: 2 },
+    { name: 'Bushwalking', emoji: '🌳', category: 'Adventure', pillars: ['physical', 'adventure'], hours: 3 },
+    { name: 'Surfing Lesson', emoji: '🏄‍♀️', category: 'Water', pillars: ['physical', 'skills'], hours: 2 },
+    { name: 'Rock Climbing', emoji: '🧗‍♀️', category: 'Adventure', pillars: ['physical', 'skills'], hours: 2 },
+    { name: 'Bike Riding', emoji: '🚴', category: 'Physical', pillars: ['physical'], hours: 2 },
+    { name: 'Yoga / Stretching', emoji: '🧘', category: 'Physical', pillars: ['physical'], hours: 1 },
+    { name: 'Helping Elderly Neighbour', emoji: '👵', category: 'Service', pillars: ['service'], hours: 1 },
+    { name: 'Tutoring Younger Kid', emoji: '📚', category: 'Service', pillars: ['service', 'skills'], hours: 1 },
+    { name: 'Learning Knots', emoji: '🪢', category: 'Skills', pillars: ['skills'], hours: 1 },
+    { name: 'Map & Compass Navigation', emoji: '🗺️', category: 'Skills', pillars: ['skills', 'adventure'], hours: 2 },
+    { name: 'Overnight Hike Expedition', emoji: '⛺', category: 'Adventure', pillars: ['physical', 'skills', 'adventure'], hours: 14 }
   ],
   badges: [
-    // Duke of Edinburgh inspired
-    { id: 'skill',      name: 'Skill Master',     emoji: '🧠', color: '#4ECDC4', category: 'Duke of Ed', desc: 'Learned a new skill — knots, first aid, navigation, cooking, anything!' },
-    { id: 'physical',   name: 'Physical Hero',    emoji: '💪', color: '#FF9F45', category: 'Duke of Ed', desc: 'Pushed your body — ran, climbed, swam, paddled hard!' },
-    { id: 'adventure',  name: 'Adventurer',       emoji: '🏞️', color: '#B4F8C8', category: 'Duke of Ed', desc: 'Tried something new and exciting outdoors.' },
-    { id: 'service',    name: 'Service Star',     emoji: '❤️', color: '#FF6B9D', category: 'Duke of Ed', desc: 'Helped someone — cleaned up, taught a friend, helped a stranger.' },
-    // Fab 5 Special Values
+    // Fab 5 Special Values (the 4 Duke-of-Ed-style badges were removed since
+    // we now have a dedicated DofE pillar tracking system instead)
     { id: 'team',       name: 'Team Player',      emoji: '🤝', color: '#A06CD5', category: 'Fab 5 Values', desc: '"If you\'re not a team player, you\'re not in the team." — Fab 5 team rule' },
     { id: 'mentor',     name: 'Peer Mentor',      emoji: '👯', color: '#FFE66D', category: 'Fab 5 Values', desc: 'Guided a friend with kindness — not bossy, but supportive.' },
     { id: 'kind',       name: 'Kind Heart',       emoji: '💛', color: '#FF4E8D', category: 'Fab 5 Values', desc: 'Not selfish, not greedy, not impatient — our 3 club rules in action!' },
     { id: 'safety',     name: 'Safety Champ',     emoji: '⛑️', color: '#FFA500', category: 'Fab 5 Values', desc: 'Looked after the team — packed first aid, checked weather, kept everyone safe.' }
   ]
+}
+
+// =========== 🏅 DUKE OF EDINBURGH SYLLABUS ===========
+// Official DofE Australia framework (as of 2026):
+// - Bronze (14+): min 13 weeks per section, ~1hr/week avg, Adventurous Journey 2d/1n @6hr/day
+// - Silver  (15+): min 26 weeks per section, ~1hr/week, AJ 3d/2n @7hr/day
+// - Gold    (16+): min 52 weeks per section, ~1hr/week, AJ 4d/3n @8hr/day + Gold Residential Project 5d/4n
+// 4 Sections (we call them "Pillars"): Voluntary Service, Skills, Physical Recreation, Adventurous Journey
+//
+// The Fab 5 are 12 (Saia's age) so officially we're "DofE-prep" — building the habit early so when
+// each kid hits 14 they have a head start. Same syllabus, same pillars, just kid-friendly framing.
+const DOFE_PILLARS = [
+  { id: 'physical', name: 'Physical Recreation', emoji: '💪', color: '#FF6B9D', kidTalk: 'Getting fit & moving your body', desc: 'Improve in a physical activity — sport, dance, fitness, anything that gets your heart pumping.' },
+  { id: 'skills',   name: 'Skills',              emoji: '🎓', color: '#4ECDC4', kidTalk: 'Learning cool new skills',         desc: 'Develop a personal interest, practical or social skill — cooking, music, photography, first aid, navigation, etc.' },
+  { id: 'service',  name: 'Voluntary Service',   emoji: '💛', color: '#FFE66D', kidTalk: 'Helping our community',            desc: 'Help people, animals or the environment without being paid — beach cleanups, tutoring, helping elderly neighbours.' },
+  { id: 'adventure',name: 'Adventurous Journey', emoji: '🏔️', color: '#A06CD5', kidTalk: 'Outdoor adventures & expeditions', desc: 'Plan, train for and complete a self-reliant team journey in unfamiliar wild country.' }
+] as const
+
+const DOFE_SYLLABUS = {
+  bronze: {
+    name: 'Bronze',
+    emoji: '🥉',
+    color: '#CD7F32',
+    minAge: 14,
+    minWeeksPerSection: 13,
+    hoursPerWeekTarget: 1,
+    sectionTargetHours: 13,         // 13 weeks × 1 hr (the entry minimum)
+    aj: { days: 2, nights: 1, hoursPerDay: 6, totalHours: 12, env: 'Familiar rural area' },
+    kidTalk: 'Zero-to-Hero starter — 3 months of consistent effort. You\'ve got this!',
+    parentTalk: 'Entry level. ~13 weeks per section + a 2-day/1-night Adventurous Journey in a familiar rural area.'
+  },
+  silver: {
+    name: 'Silver',
+    emoji: '🥈',
+    color: '#C0C0C0',
+    minAge: 15,
+    minWeeksPerSection: 26,
+    hoursPerWeekTarget: 1,
+    sectionTargetHours: 26,
+    aj: { days: 3, nights: 2, hoursPerDay: 7, totalHours: 21, env: 'Open country' },
+    kidTalk: 'Halfway hero — 6 months of building real depth in your interests.',
+    parentTalk: '~26 weeks per section + a 3-day/2-night AJ in open countryside. Builds genuine mastery.'
+  },
+  gold: {
+    name: 'Gold',
+    emoji: '🥇',
+    color: '#FFD700',
+    minAge: 16,
+    minWeeksPerSection: 52,
+    hoursPerWeekTarget: 1,
+    sectionTargetHours: 52,
+    aj: { days: 4, nights: 3, hoursPerDay: 8, totalHours: 32, env: 'Wild country' },
+    residentialProject: { days: 5, nights: 4, desc: 'Live & work with people you don\'t know on a shared project' },
+    kidTalk: 'Legend mode — a full year of leadership, expedition planning and a 5-day residential project.',
+    parentTalk: '~52 weeks per section + a 4-day/3-night wild-country AJ + a 5-day/4-night Residential Project. Internationally recognised qualification.'
+  }
+} as const
+
+// =========== 📅 52-WEEK PROGRESSIVE PLAN — "Zero to Hero" ===========
+// Each weekend is mapped to a primary activity + the pillars it builds.
+// Bronze foundation (weeks 1-20): light 1-3hr activities, sampling each pillar.
+// Silver depth     (weeks 21-40): longer 3-5hr activities, building mastery.
+// Gold expedition  (weeks 41-52): overnight hikes, leadership, Gold Project prep.
+type WeekPlan = {
+  week: number;             // 1-52
+  stage: 'bronze' | 'silver' | 'gold';
+  activity: string;         // must match an entry in clubData.activities
+  pillars: ('physical' | 'skills' | 'service' | 'adventure')[];
+  hours: number;
+  kidWhy: string;           // kid-language explanation (for Pebbles)
+  parentWhy: string;        // syllabus mapping for parents
+}
+
+const DOFE_52_WEEK_PLAN: WeekPlan[] = [
+  // ───── BRONZE FOUNDATION (weeks 1-20) — sample every pillar, build the habit ─────
+  { week: 1,  stage: 'bronze', activity: 'Beach Cleanup',             pillars: ['service'],                          hours: 2, kidWhy: 'Easy win — pick up rubbish at the beach and help our coast stay beautiful!',                       parentWhy: 'Voluntary Service intro — first hour toward Bronze Service requirement.' },
+  { week: 2,  stage: 'bronze', activity: 'Bushwalking',               pillars: ['physical','adventure'],             hours: 3, kidWhy: 'Walking in the bush is sneaky exercise AND it gets you used to being outdoors.',                  parentWhy: 'Physical + Adventure pillars. Builds endurance baseline for future Adventurous Journeys.' },
+  { week: 3,  stage: 'bronze', activity: 'Cooking a Family Meal',     pillars: ['skills','service'],                 hours: 2, kidWhy: 'Cooking is a life skill AND helping family counts as service. Two-for-one!',                       parentWhy: 'Skills section start + service hours. Kitchen safety, planning, nutrition.' },
+  { week: 4,  stage: 'bronze', activity: 'Bike Riding',               pillars: ['physical'],                          hours: 2, kidWhy: 'Cycling builds the leg strength you\'ll need for big hikes later.',                                parentWhy: 'Physical Recreation — cardio base. Helmet & road safety reinforcement.' },
+  { week: 5,  stage: 'bronze', activity: 'Learning Knots',            pillars: ['skills'],                            hours: 1, kidWhy: 'Knots look small but they save lives on real expeditions. Bowline, clove hitch, reef knot!',         parentWhy: 'Skills + future Adventurous Journey prep — knots are core bushcraft.' },
+  { week: 6,  stage: 'bronze', activity: 'Helping Elderly Neighbour', pillars: ['service'],                           hours: 1, kidWhy: 'Mow a lawn, bring in bins, have a chat — older neighbours LOVE this.',                            parentWhy: 'Voluntary Service hour + community connection.' },
+  { week: 7,  stage: 'bronze', activity: 'Kayaking',                  pillars: ['physical','adventure'],              hours: 3, kidWhy: 'Paddling the Maroochy River = arms workout + adventure points!',                                parentWhy: 'Physical + Adventure. Water safety, PFD use, river awareness.' },
+  { week: 8,  stage: 'bronze', activity: 'Photography Walk',          pillars: ['skills'],                            hours: 2, kidWhy: 'Slow down and notice the world. Bring a phone and capture 10 cool photos.',                       parentWhy: 'Skills section — visual literacy, composition, observation.' },
+  { week: 9,  stage: 'bronze', activity: 'Yoga / Stretching',         pillars: ['physical'],                          hours: 1, kidWhy: 'Flexibility = fewer injuries on big adventures. Plus it feels good!',                             parentWhy: 'Physical pillar diversification — mobility, recovery, mindfulness.' },
+  { week: 10, stage: 'bronze', activity: 'Helping at Animal Shelter', pillars: ['service'],                           hours: 2, kidWhy: 'Walk dogs, clean cat enclosures, cuddle puppies. Pebbles approves! 🐾',                          parentWhy: 'Voluntary Service — empathy, responsibility, working with animals.' },
+  { week: 11, stage: 'bronze', activity: 'First Aid Training',        pillars: ['skills','service'],                  hours: 2, kidWhy: 'Learn how to actually help if someone gets hurt. Real superhero stuff.',                          parentWhy: 'Skills + Service. Foundation for all future outdoor activities.' },
+  { week: 12, stage: 'bronze', activity: 'Skateboarding',             pillars: ['physical','skills'],                 hours: 2, kidWhy: 'Balance + persistence. You\'ll fall — and getting back up IS the skill.',                          parentWhy: 'Physical + Skills. Helmet/pads emphasis. Resilience training.' },
+  { week: 13, stage: 'bronze', activity: 'Tutoring Younger Kid',      pillars: ['service','skills'],                  hours: 1, kidWhy: 'Helping a younger kid with reading or maths — you teach AND learn.',                              parentWhy: 'Service hour + leadership/communication skill. 🎯 Bronze Service threshold often hit this week.' },
+  { week: 14, stage: 'bronze', activity: 'Map & Compass Navigation',  pillars: ['skills','adventure'],                hours: 2, kidWhy: 'GPS dies but a compass NEVER does. Old-school navigation = adventure unlock.',                    parentWhy: 'Skills + Adventure prep. Essential for any future expedition.' },
+  { week: 15, stage: 'bronze', activity: 'Snorkeling',                pillars: ['physical','adventure'],              hours: 2, kidWhy: 'Mooloolaba reef is RIGHT THERE. Fish, turtles, maybe an octopus!',                                parentWhy: 'Physical + Adventure. Ocean awareness, breathing technique.' },
+  { week: 16, stage: 'bronze', activity: 'Surfing Lesson',            pillars: ['physical','skills'],                 hours: 2, kidWhy: 'Living on the Sunny Coast and NOT surfing? Crime. Time to fix that.',                             parentWhy: 'Physical + Skills. Surf safety, rip awareness, board control.' },
+  { week: 17, stage: 'bronze', activity: 'Rock Climbing',             pillars: ['physical','skills'],                 hours: 2, kidWhy: 'Indoor walls or Mt Tibrogargan — climbing builds grip + bravery.',                                parentWhy: 'Physical + Skills. Belay technique, harness check, risk management.' },
+  { week: 18, stage: 'bronze', activity: 'Survival Skills',           pillars: ['skills','adventure'],                hours: 3, kidWhy: 'Build a fire, set up a tarp, find north. Real bush-kid stuff.',                                  parentWhy: 'Skills + Adventure. Critical AJ prerequisite knowledge.' },
+  { week: 19, stage: 'bronze', activity: 'Trekking',                  pillars: ['physical','adventure'],              hours: 4, kidWhy: 'A proper day-walk — 10km+ on real trails. Your AJ is getting close!',                            parentWhy: 'Physical + Adventure. Pre-AJ conditioning, pack weight practice.' },
+  { week: 20, stage: 'bronze', activity: 'Camping',                   pillars: ['skills','adventure'],                hours: 12, kidWhy: 'BRONZE ADVENTUROUS JOURNEY! 2 days, 1 night, 6hrs/day of walking. You did it! 🥉',                  parentWhy: '🥉 BRONZE AJ COMPLETE — 2d/1n in familiar rural area. Bronze qualification milestone.' },
+
+  // ───── SILVER DEPTH (weeks 21-40) — go deeper, longer, more skilled ─────
+  { week: 21, stage: 'silver', activity: 'Bushwalking',               pillars: ['physical','adventure'],              hours: 4, kidWhy: 'Now we go FURTHER. Same trails, longer distance. Silver wants endurance.',                       parentWhy: 'Silver Physical block begins — building 26-week consistency.' },
+  { week: 22, stage: 'silver', activity: 'Cooking a Family Meal',     pillars: ['skills','service'],                  hours: 3, kidWhy: 'Plan + shop + cook a whole meal for the family. You\'re the chef tonight!',                       parentWhy: 'Silver Skills — moving from following recipes to meal planning autonomy.' },
+  { week: 23, stage: 'silver', activity: 'Abseiling',                 pillars: ['physical','skills','adventure'],     hours: 3, kidWhy: 'Walking DOWN a cliff backwards on a rope. Yes, really. Yes, you\'ll love it.',                    parentWhy: 'Triple-pillar — Physical + Skills + Adventure. Advanced rope work.' },
+  { week: 24, stage: 'silver', activity: 'Beach Cleanup',             pillars: ['service'],                           hours: 3, kidWhy: 'Lead a beach cleanup this time — invite friends, bring bags, document it!',                       parentWhy: 'Silver Service — leadership element added. Community organising practice.' },
+  { week: 25, stage: 'silver', activity: 'Sailing',                   pillars: ['skills','adventure'],                hours: 3, kidWhy: 'Wind power!! Learn to read wind, tack, gybe. Pure problem-solving.',                              parentWhy: 'Skills + Adventure. Lake Cootharaba sailing — wind awareness, capsize drill.' },
+  { week: 26, stage: 'silver', activity: 'Mountain Biking',           pillars: ['physical','adventure'],              hours: 3, kidWhy: 'Trail riding > road riding. Roots, rocks, drops — bike handling levels up.',                       parentWhy: 'Physical + Adventure. Helmet/gloves/elbow-knee pads non-negotiable.' },
+  { week: 27, stage: 'silver', activity: 'Photography Walk',          pillars: ['skills'],                            hours: 3, kidWhy: 'This time PICK A THEME — light, water, faces — and shoot only that.',                              parentWhy: 'Silver Skills depth — moving from snapshot to intentional composition.' },
+  { week: 28, stage: 'silver', activity: 'Tutoring Younger Kid',      pillars: ['service','skills'],                  hours: 2, kidWhy: 'Weekly tutoring now — same kid, same time. Real impact takes weeks.',                            parentWhy: 'Silver Service consistency — weekly recurring volunteer commitment.' },
+  { week: 29, stage: 'silver', activity: 'Waterfalls & Creeks',       pillars: ['physical','adventure'],              hours: 4, kidWhy: 'Kondalilla Falls full circuit. Steep stairs. Worth every step.',                                parentWhy: 'Physical + Adventure. Slippery surfaces awareness, group pace management.' },
+  { week: 30, stage: 'silver', activity: 'First Aid Training',        pillars: ['skills','service'],                  hours: 3, kidWhy: 'Refresher + new stuff — snake bite, asthma, choking, CPR. Critical AJ prep.',                     parentWhy: 'Silver Skills + Service. Mandatory AJ pre-requisite at deeper level.' },
+  { week: 31, stage: 'silver', activity: 'Canyoning',                 pillars: ['physical','adventure'],              hours: 5, kidWhy: 'Down through a canyon — sliding, swimming, abseiling. ELITE adventure.',                         parentWhy: 'Physical + Adventure. Experienced guide required. Drysuits/helmets.' },
+  { week: 32, stage: 'silver', activity: 'Helping at Animal Shelter', pillars: ['service'],                           hours: 3, kidWhy: 'Weekly shelter shift now. Get to know the dogs by name. You\'re a regular.',                      parentWhy: 'Silver Service ramp — sustained relationship with one organisation.' },
+  { week: 33, stage: 'silver', activity: 'Wakeboarding',              pillars: ['physical','skills'],                 hours: 2, kidWhy: 'Behind the boat, riding the wake. Falling is mandatory. Standing up = victory.',                  parentWhy: 'Physical + Skills. Lake Borumba — PFD, hand signals, towrope safety.' },
+  { week: 34, stage: 'silver', activity: 'Map & Compass Navigation',  pillars: ['skills','adventure'],                hours: 3, kidWhy: 'Triangulation, bearings, contour reading. Real bush-nav, no phone needed.',                       parentWhy: 'Silver Skills + Adventure. Pre-Silver-AJ technical requirement.' },
+  { week: 35, stage: 'silver', activity: 'Yoga / Stretching',         pillars: ['physical'],                          hours: 2, kidWhy: 'Weekly flexibility — your body will thank you for the big trek coming up.',                       parentWhy: 'Physical pillar — injury prevention prep for upcoming Silver AJ.' },
+  { week: 36, stage: 'silver', activity: 'Outback Festivals',         pillars: ['skills'],                            hours: 4, kidWhy: 'Visit an outback show — animals, crafts, country skills. Cultural skill-up.',                     parentWhy: 'Skills section — cultural literacy, Aussie heritage, regional connection.' },
+  { week: 37, stage: 'silver', activity: 'Caving',                    pillars: ['adventure','skills'],                hours: 4, kidWhy: 'Underground — helmet lamp, squeezes, crystal chambers. Earth\'s secret rooms.',                    parentWhy: 'Adventure + Skills. Experienced caver guide. Safety brief mandatory.' },
+  { week: 38, stage: 'silver', activity: 'Trekking',                  pillars: ['physical','adventure'],              hours: 5, kidWhy: 'Big day trek — 15km+ with a 5kg pack. Your AJ is days away. Train hard!',                          parentWhy: 'Pre-Silver-AJ conditioning. Pack weight + distance build.' },
+  { week: 39, stage: 'silver', activity: 'Survival Skills',           pillars: ['skills','adventure'],                hours: 4, kidWhy: 'Final prep — water purification, shelter from scratch, fire in the rain.',                        parentWhy: 'Skills + Adventure. Silver AJ readiness check.' },
+  { week: 40, stage: 'silver', activity: 'Overnight Hike Expedition', pillars: ['physical','skills','adventure'],     hours: 21, kidWhy: 'SILVER ADVENTUROUS JOURNEY!! 3 days, 2 nights, 7hrs/day. You\'re a Silver hero! 🥈',                parentWhy: '🥈 SILVER AJ COMPLETE — 3d/2n in open country, 7hr/day. Silver qualification milestone.' },
+
+  // ───── GOLD EXPEDITION (weeks 41-52) — leadership, residential, the full hero arc ─────
+  { week: 41, stage: 'gold',   activity: 'Bushwalking',               pillars: ['physical','adventure'],              hours: 5, kidWhy: 'Gold prep starts. You\'re leading newer kids on a trail YOU planned.',                          parentWhy: 'Gold Physical + leadership element. Self-directed planning required.' },
+  { week: 42, stage: 'gold',   activity: 'Tutoring Younger Kid',      pillars: ['service','skills'],                  hours: 2, kidWhy: 'You\'ve been tutoring for months now — train a NEW tutor. Multiplier effect.',                    parentWhy: 'Gold Service — leadership through mentoring other volunteers.' },
+  { week: 43, stage: 'gold',   activity: 'Rock Climbing',             pillars: ['physical','skills'],                 hours: 3, kidWhy: 'Outdoor lead climbing now — placing your own gear. Trust your training.',                        parentWhy: 'Gold Physical + Skills. Lead climbing instructor required. Advanced ropework.' },
+  { week: 44, stage: 'gold',   activity: 'Beach Cleanup',             pillars: ['service'],                           hours: 4, kidWhy: 'Organise the WHOLE event — permits, social media, volunteers. Gold-level service.',                parentWhy: 'Gold Service leadership — event organisation, public engagement.' },
+  { week: 45, stage: 'gold',   activity: 'Map & Compass Navigation',  pillars: ['skills','adventure'],                hours: 3, kidWhy: 'Nav class — YOU teach the younger kids. Best way to master something.',                          parentWhy: 'Gold Skills + leadership. Teaching = deepest learning.' },
+  { week: 46, stage: 'gold',   activity: 'Canyoning',                 pillars: ['physical','adventure'],              hours: 6, kidWhy: 'Multi-canyon day — Cedar Creek + Booloumba. Big logistics, bigger memories.',                     parentWhy: 'Gold Physical + Adventure. Complex multi-stage trip planning practice.' },
+  { week: 47, stage: 'gold',   activity: 'First Aid Training',        pillars: ['skills','service'],                  hours: 4, kidWhy: 'Wilderness First Aid now — multi-day care, evacuation decisions. Pro level.',                      parentWhy: 'Gold Skills + Service. Wilderness First Aid certification — Gold AJ requirement.' },
+  { week: 48, stage: 'gold',   activity: 'Survival Skills',           pillars: ['skills','adventure'],                hours: 5, kidWhy: 'Solo bivvy night — sleep out with just a tarp + sleeping bag. You\'ve got this.',                  parentWhy: 'Gold Skills + Adventure. Self-reliance assessment. Adult supervision nearby.' },
+  { week: 49, stage: 'gold',   activity: 'Cooking a Family Meal',     pillars: ['skills','service'],                  hours: 4, kidWhy: 'Cook a 3-course meal for 10 people. Menu, shopping, timing — full restaurant mode.',                parentWhy: 'Gold Skills — complex multi-task project execution under time pressure.' },
+  { week: 50, stage: 'gold',   activity: 'Trekking',                  pillars: ['physical','adventure'],              hours: 6, kidWhy: 'Final long-day trek — 20km+ with 8kg pack. Your Gold AJ is THIS WEEKEND-but-one.',                   parentWhy: 'Final Gold AJ conditioning peak — full pack weight, full distance.' },
+  { week: 51, stage: 'gold',   activity: 'Helping at Animal Shelter', pillars: ['service'],                           hours: 5, kidWhy: 'GOLD RESIDENTIAL — 5 days/4 nights staying at an animal sanctuary working with strangers.',          parentWhy: '🥇 GOLD RESIDENTIAL PROJECT — 5d/4n shared purpose with unfamiliar group.' },
+  { week: 52, stage: 'gold',   activity: 'Overnight Hike Expedition', pillars: ['physical','skills','adventure'],     hours: 32, kidWhy: 'GOLD ADVENTUROUS JOURNEY!!! 4 days, 3 nights, 8hrs/day, wild country. YOU ARE THE HERO. 🥇',     parentWhy: '🥇 GOLD AJ COMPLETE — 4d/3n in wild country, 8hr/day. Gold qualification achieved.' }
+]
+
+// Helper: today's ISO date + which DofE week we're on
+// Week 1 starts THIS Saturday — anchor the plan to that date so it auto-progresses.
+function getDofeAnchorDate(): string {
+  // Anchor = this coming (or current) Saturday at 00:00. Stable for the whole year.
+  const d = new Date()
+  const day = d.getDay()                      // 0=Sun..6=Sat
+  const diff = day === 6 ? 0 : (6 - day + 7) % 7
+  d.setDate(d.getDate() + diff)
+  d.setHours(0, 0, 0, 0)
+  return d.toISOString().slice(0, 10)
+}
+function getCurrentDofeWeek(): WeekPlan {
+  const anchor = new Date(getDofeAnchorDate() + 'T00:00:00')
+  const now = new Date()
+  // If we haven't reached anchor yet, we're on week 1.
+  const daysSince = Math.floor((now.getTime() - anchor.getTime()) / 86400000)
+  let weekIndex = Math.floor(daysSince / 7)
+  if (weekIndex < 0) weekIndex = 0
+  if (weekIndex > 51) weekIndex = weekIndex % 52  // wrap around for year 2+
+  return DOFE_52_WEEK_PLAN[weekIndex]
+}
+
+// Helper: compute a kid's DofE progress (pillar hours + stage %) from their attended events.
+type PillarHours = { physical: number; skills: number; service: number; adventure: number }
+function computeDofeProgressFor(memberName: string): {
+  pillarHours: PillarHours;
+  totalHours: number;
+  bronze: { pillars: Record<string, number>; complete: boolean; percent: number };
+  silver: { pillars: Record<string, number>; complete: boolean; percent: number };
+  gold:   { pillars: Record<string, number>; complete: boolean; percent: number };
+  currentStage: 'starter' | 'bronze' | 'silver' | 'gold' | 'legend';
+  ajCompleted: { bronze: boolean; silver: boolean; gold: boolean };
+} {
+  // Build activity → {pillars, hours} lookup from CLUB_INFO
+  const activityLookup: Record<string, { pillars: string[]; hours: number }> = {}
+  for (const a of (CLUB_INFO.activities as any[])) {
+    activityLookup[a.name] = { pillars: a.pillars || [], hours: a.hours || 0 }
+  }
+  const pillarHours: PillarHours = { physical: 0, skills: 0, service: 0, adventure: 0 }
+  let bronzeAJ = false, silverAJ = false, goldAJ = false
+  const today = new Date().toISOString().slice(0, 10)
+
+  for (const ev of EVENTS) {
+    if (!ev.members.includes(memberName)) continue
+    if (ev.date > today) continue  // only count completed events
+    const meta = activityLookup[ev.activity]
+    if (!meta) continue
+    const hours = meta.hours
+    for (const p of meta.pillars) {
+      if (p in pillarHours) (pillarHours as any)[p] += hours
+    }
+    // AJ detection — Camping (Bronze AJ ≥12hr), Overnight Hike Expedition (Silver/Gold AJ)
+    if (ev.activity === 'Camping' && hours >= 12) bronzeAJ = true
+    if (ev.activity === 'Overnight Hike Expedition') {
+      if (hours >= 21) silverAJ = true
+      if (hours >= 32) goldAJ = true
+    }
+  }
+
+  const totalHours = pillarHours.physical + pillarHours.skills + pillarHours.service + pillarHours.adventure
+
+  function stageStatus(target: number) {
+    const pillars = {
+      physical: Math.min(100, Math.round((pillarHours.physical / target) * 100)),
+      skills:   Math.min(100, Math.round((pillarHours.skills   / target) * 100)),
+      service:  Math.min(100, Math.round((pillarHours.service  / target) * 100)),
+      adventure:Math.min(100, Math.round((pillarHours.adventure/ target) * 100))
+    }
+    const complete = pillars.physical >= 100 && pillars.skills >= 100 && pillars.service >= 100 && pillars.adventure >= 100
+    const percent = Math.round((pillars.physical + pillars.skills + pillars.service + pillars.adventure) / 4)
+    return { pillars, complete, percent }
+  }
+
+  const bronze = stageStatus(DOFE_SYLLABUS.bronze.sectionTargetHours)
+  const silver = stageStatus(DOFE_SYLLABUS.silver.sectionTargetHours)
+  const gold   = stageStatus(DOFE_SYLLABUS.gold.sectionTargetHours)
+
+  let currentStage: 'starter' | 'bronze' | 'silver' | 'gold' | 'legend' = 'starter'
+  if (bronze.complete && bronzeAJ) currentStage = 'bronze'
+  if (silver.complete && silverAJ) currentStage = 'silver'
+  if (gold.complete && goldAJ)     currentStage = 'gold'
+  if (currentStage === 'gold')     currentStage = 'legend'
+  // If you're partway through bronze, you're a "starter"
+
+  return {
+    pillarHours,
+    totalHours,
+    bronze: { pillars: bronze.pillars, complete: bronze.complete && bronzeAJ, percent: bronze.percent },
+    silver: { pillars: silver.pillars, complete: silver.complete && silverAJ, percent: silver.percent },
+    gold:   { pillars: gold.pillars,   complete: gold.complete && goldAJ,     percent: gold.percent },
+    currentStage,
+    ajCompleted: { bronze: bronzeAJ, silver: silverAJ, gold: goldAJ }
+  }
 }
 
 const LOCATION_GUIDE = `
@@ -1613,6 +1852,37 @@ app.delete('/api/suggestions/:id', (c) => {
   return c.json({ ok: true })
 })
 
+// =========== 🏅 DUKE OF EDINBURGH API ===========
+// Returns the full syllabus + 52-week plan + current week marker (for parent page).
+app.get('/api/dofe/syllabus', (c) => {
+  ensureSeeded()
+  const current = getCurrentDofeWeek()
+  return c.json({
+    pillars: DOFE_PILLARS,
+    syllabus: DOFE_SYLLABUS,
+    plan: DOFE_52_WEEK_PLAN,
+    currentWeek: current.week,
+    anchorDate: getDofeAnchorDate()
+  })
+})
+
+// Returns a kid's pillar progress + Bronze/Silver/Gold % + this weekend's activity.
+app.get('/api/dofe/progress/:name', (c) => {
+  ensureSeeded()
+  const name = c.req.param('name')
+  if (!MEMBER_NAMES.includes(name) && name !== 'Pebbles') {
+    return c.json({ error: 'Unknown member' }, 404)
+  }
+  const progress = computeDofeProgressFor(name)
+  const current = getCurrentDofeWeek()
+  return c.json({
+    member: name,
+    progress,
+    thisWeek: current,
+    nextWeek: DOFE_52_WEEK_PLAN[Math.min(51, current.week)] || null
+  })
+})
+
 // =========== PEBBLES AI CHAT ===========
 const PEBBLES_SYSTEM_PROMPT = `You are PEBBLES 🐾 — the AI mascot of the Fab 5 Fun Club!
 
@@ -1721,17 +1991,39 @@ LEADER MERCH SYSTEM (important!):
 - When someone is wearing the leader merch, THEY are responsible for asking the team-leader questions
 - Other crew members give PEER FEEDBACK to the leader after (kind, helpful, not bossy)
 
-AVAILABLE BADGES (you can award these to crew):
-Duke of Ed inspired:
-- skill (🧠 Skill Master) — learned something new
-- physical (💪 Physical Hero) — pushed their body
-- adventure (🏞️ Adventurer) — tried something new outdoors
-- service (❤️ Service Star) — helped someone
-Fab 5 Values:
+AVAILABLE BADGES (you can award these to crew) — Fab 5 Values only:
 - team (🤝 Team Player) — our team rule: "no team player → not in team"
 - mentor (👯 Peer Mentor) — guided a friend with kindness
 - kind (💛 Kind Heart) — not selfish, greedy, or impatient
 - safety (⛑️ Safety Champ) — kept the team safe
+
+🏅 DUKE OF EDINBURGH JOURNEY (NEW — IMPORTANT!):
+We've now baked the OFFICIAL Duke of Edinburgh (DofE) Award syllabus into the club.
+- It's a real UK/Australia-wide youth development program with 3 stages: 🥉 Bronze (14+), 🥈 Silver (15+), 🥇 Gold (16+)
+- Fab 5 are 12 so we're "DofE-prep" — building the habit early. Same syllabus, kid-friendly framing.
+- 4 PILLARS each kid develops:
+  • 💪 Physical Recreation — getting fit, moving your body
+  • 🎓 Skills — learning cool new skills (cooking, photography, knots, first aid)
+  • 💛 Voluntary Service — helping people, animals, environment (UNPAID!)
+  • 🏔️ Adventurous Journey — outdoor expeditions in unfamiliar wild country
+
+EVERY ACTIVITY IN THE CLUB IS TAGGED with which pillars it builds + how many hours.
+- We have a 52-WEEK PROGRESSIVE PLAN starting THIS Saturday → "Zero to Hero" over 12 months
+- Weeks 1-20 = Bronze foundation (light 1-3hr activities, sampling each pillar)
+- Weeks 21-40 = Silver depth (longer 3-5hr activities, building mastery)
+- Weeks 41-52 = Gold expedition (overnight hikes, leadership, Gold Project prep)
+- Adventurous Journey milestones: Week 20 = Bronze AJ (2d/1n), Week 40 = Silver AJ (3d/2n), Week 52 = Gold AJ (4d/3n)
+
+WHEN A KID ASKS "what are we doing this weekend?" or "why are we doing X?":
+→ Look at the "TODAY'S DOFE PLAN" block injected below
+→ Explain in KID LANGUAGE what the activity is + which pillars it builds + why that matters
+→ Example: "This Saturday we're going bushwalking! 🌳 That builds your Physical pillar (sneaky exercise!) AND your Adventure pillar (getting comfortable outdoors). It's training for the BIG overnight hike at the end of the year! *tail wag*"
+→ NEVER lecture parent-style — keep it fun, kid-talk, "*wags tail*" energy
+→ Parents have their OWN page (/dofe-syllabus) with the full official syllabus — don't quote it at kids unless they ask
+
+WHEN A KID ASKS "what's the Duke of Edinburgh?" or "what's DofE?":
+→ Kid version: "It's like a treasure hunt for your future-self 🏆 You collect hours doing 4 kinds of cool stuff — getting fit, learning skills, helping people, and going on adventures. After enough hours you earn Bronze 🥉, then Silver 🥈, then Gold 🥇. Gold gets you respect WORLDWIDE — uni admissions and jobs love it!"
+→ Don't dump the syllabus — keep it 2-3 sentences max
 
 CONVERSATION STYLE:
 - SHORT replies (2-4 sentences usually), ONE question at a time
@@ -1802,7 +2094,7 @@ const PEBBLES_TOOLS = [
   }
 ]
 
-const BADGE_IDS = ['skill','physical','adventure','service','team','mentor','kind','safety']
+const BADGE_IDS = ['team','mentor','kind','safety']
 
 app.post('/api/pebbles/chat', async (c) => {
   ensureSeeded()
@@ -1830,6 +2122,21 @@ app.post('/api/pebbles/chat', async (c) => {
     return `- ${n}: ${bits.length ? bits.join(' • ') : '(no profile data yet — a parent can fill it in via Parents\' Dashboard)'}`
   }).join('\n')
 
+  // 🏅 DofE — what's on this weekend + each kid's progress
+  const thisWeek = getCurrentDofeWeek()
+  const dofeBlock =
+    `\n\n🏅 TODAY'S DOFE PLAN (week ${thisWeek.week} of 52 — ${thisWeek.stage.toUpperCase()} stage):\n` +
+    `- Activity: ${thisWeek.activity}  •  Pillars: ${thisWeek.pillars.join(', ') || '(fun bonus week)'}  •  ${thisWeek.hours}hr\n` +
+    `- Kid talk: ${thisWeek.kidWhy}\n` +
+    `- Why it matters: ${thisWeek.parentWhy}\n`
+  const userProgress = MEMBER_NAMES.includes(user) ? computeDofeProgressFor(user) : null
+  const progressBlock = userProgress
+    ? `\n📊 ${user}'s DofE progress so far:\n` +
+      `- Hours: 💪 Physical ${userProgress.pillarHours.physical}hr • 🎓 Skills ${userProgress.pillarHours.skills}hr • 💛 Service ${userProgress.pillarHours.service}hr • 🏔️ Adventure ${userProgress.pillarHours.adventure}hr\n` +
+      `- Bronze ${userProgress.bronze.percent}% • Silver ${userProgress.silver.percent}% • Gold ${userProgress.gold.percent}%\n` +
+      `- Current stage: ${userProgress.currentStage}\n`
+    : ''
+
   const systemMsg = {
     role: 'system',
     content: PEBBLES_SYSTEM_PROMPT +
@@ -1839,6 +2146,8 @@ app.post('/api/pebbles/chat', async (c) => {
       `\nNext Sunday: ${getNextSunday()}.` +
       `\nLeader rotation counts so far: ${JSON.stringify(counts)}.` +
       `\nFairest next leader (led fewest times): ${sorted[0]}.` +
+      dofeBlock +
+      progressBlock +
       `\n\n🧒 KID PROFILES (use these for personalised recommendations, NEVER ignore allergies!):\n${profileSummary}`
   }
 
@@ -2006,10 +2315,12 @@ app.get('/', (c) => {
           </a>
           <div class="topnav-links">
             <a href="#calendar">📅 Calendar</a>
+            <a href="#dofe-journey">🏅 My Journey</a>
             <a href="#fab5-ways">🌟 Fab 5 Ways</a>
             <a href="#merch">👕 Merch</a>
             <a href="#awards">🏆 Awards</a>
             <a href="#gallery">📸 Gallery</a>
+            <a href="/dofe-syllabus">📋 Parent Syllabus</a>
             <a href="#parents-faq">❓ Parents</a>
           </div>
           <button id="whoami-btn" class="whoami-btn" title="Who are you?">
@@ -2315,6 +2626,23 @@ app.get('/', (c) => {
             <button type="submit" class="btn btn-primary btn-big">🎉 Add to Calendar</button>
             <div id="form-msg"></div>
           </form>
+        </section>
+
+        {/* 🏅 MY DOFE JOURNEY — kid-facing pillar progress + this weekend's plan */}
+        <section class="section dofe-journey-section" id="dofe-journey">
+          <h2 class="section-title">🏅 My Duke of Edinburgh Journey</h2>
+          <p class="section-subtitle">Zero to Hero — 52 weekends of cool stuff that builds 4 super-powers 💪🎓💛🏔️</p>
+          <div class="dofe-journey-intro">
+            <p>👋 Pick who you are above (the <strong>"Who am I?"</strong> button up top) and watch your pillars fill up as you join adventures!</p>
+            <p class="dofe-journey-parent-link">📋 Parents — see the full official syllabus & 52-week calendar on the <a href="/dofe-syllabus">Parent Syllabus page</a>.</p>
+          </div>
+          <div id="dofe-journey-content" class="dofe-journey-content">
+            <p class="muted">Loading your journey…</p>
+          </div>
+          <div class="dofe-this-week" id="dofe-this-week">
+            <h3>📅 This Weekend's Plan</h3>
+            <div id="dofe-this-week-content" class="dofe-this-week-content">Loading…</div>
+          </div>
         </section>
 
         {/* MERCH SECTION */}
@@ -2961,6 +3289,141 @@ app.get('/', (c) => {
             <button type="submit">📤</button>
           </form>
         </div>
+      </div>
+    </div>
+  )
+})
+
+// =========== 📋 PARENT-FACING DOFE SYLLABUS PAGE ===========
+app.get('/dofe-syllabus', (c) => {
+  ensureSeeded()
+  const currentWeek = getCurrentDofeWeek().week
+  return c.render(
+    <div id="app">
+      <div class="dofe-parent-page">
+        <header class="dofe-parent-hero">
+          <div class="dofe-parent-hero-inner">
+            <a href="/" class="dofe-parent-back">← Back to club</a>
+            <h1>🏅 Duke of Edinburgh — Parent Syllabus</h1>
+            <p class="dofe-parent-sub">The official DofE framework, the 52-week progressive plan, and exactly which weekend activity maps to which syllabus area.</p>
+          </div>
+        </header>
+
+        <main class="dofe-parent-main">
+          <section class="dofe-card">
+            <h2>What is the Duke of Edinburgh Award?</h2>
+            <p>The Duke of Edinburgh's International Award is a globally recognised youth development program founded by HRH Prince Philip in 1956. It runs in 130+ countries, including <strong>Australia</strong>, where it's delivered by The Duke of Edinburgh's International Award – Australia.</p>
+            <p>The Award has <strong>3 progressive levels</strong> — Bronze (14+), Silver (15+), Gold (16+) — and 4 mandatory sections (we call them <strong>"pillars"</strong>). Each kid sets a personal goal in each section and tracks regular activity over weeks/months. Gold-level Award holders enjoy genuine recognition with universities and employers worldwide.</p>
+            <p class="muted">The Fab 5 are currently 12 — too young to formally enrol, but we're <strong>baking in the habit early</strong> so when each kid hits 14 they're already months ahead. Same syllabus, kid-friendly framing.</p>
+          </section>
+
+          <section class="dofe-card">
+            <h2>The 4 Pillars</h2>
+            <div class="dofe-pillars-grid">
+              {DOFE_PILLARS.map(p => (
+                <div class="dofe-pillar-card" style={`border-left: 6px solid ${p.color}`}>
+                  <h3>{p.emoji} {p.name}</h3>
+                  <p class="dofe-pillar-kid"><strong>Kid talk:</strong> {p.kidTalk}</p>
+                  <p>{p.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section class="dofe-card">
+            <h2>The 3 Stages — Bronze 🥉 / Silver 🥈 / Gold 🥇</h2>
+            <table class="dofe-stage-table">
+              <thead>
+                <tr>
+                  <th>Stage</th>
+                  <th>Min Age</th>
+                  <th>Per Section</th>
+                  <th>Adventurous Journey</th>
+                  <th>Extra</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="background:#FFF5E6">
+                  <td><strong>🥉 Bronze</strong></td>
+                  <td>{DOFE_SYLLABUS.bronze.minAge}+</td>
+                  <td>{DOFE_SYLLABUS.bronze.minWeeksPerSection} weeks × ~{DOFE_SYLLABUS.bronze.hoursPerWeekTarget}hr/week</td>
+                  <td>{DOFE_SYLLABUS.bronze.aj.days}d / {DOFE_SYLLABUS.bronze.aj.nights}n @ {DOFE_SYLLABUS.bronze.aj.hoursPerDay}hr/day — {DOFE_SYLLABUS.bronze.aj.env}</td>
+                  <td>—</td>
+                </tr>
+                <tr style="background:#F0F0F0">
+                  <td><strong>🥈 Silver</strong></td>
+                  <td>{DOFE_SYLLABUS.silver.minAge}+</td>
+                  <td>{DOFE_SYLLABUS.silver.minWeeksPerSection} weeks × ~{DOFE_SYLLABUS.silver.hoursPerWeekTarget}hr/week</td>
+                  <td>{DOFE_SYLLABUS.silver.aj.days}d / {DOFE_SYLLABUS.silver.aj.nights}n @ {DOFE_SYLLABUS.silver.aj.hoursPerDay}hr/day — {DOFE_SYLLABUS.silver.aj.env}</td>
+                  <td>—</td>
+                </tr>
+                <tr style="background:#FFF8DC">
+                  <td><strong>🥇 Gold</strong></td>
+                  <td>{DOFE_SYLLABUS.gold.minAge}+</td>
+                  <td>{DOFE_SYLLABUS.gold.minWeeksPerSection} weeks × ~{DOFE_SYLLABUS.gold.hoursPerWeekTarget}hr/week</td>
+                  <td>{DOFE_SYLLABUS.gold.aj.days}d / {DOFE_SYLLABUS.gold.aj.nights}n @ {DOFE_SYLLABUS.gold.aj.hoursPerDay}hr/day — {DOFE_SYLLABUS.gold.aj.env}</td>
+                  <td>Gold Residential Project — {DOFE_SYLLABUS.gold.residentialProject.days}d / {DOFE_SYLLABUS.gold.residentialProject.nights}n shared project with strangers</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="muted" style="margin-top: 1rem;"><strong>Note for parents:</strong> The hours above are official entry minimums. Many kids exceed them naturally — the goal isn't ticking boxes, it's building <em>consistent habits</em> in each pillar.</p>
+          </section>
+
+          <section class="dofe-card">
+            <h2>📅 The 52-Week Progressive Plan</h2>
+            <p>Each weekend is mapped to a specific activity + the pillars it builds. The plan progresses <strong>Bronze foundation (weeks 1-20) → Silver depth (weeks 21-40) → Gold expedition (weeks 41-52)</strong>. Each phase ends with an <strong>Adventurous Journey milestone</strong>: Bronze AJ week 20, Silver AJ week 40, Gold AJ + Residential week 51-52.</p>
+            <p class="dofe-current-marker">🐾 We're currently on <strong>Week {currentWeek}</strong> of 52 — the row highlighted below is this weekend.</p>
+            <div class="dofe-plan-table-wrap">
+              <table class="dofe-plan-table">
+                <thead>
+                  <tr>
+                    <th>Week</th>
+                    <th>Stage</th>
+                    <th>Activity</th>
+                    <th>Pillars</th>
+                    <th>Hours</th>
+                    <th>Why it counts (syllabus mapping)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {DOFE_52_WEEK_PLAN.map(w => (
+                    <tr class={w.week === currentWeek ? 'dofe-plan-current' : `dofe-plan-${w.stage}`}>
+                      <td><strong>{w.week}</strong></td>
+                      <td class={`dofe-stage-cell dofe-stage-${w.stage}`}>
+                        {w.stage === 'bronze' ? '🥉' : w.stage === 'silver' ? '🥈' : '🥇'} {w.stage}
+                      </td>
+                      <td>{w.activity}</td>
+                      <td>
+                        {w.pillars.map(p => {
+                          const pillar = DOFE_PILLARS.find(x => x.id === p)
+                          return pillar ? <span class="dofe-pillar-chip" style={`background:${pillar.color}22; color:${pillar.color}`}>{pillar.emoji} {pillar.name}</span> : null
+                        })}
+                      </td>
+                      <td>{w.hours}hr</td>
+                      <td class="dofe-plan-why">{w.parentWhy}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="dofe-card">
+            <h2>How to support your kid</h2>
+            <ul class="dofe-support-list">
+              <li>📅 <strong>Show up</strong> to the weekend adventures (or wave them off — your call).</li>
+              <li>🎒 <strong>Pack the standard day-pack</strong> (food, drink, weather-appropriate clothes, sunscreen).</li>
+              <li>💬 <strong>Ask about it</strong> on Sunday night — "Which pillar did you build today?" — kids LOVE explaining what they learned.</li>
+              <li>📲 <strong>Use the kid app</strong> with them — they have a "My DofE Journey" view that shows their pillar progress in kid language. They can chat with Pebbles (the AI mascot) about each weekend.</li>
+              <li>🏆 <strong>Celebrate AJ milestones</strong> — week 20 (Bronze AJ), week 40 (Silver AJ), week 52 (Gold AJ). These are the BIG memories.</li>
+            </ul>
+          </section>
+
+          <footer class="dofe-parent-footer">
+            <p>🐾 Built with love by the Fab 5 Fun Club crew. Questions? Tap the chat icon in the kid app and ask Pebbles!</p>
+            <p class="muted">Reference: <a href="https://dukeofed.com.au/" target="_blank" rel="noopener">Duke of Edinburgh's International Award – Australia</a></p>
+          </footer>
+        </main>
       </div>
     </div>
   )

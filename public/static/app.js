@@ -224,6 +224,68 @@ async function refreshAll() {
   renderDiary();
   renderCaptionBattles();
   renderPostcards();
+  renderDofeHomeSection();
+}
+
+// 🏅 Render the kid-facing DofE Journey home section
+async function renderDofeHomeSection() {
+  const journeyContent = document.getElementById('dofe-journey-content');
+  const thisWeekContent = document.getElementById('dofe-this-week-content');
+  if (!journeyContent || !thisWeekContent) return;
+
+  const currentUser = getCurrentCrewUser();
+  // ── If logged-in user picked → show their progress, else nudge them to pick ──
+  if (currentUser && currentUser !== 'Pebbles') {
+    try {
+      const data = await api(`/api/dofe/progress/${encodeURIComponent(currentUser)}`);
+      journeyContent.innerHTML = `
+        <div class="dofe-journey-card">
+          <h3>${escapeHtml(currentUser)}'s Pillars 🎯</h3>
+          ${renderDofeJourney(data)}
+        </div>`;
+      const tw = data.thisWeek;
+      if (tw) {
+        thisWeekContent.innerHTML = renderDofeThisWeekKid(tw);
+      }
+      return;
+    } catch (e) {
+      // fall through to default
+    }
+  }
+
+  // ── No user picked → show generic week info + nudge ──
+  try {
+    const syllabus = await api('/api/dofe/syllabus');
+    const tw = syllabus.plan[syllabus.currentWeek - 1];
+    journeyContent.innerHTML = `
+      <div class="dofe-journey-card dofe-journey-nudge">
+        <p>👋 Tap <strong>"Who am I?"</strong> up top and pick your name to see <strong>YOUR</strong> pillar progress!</p>
+        <p class="muted">Each adventure you join builds your 4 super-powers: Physical 💪 · Skills 🎓 · Service 💛 · Adventure 🏔️</p>
+      </div>`;
+    if (tw) {
+      thisWeekContent.innerHTML = renderDofeThisWeekKid(tw);
+    }
+  } catch (e) {
+    journeyContent.innerHTML = `<p class="muted">Couldn't load your journey right now 🐾</p>`;
+  }
+}
+
+function renderDofeThisWeekKid(tw) {
+  const stageEmoji = tw.stage === 'bronze' ? '🥉' : tw.stage === 'silver' ? '🥈' : '🥇';
+  const pillarChips = tw.pillars.map(pid => {
+    const m = DOFE_PILLAR_META[pid];
+    return m ? `<span class="dofe-pillar-chip" style="background:${m.color}22;color:${m.color}">${m.emoji} ${m.name}</span>` : '';
+  }).join(' ');
+  return `
+    <div class="dofe-week-card dofe-week-${tw.stage}">
+      <div class="dofe-week-head">
+        <span class="dofe-week-num">Week ${tw.week}/52 · ${stageEmoji} ${tw.stage}</span>
+      </div>
+      <h4>${escapeHtml(tw.activity)} · ${tw.hours}hr</h4>
+      <p class="dofe-week-pillars">${pillarChips}</p>
+      <p class="dofe-week-why">${escapeHtml(tw.kidWhy)}</p>
+      <p class="muted dofe-week-pebbles-cta">💬 Ask Pebbles "what are we doing this weekend?" for more!</p>
+    </div>`;
 }
 
 // ---------- MEMBERS ----------
@@ -1910,7 +1972,16 @@ function openKidProfileModal(name) {
         : `<p>🌟 Want to edit YOUR own card? Tap the <strong>"Who are you?"</strong> button at the top of the page to pick which crew member you are!</p>`}
     </div>` : '';
 
-  const extraSections = factsHtml + songHtml + pebblesExtras + editBtnHtml + claimNudge;
+  // 🏅 DofE Journey — only on real crew members (not Pebbles)
+  const dofeHtml = !isPebbles ? `
+    <div class="kp-modal-section kp-dofe-section">
+      <h3>🏅 My DofE Journey</h3>
+      <div id="kp-dofe-${escapeHtml(name)}" class="kp-dofe-content">
+        <p class="muted">Loading your pillars…</p>
+      </div>
+    </div>` : '';
+
+  const extraSections = factsHtml + songHtml + pebblesExtras + dofeHtml + editBtnHtml + claimNudge;
 
   content.innerHTML = `
     <div class="kp-modal-header" style="border-color:${member.color}">
@@ -1924,6 +1995,85 @@ function openKidProfileModal(name) {
   `;
   overlay.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+
+  // 🏅 Lazy-load the kid's DofE progress + render pillar bars (skip for Pebbles)
+  if (!isPebbles) {
+    loadDofeJourneyInModal(name);
+  }
+}
+
+// Pillar metadata mirrors server DOFE_PILLARS — kept in sync
+const DOFE_PILLAR_META = {
+  physical:  { emoji: '💪', name: 'Physical',  color: '#FF6B9D', kidTalk: 'Getting fit & moving' },
+  skills:    { emoji: '🎓', name: 'Skills',    color: '#4ECDC4', kidTalk: 'Learning cool skills' },
+  service:   { emoji: '💛', name: 'Service',   color: '#FFE66D', kidTalk: 'Helping others' },
+  adventure: { emoji: '🏔️', name: 'Adventure', color: '#A06CD5', kidTalk: 'Outdoor expeditions' }
+};
+
+async function loadDofeJourneyInModal(name) {
+  const target = document.getElementById(`kp-dofe-${name}`);
+  if (!target) return;
+  try {
+    const data = await api(`/api/dofe/progress/${encodeURIComponent(name)}`);
+    target.innerHTML = renderDofeJourney(data);
+  } catch (e) {
+    target.innerHTML = `<p class="muted">Couldn't load your journey right now 🐾</p>`;
+  }
+}
+
+function renderDofeJourney(data) {
+  const p = data.progress;
+  const stageBadgeMap = {
+    starter: { emoji: '🌱', label: 'Just starting!', desc: "You're a DofE Starter — every adventure builds your pillars!" },
+    bronze:  { emoji: '🥉', label: 'Bronze Hero!',   desc: 'You smashed Bronze! Time to chase Silver 🥈' },
+    silver:  { emoji: '🥈', label: 'Silver Hero!',   desc: 'You smashed Silver! Gold is calling 🥇' },
+    gold:    { emoji: '🥇', label: 'Gold Hero!',     desc: 'You did it. GOLD. Worldwide recognition unlocked 🌍' },
+    legend:  { emoji: '👑', label: 'DofE Legend!',   desc: 'Beyond Gold — you ARE the legend now.' }
+  };
+  const stage = stageBadgeMap[p.currentStage] || stageBadgeMap.starter;
+
+  const pillarBars = ['physical', 'skills', 'service', 'adventure'].map(pid => {
+    const meta = DOFE_PILLAR_META[pid];
+    const hours = p.pillarHours[pid];
+    const bronzePct = p.bronze.pillars[pid];
+    return `
+      <div class="kp-pillar-row">
+        <div class="kp-pillar-label">
+          <span class="kp-pillar-emoji">${meta.emoji}</span>
+          <span class="kp-pillar-name">${meta.name}</span>
+          <span class="kp-pillar-hours">${hours}hr</span>
+        </div>
+        <div class="kp-pillar-bar" title="${meta.kidTalk} — ${bronzePct}% of Bronze">
+          <div class="kp-pillar-bar-fill" style="width:${bronzePct}%; background:${meta.color}"></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const tw = data.thisWeek;
+  const thisWeekHtml = tw ? `
+    <div class="kp-dofe-thisweek">
+      <p class="kp-dofe-thisweek-title">📅 This weekend (Week ${tw.week}/52):</p>
+      <p class="kp-dofe-thisweek-act"><strong>${escapeHtml(tw.activity)}</strong> · ${tw.hours}hr</p>
+      <p class="kp-dofe-thisweek-why">${escapeHtml(tw.kidWhy)}</p>
+    </div>` : '';
+
+  return `
+    <div class="kp-dofe-stage">
+      <span class="kp-dofe-stage-emoji">${stage.emoji}</span>
+      <div>
+        <p class="kp-dofe-stage-label"><strong>${stage.label}</strong></p>
+        <p class="kp-dofe-stage-desc">${stage.desc}</p>
+      </div>
+    </div>
+    <div class="kp-pillars">
+      ${pillarBars}
+    </div>
+    <div class="kp-dofe-totals">
+      🥉 Bronze ${p.bronze.percent}% · 🥈 Silver ${p.silver.percent}% · 🥇 Gold ${p.gold.percent}%
+    </div>
+    ${thisWeekHtml}
+    <p class="muted kp-dofe-tip">Ask Pebbles "what are we doing this weekend?" for the full kid-talk 🐾</p>
+  `;
 }
 
 function closeKidProfileModal() {
@@ -2022,6 +2172,7 @@ function setupWhoAmIModal() {
     }
     updateWhoAmIBadge();
     renderWhoAmIGrid();
+    renderDofeHomeSection();  // 🏅 re-render personal pillar progress
     // Friendly close after a beat so they see the ✓
     setTimeout(closeWhoAmIModal, 350);
   });

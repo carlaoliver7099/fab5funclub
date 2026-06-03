@@ -2,7 +2,7 @@ import { jsxRenderer } from 'hono/jsx-renderer'
 
 // Cache-bust on every deploy so phones don't keep serving old app.js / style.css.
 // Bump this manually whenever a meaningful frontend change ships.
-const ASSET_VERSION = '2026-06-03-whoami'
+const ASSET_VERSION = '2026-06-03-dofe'
 
 export const renderer = jsxRenderer(({ children }) => {
   return (
