@@ -4985,3 +4985,224 @@ body {
   .team-pillar-card { padding: 0.7rem 0.4rem; }
   .team-pillar-hours-big { font-size: 1.4rem; }
 }
+
+/* ============================================================================
+   🐾 PEBBLES 404 PAGE — kid-friendly "you got lost" page
+   ============================================================================ */
+.pebbles-404 {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #fff1f5 0%, #fff7e0 30%, #e0f4ff 60%, #f0e6ff 100%);
+  background-size: 200% 200%;
+  animation: pebbles-404-bg 12s ease infinite;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+@keyframes pebbles-404-bg {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.pebbles-404-card {
+  max-width: 520px;
+  width: 100%;
+  background: white;
+  border-radius: 28px;
+  padding: 36px 28px 32px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.pebbles-404-card::before {
+  content: "";
+  position: absolute;
+  top: -50px; right: -50px;
+  width: 150px; height: 150px;
+  background: radial-gradient(circle, rgba(255,107,157,0.15), transparent 70%);
+  border-radius: 50%;
+}
+
+.pebbles-404-card::after {
+  content: "";
+  position: absolute;
+  bottom: -50px; left: -50px;
+  width: 150px; height: 150px;
+  background: radial-gradient(circle, rgba(78,205,196,0.15), transparent 70%);
+  border-radius: 50%;
+}
+
+.pebbles-404-dog {
+  position: relative;
+  height: 120px;
+  margin-bottom: 8px;
+}
+
+.pebbles-404-emoji {
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%) rotate(-15deg);
+  font-size: 28px;
+  animation: pebbles-404-spin 4s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+@keyframes pebbles-404-spin {
+  0%, 100% { transform: translateX(-50%) rotate(-15deg); }
+  50% { transform: translateX(-50%) rotate(15deg); }
+}
+
+.pebbles-404-face {
+  position: absolute;
+  top: 20px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 90px;
+  animation: pebbles-404-bounce 2s ease-in-out infinite;
+  filter: drop-shadow(0 8px 12px rgba(0,0,0,0.15));
+}
+
+@keyframes pebbles-404-bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-12px); }
+}
+
+.pebbles-404-paws {
+  position: absolute;
+  bottom: -8px; left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  font-size: 22px;
+}
+
+.pebbles-404-paws span {
+  animation: pebbles-404-paw 1.5s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+.pebbles-404-paws span:nth-child(1) { animation-delay: 0s; }
+.pebbles-404-paws span:nth-child(2) { animation-delay: 0.2s; }
+.pebbles-404-paws span:nth-child(3) { animation-delay: 0.4s; }
+.pebbles-404-paws span:nth-child(4) { animation-delay: 0.6s; }
+
+@keyframes pebbles-404-paw {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+  50% { transform: translateY(-6px) scale(1.1); opacity: 1; }
+}
+
+.pebbles-404-title {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 12px 0 8px;
+  color: #2d3748;
+  line-height: 1.2;
+  position: relative;
+}
+
+.pebbles-404-subtitle {
+  font-size: 16px;
+  color: #718096;
+  margin: 0 0 20px;
+  position: relative;
+}
+
+.pebbles-404-speech {
+  background: linear-gradient(135deg, #fff7e0, #ffe9d6);
+  border: 2px dashed #ffb84d;
+  border-radius: 18px;
+  padding: 16px 18px;
+  margin: 0 0 24px;
+  font-size: 15px;
+  color: #5a4a2f;
+  line-height: 1.5;
+  position: relative;
+}
+
+.pebbles-404-speech p {
+  margin: 0;
+}
+
+.pebbles-404-home-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, #FF6B9D, #FFB84D);
+  color: white;
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 16px 28px;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(255,107,157,0.35), 0 2px 4px rgba(0,0,0,0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  margin: 0 0 28px;
+  position: relative;
+}
+
+.pebbles-404-home-btn:hover,
+.pebbles-404-home-btn:focus {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 12px 28px rgba(255,107,157,0.45), 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.pebbles-404-home-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.pebbles-404-tips {
+  background: #f7fafc;
+  border-radius: 14px;
+  padding: 14px 18px;
+  text-align: left;
+  margin: 0 0 20px;
+  position: relative;
+}
+
+.pebbles-404-tips h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: #2d3748;
+}
+
+.pebbles-404-tips ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  color: #4a5568;
+  line-height: 1.6;
+}
+
+.pebbles-404-tips li {
+  margin-bottom: 4px;
+}
+
+.pebbles-404-tips code {
+  background: #edf2f7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "SF Mono", Menlo, monospace;
+  font-size: 13px;
+  color: #d53f8c;
+}
+
+.pebbles-404-signoff {
+  font-size: 13px;
+  color: #a0aec0;
+  font-style: italic;
+  margin: 0;
+  position: relative;
+}
+
+/* Mobile tweaks */
+@media (max-width: 480px) {
+  .pebbles-404-card { padding: 28px 20px 24px; border-radius: 22px; }
+  .pebbles-404-title { font-size: 22px; }
+  .pebbles-404-subtitle { font-size: 14px; }
+  .pebbles-404-face { font-size: 72px; top: 16px; }
+  .pebbles-404-dog { height: 100px; }
+  .pebbles-404-home-btn { font-size: 15px; padding: 14px 22px; }
+  .pebbles-404-speech { font-size: 14px; padding: 14px 16px; }
+}

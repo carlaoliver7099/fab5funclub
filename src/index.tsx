@@ -3558,4 +3558,56 @@ app.get('/dofe-syllabus', (c) => {
   )
 })
 
+// ============================================================================
+// 🐾 PEBBLES 404 — kid-friendly "oops you got lost" page
+// Replaces the generic Cloudflare 404 (the fishing guy) when someone types a
+// wrong URL like /login or /home. Returns the kid back to the homepage with a
+// big paw-print button + Pebbles being adorable.
+// ============================================================================
+app.notFound((c) => {
+  c.status(404)
+  return c.render(
+    <div class="pebbles-404">
+      <div class="pebbles-404-card">
+        <div class="pebbles-404-dog" aria-hidden="true">
+          <div class="pebbles-404-emoji">🐾</div>
+          <div class="pebbles-404-face">🐶</div>
+          <div class="pebbles-404-paws">
+            <span>🐾</span><span>🐾</span><span>🐾</span><span>🐾</span>
+          </div>
+        </div>
+
+        <h1 class="pebbles-404-title">Woof! You got a bit lost! 🐾</h1>
+        <p class="pebbles-404-subtitle">
+          Pebbles sniffed around but couldn't find that page.
+        </p>
+
+        <div class="pebbles-404-speech">
+          <p>
+            <strong>Hey there!</strong> The page you were looking for isn't here —
+            maybe a typo? Don't worry, the whole Fab 5 Fun Club is just one tap away. 🌈
+          </p>
+        </div>
+
+        <a href="/" class="pebbles-404-home-btn">
+          🏠 Take me back to the Fab 5 Fun Club
+        </a>
+
+        <div class="pebbles-404-tips">
+          <h2>🐾 Quick tips:</h2>
+          <ul>
+            <li>Make sure you typed <code>fab5funclub.org</code> — no slashes, no extras!</li>
+            <li>If you saved a bookmark, it might be old — bookmark the homepage instead.</li>
+            <li>Stuck? Ask Saia (or her mum/dad) for help 💛</li>
+          </ul>
+        </div>
+
+        <p class="pebbles-404-signoff">
+          🐕 — Pebbles, Chief Sniffer of Lost Kids
+        </p>
+      </div>
+    </div>
+  )
+})
+
 export default app
