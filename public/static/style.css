@@ -4063,3 +4063,191 @@ body {
     padding: 13px 16px;
   }
 }
+
+/* ============================================
+   👤 WHO AM I? PICKER — Each phone claims a kid
+   ============================================ */
+.whoami-btn {
+  background: linear-gradient(135deg, #FFE66D, #FF9F45);
+  border: 2px solid #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: #5a3a00;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  white-space: nowrap;
+  font-family: inherit;
+  transition: transform 0.12s;
+}
+.whoami-btn:hover { transform: translateY(-1px); }
+
+.whoami-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 2200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+}
+.whoami-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 22px 22px 18px;
+  width: 100%;
+  max-width: min(560px, calc(100vw - 24px));
+  box-sizing: border-box;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+.whoami-close {
+  position: absolute; top: 10px; right: 12px;
+  background: none; border: none; font-size: 1.5rem; cursor: pointer;
+  color: #999; padding: 4px 10px; border-radius: 50%;
+}
+.whoami-close:hover { background: #f0f0f0; color: #333; }
+.whoami-card h2 {
+  margin: 4px 0 6px;
+  font-size: 1.5rem;
+  text-align: center;
+}
+.whoami-sub {
+  text-align: center;
+  color: #666;
+  margin: 0 0 18px;
+  font-size: 0.95rem;
+}
+.whoami-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.whoami-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 8px;
+  border-radius: 14px;
+  border: 3px solid #e3e3e3;
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.whoami-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+.whoami-option-current {
+  background: linear-gradient(135deg, #fffde0, #ffe5b4);
+  box-shadow: 0 4px 14px rgba(255,159,69,0.3);
+}
+.whoami-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.whoami-avatar img {
+  width: 100%; height: 100%; object-fit: cover;
+}
+.whoami-avatar span {
+  font-size: 2rem;
+}
+.whoami-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #333;
+}
+.whoami-check {
+  font-size: 0.75rem;
+  color: #2a9d4a;
+  font-weight: 700;
+  background: #e8f7e8;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.whoami-option-clear { opacity: 0.7; }
+.whoami-option-clear:hover { opacity: 1; }
+
+.whoami-extras {
+  border-top: 2px dashed #f0d878;
+  padding-top: 14px;
+  margin-top: 6px;
+  text-align: center;
+}
+.whoami-leader-btn {
+  background: linear-gradient(135deg, #f5e6ff, #e0c8ff);
+  border: 2px solid #c4a0e8;
+  border-radius: 14px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #5a2a90;
+  font-family: inherit;
+  width: 100%;
+  font-size: 0.9rem;
+}
+.whoami-leader-btn:hover { background: linear-gradient(135deg, #ecd6ff, #d4b0ff); }
+.whoami-leader-on {
+  background: linear-gradient(135deg, #ffd700, #ffaa00) !important;
+  color: #5a3a00 !important;
+  border-color: #c89000 !important;
+  box-shadow: 0 4px 14px rgba(255,170,0,0.4);
+}
+.whoami-leader-hint {
+  font-size: 0.78rem;
+  color: #888;
+  font-style: italic;
+  margin: 8px 0 0;
+}
+
+/* Claim nudge inside profile modal */
+.kp-claim-nudge {
+  background: #f5f5f5;
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #555;
+}
+.kp-claim-nudge p { margin: 0; }
+
+/* Leader-mode hint differentiation */
+.kp-edit-cta-leader {
+  background: linear-gradient(135deg, #f5e6ff, #e0c8ff) !important;
+  border: 2px solid #c4a0e8;
+}
+.kp-edit-cta-own {
+  background: linear-gradient(135deg, #fff8e1, #ffe5b4);
+}
+.kp-edit-hint-top {
+  margin: 0 0 10px;
+  font-weight: 700;
+  color: #5a3a00;
+  font-size: 0.95rem;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .whoami-btn { font-size: 0.78rem; padding: 5px 10px; }
+  .whoami-card { padding: 18px 14px 14px; }
+  .whoami-card h2 { font-size: 1.25rem; }
+  .whoami-sub { font-size: 0.85rem; }
+  .whoami-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .whoami-option { padding: 12px 6px; }
+  .whoami-avatar { width: 54px; height: 54px; }
+  .whoami-name { font-size: 0.9rem; }
+}
+@media (max-width: 360px) {
+  .whoami-grid { grid-template-columns: repeat(2, 1fr); }
+}

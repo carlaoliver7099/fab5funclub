@@ -10,6 +10,33 @@ let CALENDAR_DATE = new Date();
 CALENDAR_DATE.setDate(1);
 let CHAT_HISTORY = [];
 
+// 👤 Who's using this phone? (per-device, not per-account)
+// Each crew member picks themselves once → only their own card has the Edit button.
+const CREW_USER_KEY = 'fab5_crew_user_v1';
+const LEADER_OVERRIDE_KEY = 'fab5_leader_override_v1';
+let LEADER_OVERRIDE_MODE = false; // Set true to edit anyone's card (Saia's leader power 👑)
+
+function getCurrentCrewUser() {
+  try { return localStorage.getItem(CREW_USER_KEY) || null; } catch { return null; }
+}
+function setCurrentCrewUser(name) {
+  try {
+    if (name) localStorage.setItem(CREW_USER_KEY, name);
+    else localStorage.removeItem(CREW_USER_KEY);
+  } catch {}
+}
+function setLeaderOverride(on) {
+  LEADER_OVERRIDE_MODE = !!on;
+  try {
+    if (on) localStorage.setItem(LEADER_OVERRIDE_KEY, '1');
+    else localStorage.removeItem(LEADER_OVERRIDE_KEY);
+  } catch {}
+  updateWhoAmIBadge();
+}
+function loadLeaderOverride() {
+  try { LEADER_OVERRIDE_MODE = localStorage.getItem(LEADER_OVERRIDE_KEY) === '1'; } catch {}
+}
+
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
@@ -104,6 +131,9 @@ async function initApp() {
     setupVoicePebbles();
     setupKidProfileModal();
     setupOnboardingWizard();
+    loadLeaderOverride();
+    setupWhoAmIModal();
+    updateWhoAmIBadge();
     $('#logout-btn').addEventListener('click', logout);
 
     await refreshAll();
@@ -1854,16 +1884,33 @@ function openKidProfileModal(name) {
       </ul>
     </div>` : '';
 
-  // ✏️ Edit my card button — kids only (not Pebbles)
-  const editBtnHtml = !isPebbles ? `
-    <div class="kp-modal-section kp-edit-cta">
+  // ✏️ Edit my card button — only shows on the LOGGED-IN user's own card
+  // (with a leader override for Saia who can edit anyone's)
+  const currentUser = getCurrentCrewUser();
+  const isOwnCard = currentUser === name;
+  const isLeaderOverride = LEADER_OVERRIDE_MODE && !isPebbles;
+  const canEdit = !isPebbles && (isOwnCard || isLeaderOverride);
+
+  const editBtnHtml = canEdit ? `
+    <div class="kp-modal-section kp-edit-cta ${isOwnCard ? 'kp-edit-cta-own' : 'kp-edit-cta-leader'}">
+      ${isOwnCard
+        ? `<p class="kp-edit-hint-top">👋 This is YOUR card! Tap to fill it in with your favourite stuff.</p>`
+        : `<p class="kp-edit-hint-top">🔑 Leader override mode — you're editing ${escapeHtml(name)}'s card.</p>`}
       <button type="button" class="btn btn-primary kp-edit-btn" data-edit-name="${escapeHtml(name)}">
-        ✏️ Edit my card
+        ✏️ Edit ${isOwnCard ? 'my' : escapeHtml(name) + "'s"} card
       </button>
-      <p class="kp-edit-hint">Make it really YOU — change your favourite stuff anytime 💛</p>
+      <p class="kp-edit-hint">Change your favourite stuff anytime 💛</p>
     </div>` : '';
 
-  const extraSections = factsHtml + songHtml + pebblesExtras + editBtnHtml;
+  // Nudge for visitors looking at someone else's card (or before they've claimed)
+  const claimNudge = (!isPebbles && !canEdit) ? `
+    <div class="kp-modal-section kp-claim-nudge">
+      ${currentUser
+        ? `<p>👀 This is <strong>${escapeHtml(name)}</strong>'s card. You're logged in as <strong>${escapeHtml(currentUser)}</strong> — tap your own card to edit yours!</p>`
+        : `<p>🌟 Want to edit YOUR own card? Tap the <strong>"Who are you?"</strong> button at the top of the page to pick which crew member you are!</p>`}
+    </div>` : '';
+
+  const extraSections = factsHtml + songHtml + pebblesExtras + editBtnHtml + claimNudge;
 
   content.innerHTML = `
     <div class="kp-modal-header" style="border-color:${member.color}">
@@ -1884,6 +1931,120 @@ function closeKidProfileModal() {
   if (!overlay) return;
   overlay.style.display = 'none';
   document.body.style.overflow = '';
+}
+
+// ---------- 👤 WHO AM I? PICKER ----------
+function updateWhoAmIBadge() {
+  const lbl = $('#whoami-label');
+  if (!lbl) return;
+  const user = getCurrentCrewUser();
+  if (LEADER_OVERRIDE_MODE) {
+    lbl.innerHTML = `👑 Leader${user ? ` (${escapeHtml(user)})` : ''}`;
+  } else if (user) {
+    lbl.innerHTML = `👋 I'm ${escapeHtml(user)}`;
+  } else {
+    lbl.innerHTML = `👋 Who am I?`;
+  }
+}
+
+function renderWhoAmIGrid() {
+  const grid = $('#whoami-grid');
+  if (!grid || !CLUB || !CLUB.members) return;
+  const currentUser = getCurrentCrewUser();
+  const kids = CLUB.members.filter(m => m.name !== 'Pebbles');
+  grid.innerHTML = kids.map(m => {
+    const hasAvatar = ['Ace', 'Charlotte', 'Elijah', 'Saia', 'Sienna'].includes(m.name);
+    const avatarSrc = `/static/avatars/${m.name.toLowerCase()}.png?v=2`;
+    const isCurrent = m.name === currentUser;
+    return `
+      <button type="button" class="whoami-option ${isCurrent ? 'whoami-option-current' : ''}" data-whoami-pick="${escapeHtml(m.name)}" style="border-color:${m.color}">
+        <div class="whoami-avatar" style="background:${m.color}">
+          ${hasAvatar ? `<img src="${avatarSrc}" alt="${escapeHtml(m.name)}" />` : `<span>${m.emoji}</span>`}
+        </div>
+        <div class="whoami-name">${escapeHtml(m.name)}</div>
+        ${isCurrent ? '<div class="whoami-check">✓ This is me</div>' : ''}
+      </button>`;
+  }).join('') + `
+    <button type="button" class="whoami-option whoami-option-clear" data-whoami-pick="__clear__">
+      <div class="whoami-avatar" style="background:#eee">
+        <span>🚫</span>
+      </div>
+      <div class="whoami-name">Not me</div>
+      ${!currentUser ? '<div class="whoami-check">✓ Current</div>' : ''}
+    </button>`;
+}
+
+function openWhoAmIModal() {
+  const overlay = $('#whoami-modal');
+  if (!overlay) return;
+  renderWhoAmIGrid();
+  // Update leader button label
+  const leaderBtn = $('#whoami-leader-toggle');
+  if (leaderBtn) {
+    leaderBtn.textContent = LEADER_OVERRIDE_MODE
+      ? '👑 Leader mode ON — tap to turn OFF'
+      : '👑 I\'m the leader — let me edit anyone\'s card';
+    leaderBtn.classList.toggle('whoami-leader-on', LEADER_OVERRIDE_MODE);
+  }
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeWhoAmIModal() {
+  const overlay = $('#whoami-modal');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function setupWhoAmIModal() {
+  const openBtn = $('#whoami-btn');
+  const closeBtn = $('#whoami-close');
+  const overlay = $('#whoami-modal');
+  const leaderBtn = $('#whoami-leader-toggle');
+  if (!openBtn || !overlay) return;
+
+  openBtn.addEventListener('click', openWhoAmIModal);
+  if (closeBtn) closeBtn.addEventListener('click', closeWhoAmIModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeWhoAmIModal();
+  });
+
+  // Pick a crew member
+  overlay.addEventListener('click', (e) => {
+    const btn = e.target.closest && e.target.closest('[data-whoami-pick]');
+    if (!btn) return;
+    const pick = btn.dataset.whoamiPick;
+    if (pick === '__clear__') {
+      setCurrentCrewUser(null);
+    } else {
+      setCurrentCrewUser(pick);
+    }
+    updateWhoAmIBadge();
+    renderWhoAmIGrid();
+    // Friendly close after a beat so they see the ✓
+    setTimeout(closeWhoAmIModal, 350);
+  });
+
+  // Leader override toggle
+  if (leaderBtn) {
+    leaderBtn.addEventListener('click', () => {
+      setLeaderOverride(!LEADER_OVERRIDE_MODE);
+      leaderBtn.textContent = LEADER_OVERRIDE_MODE
+        ? '👑 Leader mode ON — tap to turn OFF'
+        : '👑 I\'m the leader — let me edit anyone\'s card';
+      leaderBtn.classList.toggle('whoami-leader-on', LEADER_OVERRIDE_MODE);
+    });
+  }
+
+  // Auto-prompt the picker for first-time visitors who haven't claimed yet
+  // (only if they're not seeing the onboarding wizard)
+  setTimeout(() => {
+    if (!getCurrentCrewUser() && !LEADER_OVERRIDE_MODE) {
+      const wizardOpen = $('#onboarding-wizard') && $('#onboarding-wizard').style.display !== 'none';
+      if (!wizardOpen) openWhoAmIModal();
+    }
+  }, 1500);
 }
 
 function setupKidProfileModal() {

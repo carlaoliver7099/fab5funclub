@@ -2012,9 +2012,28 @@ app.get('/', (c) => {
             <a href="#gallery">📸 Gallery</a>
             <a href="#parents-faq">❓ Parents</a>
           </div>
+          <button id="whoami-btn" class="whoami-btn" title="Who are you?">
+            <span id="whoami-label">👋 Who am I?</span>
+          </button>
           <button id="take-tour-btn" class="take-tour-btn" title="Start here!">🎈 Start here!</button>
           <button id="logout-btn" class="logout-btn" title="Log out">🚪</button>
         </nav>
+
+        {/* 👤 WHO ARE YOU? PICKER — each phone claims one crew member */}
+        <div id="whoami-modal" class="whoami-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="whoami-title">
+          <div class="whoami-card">
+            <button id="whoami-close" class="whoami-close" title="Close">✕</button>
+            <h2 id="whoami-title">👋 Who are you?</h2>
+            <p class="whoami-sub">Pick which crew member is using this phone — only YOUR card will show the Edit button!</p>
+            <div id="whoami-grid" class="whoami-grid"></div>
+            <div class="whoami-extras">
+              <button id="whoami-leader-toggle" class="whoami-leader-btn" type="button">
+                👑 I'm the leader — let me edit anyone's card
+              </button>
+              <p class="whoami-leader-hint" id="whoami-leader-hint">(Saia's leader power — turn this on to edit any card)</p>
+            </div>
+          </div>
+        </div>
 
         {/* 🪄 ONBOARDING WIZARD — first-visit welcome tour */}
         <div id="onboarding-wizard" class="wizard-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="wizard-title">
