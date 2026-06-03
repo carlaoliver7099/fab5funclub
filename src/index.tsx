@@ -2427,9 +2427,9 @@ app.get('/', (c) => {
             <div id="whoami-grid" class="whoami-grid"></div>
             <div class="whoami-extras">
               <button id="whoami-leader-toggle" class="whoami-leader-btn" type="button">
-                👑 I'm the leader — let me edit anyone's card
+                🛟 Grown-up helper mode — let me edit anyone's card
               </button>
-              <p class="whoami-leader-hint" id="whoami-leader-hint">(Saia's leader power — turn this on to edit any card)</p>
+              <p class="whoami-leader-hint" id="whoami-leader-hint">(For parents or grown-ups helping a kid set up their card)</p>
             </div>
           </div>
         </div>

@@ -14,7 +14,7 @@ let CHAT_HISTORY = [];
 // Each crew member picks themselves once → only their own card has the Edit button.
 const CREW_USER_KEY = 'fab5_crew_user_v1';
 const LEADER_OVERRIDE_KEY = 'fab5_leader_override_v1';
-let LEADER_OVERRIDE_MODE = false; // Set true to edit anyone's card (Saia's leader power 👑)
+let LEADER_OVERRIDE_MODE = false; // Set true to edit anyone's card (grown-up helper mode 🛟)
 
 function getCurrentCrewUser() {
   try { return localStorage.getItem(CREW_USER_KEY) || null; } catch { return null; }
@@ -2381,7 +2381,7 @@ function openKidProfileModal(name) {
     </div>` : '';
 
   // ✏️ Edit my card button — only shows on the LOGGED-IN user's own card
-  // (with a leader override for Saia who can edit anyone's)
+  // (with a grown-up helper override so parents can edit any kid's card)
   const currentUser = getCurrentCrewUser();
   const isOwnCard = currentUser === name;
   const isLeaderOverride = LEADER_OVERRIDE_MODE && !isPebbles;
@@ -2391,7 +2391,7 @@ function openKidProfileModal(name) {
     <div class="kp-modal-section kp-edit-cta ${isOwnCard ? 'kp-edit-cta-own' : 'kp-edit-cta-leader'}">
       ${isOwnCard
         ? `<p class="kp-edit-hint-top">👋 This is YOUR card! Tap to fill it in with your favourite stuff.</p>`
-        : `<p class="kp-edit-hint-top">🔑 Leader override mode — you're editing ${escapeHtml(name)}'s card.</p>`}
+        : `<p class="kp-edit-hint-top">🛟 Grown-up helper mode — you're editing ${escapeHtml(name)}'s card.</p>`}
       <button type="button" class="btn btn-primary kp-edit-btn" data-edit-name="${escapeHtml(name)}">
         ✏️ Edit ${isOwnCard ? 'my' : escapeHtml(name) + "'s"} card
       </button>
@@ -2523,7 +2523,7 @@ function updateWhoAmIBadge() {
   if (!lbl) return;
   const user = getCurrentCrewUser();
   if (LEADER_OVERRIDE_MODE) {
-    lbl.innerHTML = `👑 Leader${user ? ` (${escapeHtml(user)})` : ''}`;
+    lbl.innerHTML = `🛟 Helper${user ? ` (${escapeHtml(user)})` : ''}`;
   } else if (user) {
     lbl.innerHTML = `👋 I'm ${escapeHtml(user)}`;
   } else {
@@ -2566,8 +2566,8 @@ function openWhoAmIModal() {
   const leaderBtn = $('#whoami-leader-toggle');
   if (leaderBtn) {
     leaderBtn.textContent = LEADER_OVERRIDE_MODE
-      ? '👑 Leader mode ON — tap to turn OFF'
-      : '👑 I\'m the leader — let me edit anyone\'s card';
+      ? '🛟 Helper mode ON — tap to turn OFF'
+      : '🛟 Grown-up helper mode — let me edit anyone\'s card';
     leaderBtn.classList.toggle('whoami-leader-on', LEADER_OVERRIDE_MODE);
   }
   overlay.style.display = 'flex';
@@ -2612,13 +2612,13 @@ function setupWhoAmIModal() {
     setTimeout(closeWhoAmIModal, 350);
   });
 
-  // Leader override toggle
+  // Grown-up helper mode toggle
   if (leaderBtn) {
     leaderBtn.addEventListener('click', () => {
       setLeaderOverride(!LEADER_OVERRIDE_MODE);
       leaderBtn.textContent = LEADER_OVERRIDE_MODE
-        ? '👑 Leader mode ON — tap to turn OFF'
-        : '👑 I\'m the leader — let me edit anyone\'s card';
+        ? '🛟 Helper mode ON — tap to turn OFF'
+        : '🛟 Grown-up helper mode — let me edit anyone\'s card';
       leaderBtn.classList.toggle('whoami-leader-on', LEADER_OVERRIDE_MODE);
     });
   }
