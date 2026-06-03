@@ -1883,6 +1883,93 @@ app.get('/api/dofe/progress/:name', (c) => {
   })
 })
 
+// Team chart — all 5 kids' progress in one call
+app.get('/api/dofe/team', (c) => {
+  ensureSeeded()
+  const team = MEMBER_NAMES.map(name => {
+    const member = CLUB_INFO.members.find(m => m.name === name)
+    const progress = computeDofeProgressFor(name)
+    return {
+      name,
+      color: member?.color || '#999',
+      emoji: member?.emoji || '⭐',
+      pillarHours: progress.pillarHours,
+      totalHours: progress.totalHours,
+      bronze: progress.bronze,
+      silver: progress.silver,
+      gold: progress.gold,
+      currentStage: progress.currentStage,
+      ajCompleted: progress.ajCompleted
+    }
+  })
+  // Team totals (combined pillar hours across all 5)
+  const teamPillarHours = team.reduce((acc, k) => ({
+    physical: acc.physical + k.pillarHours.physical,
+    skills: acc.skills + k.pillarHours.skills,
+    service: acc.service + k.pillarHours.service,
+    adventure: acc.adventure + k.pillarHours.adventure
+  }), { physical: 0, skills: 0, service: 0, adventure: 0 })
+  return c.json({ team, teamPillarHours, currentWeek: getCurrentDofeWeek() })
+})
+
+// Individual kid's event-by-event journey (drill-down view)
+app.get('/api/dofe/journey/:name', (c) => {
+  ensureSeeded()
+  const name = c.req.param('name')
+  if (!MEMBER_NAMES.includes(name) && name !== 'Pebbles') {
+    return c.json({ error: 'Unknown member' }, 404)
+  }
+  const activityLookup: Record<string, { pillars: string[]; hours: number; emoji: string; category: string }> = {}
+  for (const a of (CLUB_INFO.activities as any[])) {
+    activityLookup[a.name] = { pillars: a.pillars || [], hours: a.hours || 0, emoji: a.emoji, category: a.category }
+  }
+  const today = new Date().toISOString().slice(0, 10)
+  const kidsEvents = EVENTS
+    .filter(ev => ev.members.includes(name))
+    .map(ev => {
+      const meta = activityLookup[ev.activity] || { pillars: [], hours: 0, emoji: '🎯', category: 'Other' }
+      const isPast = ev.date <= today
+      // What syllabus area(s) this counts toward
+      const syllabusAreas = meta.pillars.map(p => {
+        const pillar = DOFE_PILLARS.find(x => x.id === p)
+        return pillar ? { id: pillar.id, name: pillar.name, emoji: pillar.emoji, color: pillar.color } : null
+      }).filter(Boolean)
+      return {
+        eventId: ev.id,
+        title: ev.title,
+        activity: ev.activity,
+        emoji: meta.emoji,
+        date: ev.date,
+        location: ev.location,
+        hours: meta.hours,
+        pillars: meta.pillars,
+        syllabusAreas,
+        leader: ev.leader,
+        isPast,
+        isAJ: (ev.activity === 'Camping' && meta.hours >= 12) ||
+              (ev.activity === 'Overnight Hike Expedition')
+      }
+    })
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  // Compute graduations — when each pillar hit Bronze/Silver/Gold thresholds
+  const progress = computeDofeProgressFor(name)
+  const graduations: Array<{ stage: string; emoji: string; pillar?: string; pillarName?: string; pillarEmoji?: string; achieved: boolean; date?: string; label: string }> = []
+  // Stage-level graduations
+  if (progress.bronze.complete) graduations.push({ stage: 'bronze', emoji: '🥉', achieved: true, label: 'Bronze Award unlocked!' })
+  if (progress.silver.complete) graduations.push({ stage: 'silver', emoji: '🥈', achieved: true, label: 'Silver Award unlocked!' })
+  if (progress.gold.complete)   graduations.push({ stage: 'gold',   emoji: '🥇', achieved: true, label: 'Gold Award unlocked!' })
+
+  return c.json({
+    member: name,
+    progress,
+    events: kidsEvents,
+    pastEventCount: kidsEvents.filter(e => e.isPast).length,
+    futureEventCount: kidsEvents.filter(e => !e.isPast).length,
+    graduations
+  })
+})
+
 // =========== PEBBLES AI CHAT ===========
 const PEBBLES_SYSTEM_PROMPT = `You are PEBBLES 🐾 — the AI mascot of the Fab 5 Fun Club!
 
@@ -2316,6 +2403,7 @@ app.get('/', (c) => {
           <div class="topnav-links">
             <a href="#calendar">📅 Calendar</a>
             <a href="#dofe-journey">🏅 My Journey</a>
+            <a href="#team-progress">📊 Team Chart</a>
             <a href="#fab5-ways">🌟 Fab 5 Ways</a>
             <a href="#merch">👕 Merch</a>
             <a href="#awards">🏆 Awards</a>
@@ -2644,6 +2732,47 @@ app.get('/', (c) => {
             <div id="dofe-this-week-content" class="dofe-this-week-content">Loading…</div>
           </div>
         </section>
+
+        {/* 📊 TEAM PROGRESS CHART — kid-friendly view of ALL 5 crew members */}
+        <section class="section team-progress-section" id="team-progress">
+          <h2 class="section-title">📊 Team Progress Chart</h2>
+          <p class="section-subtitle">See how the WHOLE crew is doing — tap any kid to drill into their journey! 🔍</p>
+
+          {/* Team-wide pillar totals (combined) */}
+          <div class="team-totals-card">
+            <h3>🌟 The Fab 5 Combined Power</h3>
+            <p class="team-totals-sub">Every adventure builds the team's total pillar hours!</p>
+            <div id="team-totals" class="team-totals-grid">
+              <p class="muted">Loading team power…</p>
+            </div>
+          </div>
+
+          {/* All 5 kids' cards */}
+          <h3 class="team-grid-heading">🏅 Each crew member's journey</h3>
+          <div id="team-grid" class="team-grid">
+            <p class="muted">Loading team chart…</p>
+          </div>
+
+          {/* Drill-down modal — opens when a kid card is tapped */}
+          <div id="kid-journey-modal" class="journey-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="journey-title">
+            <div class="journey-card">
+              <button id="journey-close" class="journey-close" title="Close">✕</button>
+              <div id="journey-content" class="journey-content">Loading journey…</div>
+            </div>
+          </div>
+        </section>
+
+        {/* 🎉 MILESTONE CELEBRATION OVERLAY — fires when a kid crosses a pillar/stage threshold */}
+        <div id="milestone-overlay" class="milestone-overlay" style="display:none" aria-hidden="true">
+          <div id="confetti-canvas" class="confetti-canvas"></div>
+          <div class="milestone-card">
+            <div id="milestone-emoji" class="milestone-emoji">🎉</div>
+            <h2 id="milestone-title" class="milestone-title">YOU DID IT!</h2>
+            <p id="milestone-message" class="milestone-message">You just unlocked a new pillar!</p>
+            <p id="milestone-pebbles" class="milestone-pebbles">🐾 Pebbles is SO proud of you!</p>
+            <button id="milestone-close" class="btn btn-primary btn-big">🎊 Keep going!</button>
+          </div>
+        </div>
 
         {/* MERCH SECTION */}
         <section class="section merch-section" id="merch">

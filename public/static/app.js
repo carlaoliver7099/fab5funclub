@@ -134,6 +134,7 @@ async function initApp() {
     loadLeaderOverride();
     setupWhoAmIModal();
     updateWhoAmIBadge();
+    setupMilestoneAndJourney();
     $('#logout-btn').addEventListener('click', logout);
 
     await refreshAll();
@@ -225,6 +226,7 @@ async function refreshAll() {
   renderCaptionBattles();
   renderPostcards();
   renderDofeHomeSection();
+  renderTeamProgress();
 }
 
 // 🏅 Render the kid-facing DofE Journey home section
@@ -286,6 +288,438 @@ function renderDofeThisWeekKid(tw) {
       <p class="dofe-week-why">${escapeHtml(tw.kidWhy)}</p>
       <p class="muted dofe-week-pebbles-cta">💬 Ask Pebbles "what are we doing this weekend?" for more!</p>
     </div>`;
+}
+
+// ============ 📊 TEAM PROGRESS CHART ============
+// Cached team data to detect milestone crossings across refreshes
+let LAST_TEAM_DATA = null;
+
+async function renderTeamProgress() {
+  const totalsEl = document.getElementById('team-totals');
+  const gridEl = document.getElementById('team-grid');
+  if (!totalsEl || !gridEl) return;
+
+  try {
+    const data = await api('/api/dofe/team');
+
+    // ── Milestone check: compare LAST_TEAM_DATA → new data ──
+    if (LAST_TEAM_DATA) {
+      detectMilestoneCrossings(LAST_TEAM_DATA, data);
+    }
+    LAST_TEAM_DATA = data;
+
+    // ── Team-wide combined pillar bars ──
+    const teamPillars = ['physical', 'skills', 'service', 'adventure'].map(pid => {
+      const m = DOFE_PILLAR_META[pid];
+      const hrs = data.teamPillarHours[pid];
+      // Visual scale: team of 5 × 52hr Gold = 260hr per pillar at full Gold
+      const pct = Math.min(100, Math.round((hrs / 260) * 100));
+      return `
+        <div class="team-pillar-card" style="background:linear-gradient(135deg, ${m.color}33, ${m.color}11)">
+          <div class="team-pillar-emoji">${m.emoji}</div>
+          <div class="team-pillar-name">${m.name}</div>
+          <div class="team-pillar-hours-big">${hrs}<span class="team-pillar-hours-unit">hr</span></div>
+          <div class="team-pillar-bar"><div class="team-pillar-bar-fill" style="width:${pct}%; background:${m.color}"></div></div>
+        </div>`;
+    }).join('');
+    totalsEl.innerHTML = teamPillars;
+
+    // ── Individual kid cards (sorted by total hours desc — top contributor first, but no "rank" wording) ──
+    const sorted = data.team.slice().sort((a, b) => b.totalHours - a.totalHours);
+    gridEl.innerHTML = sorted.map(k => renderTeamKidCard(k)).join('');
+
+    // Wire up drill-down clicks
+    gridEl.querySelectorAll('.team-kid-card').forEach(card => {
+      card.addEventListener('click', () => openJourneyModal(card.dataset.memberName));
+    });
+  } catch (e) {
+    console.error('Team chart load failed', e);
+    gridEl.innerHTML = `<p class="muted">Couldn't load team chart 🐾</p>`;
+  }
+}
+
+function renderTeamKidCard(k) {
+  const stageBadgeMap = {
+    starter: { emoji: '🌱', label: 'Starter' },
+    bronze:  { emoji: '🥉', label: 'Bronze!' },
+    silver:  { emoji: '🥈', label: 'Silver!' },
+    gold:    { emoji: '🥇', label: 'Gold!' },
+    legend:  { emoji: '👑', label: 'LEGEND' }
+  };
+  const stage = stageBadgeMap[k.currentStage] || stageBadgeMap.starter;
+
+  // Mini pillar dots — 4 little circles showing how full each pillar is (toward Bronze)
+  const pillarDots = ['physical', 'skills', 'service', 'adventure'].map(pid => {
+    const m = DOFE_PILLAR_META[pid];
+    const pct = k.bronze.pillars[pid];
+    return `
+      <div class="team-mini-pillar" title="${m.name}: ${k.pillarHours[pid]}hr (${pct}% of Bronze)">
+        <div class="team-mini-emoji">${m.emoji}</div>
+        <div class="team-mini-bar"><div class="team-mini-fill" style="height:${Math.max(4, pct)}%; background:${m.color}"></div></div>
+        <div class="team-mini-hrs">${k.pillarHours[pid]}h</div>
+      </div>`;
+  }).join('');
+
+  return `
+    <button type="button" class="team-kid-card" data-member-name="${escapeHtml(k.name)}" style="border-color:${k.color}; background:linear-gradient(180deg, white 70%, ${k.color}33)">
+      <div class="team-kid-header">
+        <div class="team-kid-avatar" style="background:${k.color}">
+          <img src="/static/avatars/${k.name.toLowerCase()}.png?v=2" alt="${escapeHtml(k.name)}" onerror="this.style.display='none'; this.parentElement.textContent='${k.emoji}'"/>
+        </div>
+        <div class="team-kid-meta">
+          <h4 class="team-kid-name">${escapeHtml(k.name)}</h4>
+          <div class="team-kid-stage"><span class="team-kid-stage-emoji">${stage.emoji}</span> ${stage.label}</div>
+        </div>
+        <div class="team-kid-total">
+          <span class="team-kid-total-num">${k.totalHours}</span>
+          <span class="team-kid-total-unit">hours</span>
+        </div>
+      </div>
+      <div class="team-mini-pillars">${pillarDots}</div>
+      <div class="team-medals">
+        <span class="team-medal ${k.bronze.complete ? 'team-medal-on' : ''}" title="Bronze: ${k.bronze.percent}%">🥉 ${k.bronze.percent}%</span>
+        <span class="team-medal ${k.silver.complete ? 'team-medal-on' : ''}" title="Silver: ${k.silver.percent}%">🥈 ${k.silver.percent}%</span>
+        <span class="team-medal ${k.gold.complete ? 'team-medal-on' : ''}" title="Gold: ${k.gold.percent}%">🥇 ${k.gold.percent}%</span>
+      </div>
+      <div class="team-kid-tap-hint">👆 Tap to see ${escapeHtml(k.name)}'s journey</div>
+    </button>`;
+}
+
+// ---------- 🔍 DRILL-DOWN: individual kid's journey timeline ----------
+async function openJourneyModal(name) {
+  const overlay = document.getElementById('kid-journey-modal');
+  const content = document.getElementById('journey-content');
+  if (!overlay || !content) return;
+  content.innerHTML = `<p class="muted">Loading ${escapeHtml(name)}'s journey…</p>`;
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  try {
+    const data = await api(`/api/dofe/journey/${encodeURIComponent(name)}`);
+    content.innerHTML = renderJourneyView(data);
+  } catch (e) {
+    content.innerHTML = `<p class="muted">Couldn't load journey 🐾</p>`;
+  }
+}
+
+function closeJourneyModal() {
+  const overlay = document.getElementById('kid-journey-modal');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function renderJourneyView(data) {
+  const name = data.member;
+  const p = data.progress;
+
+  // ── Header: name + current stage badge ──
+  const stageBadgeMap = {
+    starter: { emoji: '🌱', label: 'DofE Starter',  desc: 'Building the habit — every event counts!' },
+    bronze:  { emoji: '🥉', label: 'Bronze Hero',   desc: 'You smashed Bronze!' },
+    silver:  { emoji: '🥈', label: 'Silver Hero',   desc: 'Silver smashed — Gold next!' },
+    gold:    { emoji: '🥇', label: 'Gold Hero',     desc: 'GOLD unlocked. World-class!' },
+    legend:  { emoji: '👑', label: 'DofE Legend',   desc: 'Beyond Gold. You ARE the legend.' }
+  };
+  const stage = stageBadgeMap[p.currentStage] || stageBadgeMap.starter;
+
+  // ── Big pillar bars ──
+  const pillarBars = ['physical', 'skills', 'service', 'adventure'].map(pid => {
+    const m = DOFE_PILLAR_META[pid];
+    const hrs = p.pillarHours[pid];
+    const bronzePct = p.bronze.pillars[pid];
+    const silverPct = p.silver.pillars[pid];
+    const goldPct = p.gold.pillars[pid];
+    // Show progress on a 0→Gold scale (52hr = 100%)
+    const goldVisualPct = Math.min(100, Math.round((hrs / 52) * 100));
+    return `
+      <div class="journey-pillar" style="background:linear-gradient(135deg, ${m.color}22, ${m.color}08)">
+        <div class="journey-pillar-head">
+          <span class="journey-pillar-emoji">${m.emoji}</span>
+          <span class="journey-pillar-name">${m.name}</span>
+          <span class="journey-pillar-hrs">${hrs}hr</span>
+        </div>
+        <div class="journey-pillar-track">
+          <div class="journey-pillar-fill" style="width:${goldVisualPct}%; background:${m.color}"></div>
+          <div class="journey-pillar-marker" style="left:25%" title="Bronze threshold (13hr)"><span>🥉</span></div>
+          <div class="journey-pillar-marker" style="left:50%" title="Silver threshold (26hr)"><span>🥈</span></div>
+          <div class="journey-pillar-marker" style="left:100%" title="Gold threshold (52hr)"><span>🥇</span></div>
+        </div>
+        <div class="journey-pillar-stats">
+          <span class="${bronzePct >= 100 ? 'jstat-on' : ''}">🥉 ${bronzePct}%</span>
+          <span class="${silverPct >= 100 ? 'jstat-on' : ''}">🥈 ${silverPct}%</span>
+          <span class="${goldPct >= 100 ? 'jstat-on' : ''}">🥇 ${goldPct}%</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  // ── Graduations ribbon ──
+  const allGrads = [
+    { stage: 'bronze', emoji: '🥉', label: 'Bronze Award', complete: p.bronze.complete, aj: p.ajCompleted.bronze },
+    { stage: 'silver', emoji: '🥈', label: 'Silver Award', complete: p.silver.complete, aj: p.ajCompleted.silver },
+    { stage: 'gold',   emoji: '🥇', label: 'Gold Award',   complete: p.gold.complete,   aj: p.ajCompleted.gold }
+  ];
+  const gradsHtml = allGrads.map(g => `
+    <div class="journey-grad ${g.complete ? 'journey-grad-on' : 'journey-grad-off'}">
+      <div class="journey-grad-emoji">${g.emoji}</div>
+      <div class="journey-grad-label">${g.label}</div>
+      <div class="journey-grad-status">${g.complete ? '✅ Achieved!' : (g.aj ? 'AJ done — need hours' : 'Working on it')}</div>
+    </div>`).join('');
+
+  // ── Event timeline: past + upcoming ──
+  const pastEvents = data.events.filter(e => e.isPast).reverse(); // most recent first
+  const futureEvents = data.events.filter(e => !e.isPast);
+
+  const pastHtml = pastEvents.length > 0 ? pastEvents.map(ev => renderJourneyEvent(ev, true)).join('') : `<p class="muted">No past adventures yet — but that's about to change! 🚀</p>`;
+  const futureHtml = futureEvents.length > 0 ? futureEvents.map(ev => renderJourneyEvent(ev, false)).join('') : `<p class="muted">No upcoming adventures booked yet. Use the calendar to plan some! 📅</p>`;
+
+  return `
+    <div class="journey-header" style="background:linear-gradient(135deg, white 0%, ${getMemberColor(name)}33 100%)">
+      <div class="journey-avatar" style="background:${getMemberColor(name)}">
+        <img src="/static/avatars/${name.toLowerCase()}.png?v=2" alt="${escapeHtml(name)}" onerror="this.style.display='none'"/>
+      </div>
+      <div class="journey-header-text">
+        <h2 id="journey-title">${escapeHtml(name)}'s Journey 🌟</h2>
+        <div class="journey-stage-badge">
+          <span class="journey-stage-emoji">${stage.emoji}</span>
+          <div>
+            <div class="journey-stage-label">${stage.label}</div>
+            <div class="journey-stage-desc">${stage.desc}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="journey-section">
+      <h3>💪🎓💛🏔️ The 4 Pillars</h3>
+      <p class="muted">Markers show 🥉 Bronze (13hr) · 🥈 Silver (26hr) · 🥇 Gold (52hr) thresholds</p>
+      ${pillarBars}
+    </div>
+
+    <div class="journey-section">
+      <h3>🏆 Awards Progress</h3>
+      <div class="journey-grads">${gradsHtml}</div>
+    </div>
+
+    <div class="journey-section">
+      <h3>📅 Past Adventures (${pastEvents.length})</h3>
+      <div class="journey-timeline">${pastHtml}</div>
+    </div>
+
+    <div class="journey-section">
+      <h3>🚀 Upcoming Adventures (${futureEvents.length})</h3>
+      <div class="journey-timeline journey-timeline-future">${futureHtml}</div>
+    </div>
+
+    <div class="journey-footer">
+      <p>🐾 Every adventure builds the pillars. Keep going!</p>
+    </div>
+  `;
+}
+
+function renderJourneyEvent(ev, isPast) {
+  const chips = (ev.syllabusAreas || []).map(s => `<span class="dofe-pillar-chip" style="background:${s.color}22;color:${s.color}">${s.emoji} ${s.name}</span>`).join(' ');
+  const ajBadge = ev.isAJ ? `<span class="journey-ev-aj">🏔️ Adventurous Journey!</span>` : '';
+  const checkmark = isPast ? '✅' : '🔜';
+  return `
+    <div class="journey-event ${isPast ? 'jev-past' : 'jev-future'}">
+      <div class="journey-ev-marker">${checkmark}</div>
+      <div class="journey-ev-body">
+        <div class="journey-ev-head">
+          <span class="journey-ev-emoji">${ev.emoji}</span>
+          <span class="journey-ev-title">${escapeHtml(ev.title)}</span>
+          <span class="journey-ev-hours">+${ev.hours}hr</span>
+        </div>
+        <div class="journey-ev-date">📅 ${escapeHtml(ev.date)} · 📍 ${escapeHtml(ev.location)}</div>
+        ${chips ? `<div class="journey-ev-chips">${chips}</div>` : ''}
+        ${ajBadge}
+      </div>
+    </div>`;
+}
+
+function getMemberColor(name) {
+  if (!CLUB) return '#999';
+  const m = CLUB.members.find(x => x.name === name);
+  return m ? m.color : '#999';
+}
+
+// ============ 🎉 MILESTONE CELEBRATION SYSTEM ============
+// Detects when a kid crosses a Bronze/Silver/Gold pillar threshold
+// (or full award) between two team-data snapshots, then fires confetti.
+//
+// Also persistent: we remember which milestones we've already celebrated per kid
+// (in localStorage) so we don't repeat the party every page load.
+
+const MILESTONE_STORAGE_KEY = 'fab5_dofe_milestones_v1';
+function getCelebratedMilestones() {
+  try { return JSON.parse(localStorage.getItem(MILESTONE_STORAGE_KEY) || '{}'); }
+  catch (e) { return {}; }
+}
+function markMilestoneCelebrated(key) {
+  const data = getCelebratedMilestones();
+  data[key] = Date.now();
+  localStorage.setItem(MILESTONE_STORAGE_KEY, JSON.stringify(data));
+}
+
+// Detect crossings between previous and current team data
+function detectMilestoneCrossings(prev, curr) {
+  const queue = [];
+  curr.team.forEach(now => {
+    const before = prev.team.find(t => t.name === now.name);
+    if (!before) return;
+    // Pillar-level crossings (each pillar reaching 100% of Bronze/Silver/Gold)
+    ['physical', 'skills', 'service', 'adventure'].forEach(pid => {
+      ['bronze', 'silver', 'gold'].forEach(stg => {
+        const wasComplete = before[stg].pillars[pid] >= 100;
+        const isComplete = now[stg].pillars[pid] >= 100;
+        if (!wasComplete && isComplete) {
+          queue.push({ type: 'pillar', name: now.name, pillar: pid, stage: stg });
+        }
+      });
+    });
+    // Full award crossings
+    ['bronze', 'silver', 'gold'].forEach(stg => {
+      if (!before[stg].complete && now[stg].complete) {
+        queue.push({ type: 'award', name: now.name, stage: stg });
+      }
+    });
+  });
+  // Show only the first (most exciting) milestone to avoid spam
+  if (queue.length > 0) {
+    // Prefer 'award' over 'pillar'
+    const awards = queue.filter(m => m.type === 'award');
+    const ms = awards.length > 0 ? awards[0] : queue[0];
+    fireMilestone(ms);
+  }
+}
+
+// Manual trigger (for "celebrate already-earned" reminders if needed) — exposed for testing
+function fireMilestone(ms) {
+  const key = `${ms.name}-${ms.type}-${ms.stage}-${ms.pillar || ''}`;
+  const celebrated = getCelebratedMilestones();
+  if (celebrated[key]) return; // already celebrated, skip
+  markMilestoneCelebrated(key);
+
+  const overlay = document.getElementById('milestone-overlay');
+  const emojiEl = document.getElementById('milestone-emoji');
+  const titleEl = document.getElementById('milestone-title');
+  const msgEl = document.getElementById('milestone-message');
+  const pebEl = document.getElementById('milestone-pebbles');
+  if (!overlay) return;
+
+  const stageEmojis = { bronze: '🥉', silver: '🥈', gold: '🥇' };
+  const stageColors = { bronze: '#CD7F32', silver: '#C0C0C0', gold: '#FFD700' };
+  const sEmoji = stageEmojis[ms.stage] || '🏅';
+  overlay.style.setProperty('--milestone-color', stageColors[ms.stage] || '#FFD56B');
+
+  if (ms.type === 'award') {
+    emojiEl.textContent = sEmoji;
+    titleEl.textContent = `${ms.name.toUpperCase()} JUST WON ${ms.stage.toUpperCase()}!`;
+    msgEl.textContent = `🏆 ALL 4 pillars + Adventurous Journey complete. This is a HUGE deal!`;
+    pebEl.innerHTML = `🐾 Pebbles is doing zoomies of joy! World-recognised achievement unlocked! 🌍✨`;
+  } else if (ms.type === 'pillar') {
+    const pillar = DOFE_PILLAR_META[ms.pillar];
+    emojiEl.textContent = `${pillar.emoji}${sEmoji}`;
+    titleEl.textContent = `${ms.name} smashed ${pillar.name} ${ms.stage}!`;
+    msgEl.textContent = `${pillar.emoji} ${pillar.name} pillar just hit ${ms.stage.toUpperCase()} level for ${ms.name}! ${ms.stage === 'bronze' ? '13' : ms.stage === 'silver' ? '26' : '52'} hours done.`;
+    pebEl.innerHTML = `🐾 *wags tail furiously* Keep going ${escapeHtml(ms.name)} — you're flying!`;
+  }
+
+  overlay.style.display = 'flex';
+  overlay.setAttribute('aria-hidden', 'false');
+  spawnConfetti();
+  // Soft chime via Web Audio
+  playMilestoneChime();
+}
+
+function closeMilestone() {
+  const overlay = document.getElementById('milestone-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+  overlay.setAttribute('aria-hidden', 'true');
+  stopConfetti();
+}
+
+// ── Confetti — simple canvas-free DOM confetti ──
+let confettiTimer = null;
+function spawnConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  if (!canvas) return;
+  canvas.innerHTML = '';
+  const colors = ['#FF6B9D', '#4ECDC4', '#FFE66D', '#A06CD5', '#FFD56B', '#B4F8C8'];
+  const emojis = ['🎉', '🎊', '⭐', '✨', '🌟', '💛', '🏅'];
+  const total = 80;
+  for (let i = 0; i < total; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const isEmoji = Math.random() < 0.3;
+    if (isEmoji) {
+      piece.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      piece.classList.add('confetti-emoji');
+    } else {
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    }
+    piece.style.left = (Math.random() * 100) + 'vw';
+    piece.style.animationDelay = (Math.random() * 0.6) + 's';
+    piece.style.animationDuration = (1.8 + Math.random() * 1.5) + 's';
+    canvas.appendChild(piece);
+  }
+  // Auto clean after 4s
+  clearTimeout(confettiTimer);
+  confettiTimer = setTimeout(() => { canvas.innerHTML = ''; }, 5000);
+}
+function stopConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  if (canvas) canvas.innerHTML = '';
+  clearTimeout(confettiTimer);
+}
+
+// ── Milestone chime via Web Audio ──
+function playMilestoneChime() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    const ctx = new AC();
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.value = 0;
+      osc.connect(gain).connect(ctx.destination);
+      const startAt = ctx.currentTime + i * 0.12;
+      gain.gain.setValueAtTime(0, startAt);
+      gain.gain.linearRampToValueAtTime(0.18, startAt + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.45);
+      osc.start(startAt);
+      osc.stop(startAt + 0.5);
+    });
+    setTimeout(() => ctx.close(), 1500);
+  } catch (e) { /* silent fail — audio not critical */ }
+}
+
+// Wire up milestone close button + journey modal close (once)
+function setupMilestoneAndJourney() {
+  const msClose = document.getElementById('milestone-close');
+  if (msClose && !msClose.dataset.wired) {
+    msClose.dataset.wired = '1';
+    msClose.addEventListener('click', closeMilestone);
+  }
+  const jClose = document.getElementById('journey-close');
+  if (jClose && !jClose.dataset.wired) {
+    jClose.dataset.wired = '1';
+    jClose.addEventListener('click', closeJourneyModal);
+  }
+  // Also close on overlay background click + inline X
+  const jOverlay = document.getElementById('kid-journey-modal');
+  if (jOverlay && !jOverlay.dataset.wired) {
+    jOverlay.dataset.wired = '1';
+    jOverlay.addEventListener('click', (e) => {
+      if (e.target === jOverlay) closeJourneyModal();
+      const inlineX = e.target.closest && e.target.closest('#journey-close-inline');
+      if (inlineX) closeJourneyModal();
+    });
+  }
 }
 
 // ---------- MEMBERS ----------
@@ -2173,6 +2607,7 @@ function setupWhoAmIModal() {
     updateWhoAmIBadge();
     renderWhoAmIGrid();
     renderDofeHomeSection();  // 🏅 re-render personal pillar progress
+    renderTeamProgress();      // 📊 re-render team chart (no milestone crossings expected)
     // Friendly close after a beat so they see the ✓
     setTimeout(closeWhoAmIModal, 350);
   });
