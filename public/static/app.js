@@ -1779,105 +1779,82 @@ function openKidProfileModal(name) {
   const avatarSrc = isPebbles ? '/static/pebbles.png?v=2' : `/static/avatars/${name.toLowerCase()}.png?v=2`;
   const hasAvatar = isPebbles || ['Ace', 'Charlotte', 'Elijah', 'Saia', 'Sienna'].includes(name);
 
-  // Pull stats from existing data (kidProfiles is an object keyed by name)
+  // Pull profile from existing data (kidProfiles is an object keyed by name)
   const profile = (CLUB.kidProfiles && CLUB.kidProfiles[name]) || {};
-  const ledEvents = (EVENTS || []).filter(e => e.leader === name);
-  const memberEvents = (EVENTS || []).filter(e => Array.isArray(e.members) && e.members.includes(name));
-  const myAwards = (AWARDS || []).filter(a => a.member === name);
-  const myPhotos = (GALLERY || []).filter(g => Array.isArray(g.members) && g.members.includes(name));
-  const myPostcards = (CLUB.postcards || []).filter(p => p.toMember === name);
-
-  // Find badge details for each award
-  const badgeMap = Object.fromEntries((CLUB.badges || []).map(b => [b.id, b]));
 
   const avatarHtml = hasAvatar
     ? `<div class="kp-modal-avatar" style="background:${member.color}"><img src="${avatarSrc}" alt="${escapeHtml(name)}" /></div>`
     : `<div class="kp-modal-avatar" style="background:${member.color}"><span style="font-size:5rem">${member.emoji}</span></div>`;
 
-  let extraSections = '';
-
-  if (isPebbles) {
-    extraSections = `
-      <div class="kp-modal-section">
-        <h3>🐾 About me</h3>
-        <p>G'day! I'm <strong>Pebbles</strong> — the Fab 5 Fun Club mascot. I'm a young pup with a white coat, dark ears, and a black patch over one eye. I love going on every adventure with the crew, and I'm also their AI helper! Ask me anything in the chat. 💛</p>
-      </div>
-      <div class="kp-modal-section">
-        <h3>✨ What I'm good at</h3>
-        <ul class="kp-list">
-          <li>🎯 Helping pick activities and events</li>
-          <li>📝 Writing diary entries from your adventures</li>
-          <li>💌 Writing postcards to kids who missed out</li>
-          <li>📸 Coming up with funny photo captions</li>
-          <li>🌦️ Checking the weather before adventures</li>
-          <li>🗳️ Deciding who leads the day (Pebbles Picks)</li>
-        </ul>
-      </div>
-    `;
-  } else {
-    // Kid profile: birthday, allergies, the spark, snacks
-    const fav = profile.theSpark ? `<p class="kp-fact"><strong>✨ The Spark:</strong> ${escapeHtml(profile.theSpark)}</p>` : '';
-    const allergies = profile.allergies ? `<p class="kp-fact kp-allergies"><strong>⚠️ Allergies / dietary:</strong> ${escapeHtml(profile.allergies)}</p>` : '';
-    const snacks = profile.favouriteSnacks ? `<p class="kp-fact"><strong>🍎 Favourite snacks:</strong> ${escapeHtml(profile.favouriteSnacks)}</p>` : '';
-    const bday = profile.birthday ? `<p class="kp-fact"><strong>🎂 Birthday:</strong> ${escapeHtml(profile.birthday)}</p>` : '';
-
-    let profileFacts = '';
-    if (fav || allergies || snacks || bday) {
-      profileFacts = `
-        <div class="kp-modal-section">
-          <h3>💛 About ${escapeHtml(name)}</h3>
-          ${bday}${fav}${snacks}${allergies}
-        </div>`;
-    } else {
-      profileFacts = `
-        <div class="kp-modal-section">
-          <h3>💛 About ${escapeHtml(name)}</h3>
-          <p class="kp-empty">No profile info yet! A parent or grown-up can fill this in from the Parents' Dashboard. 🐾</p>
-        </div>`;
-    }
-
-    // Stats grid
-    const statsHtml = `
-      <div class="kp-modal-section">
-        <h3>🌟 ${escapeHtml(name)}'s crew stats</h3>
-        <div class="kp-stats">
-          <div class="kp-stat"><span>🛶</span><strong>${memberEvents.length}</strong><em>adventures</em></div>
-          <div class="kp-stat"><span>🎖️</span><strong>${ledEvents.length}</strong><em>days as leader</em></div>
-          <div class="kp-stat"><span>🏆</span><strong>${myAwards.length}</strong><em>badges</em></div>
-          <div class="kp-stat"><span>📸</span><strong>${myPhotos.length}</strong><em>photos</em></div>
-        </div>
-      </div>`;
-
-    // Badges
-    const badgesHtml = myAwards.length > 0 ? `
-      <div class="kp-modal-section">
-        <h3>🏆 Badges earned</h3>
-        <div class="kp-badges">
-          ${myAwards.map(a => {
-            const b = badgeMap[a.badgeId] || { emoji: '🏅', name: a.badgeId };
-            return `<div class="kp-badge"><span class="kp-badge-emoji">${b.emoji}</span><div><strong>${escapeHtml(b.name)}</strong><small>${escapeHtml(a.note || '')}</small></div></div>`;
-          }).join('')}
-        </div>
-      </div>` : '';
-
-    // Recent adventures (max 5)
-    const advHtml = memberEvents.length > 0 ? `
-      <div class="kp-modal-section">
-        <h3>🛶 Recent adventures</h3>
-        <ul class="kp-list">
-          ${memberEvents.slice(0, 5).map(e => `<li><strong>${escapeHtml(e.date)}</strong> — ${escapeHtml(e.title)} ${e.leader === name ? '<span class="kp-led-tag">🎖️ Led</span>' : ''}</li>`).join('')}
-        </ul>
-      </div>` : '';
-
-    // Postcards
-    const pcHtml = myPostcards.length > 0 ? `
-      <div class="kp-modal-section">
-        <h3>💌 Postcards for ${escapeHtml(name)}</h3>
-        <p class="kp-meta">${myPostcards.length} postcard${myPostcards.length === 1 ? '' : 's'} written by Pebbles 🐾</p>
-      </div>` : '';
-
-    extraSections = profileFacts + statsHtml + badgesHtml + advHtml + pcHtml;
+  // Pretty-format birthday like "23 March" (no year for privacy with friends)
+  function fmtBirthday(iso) {
+    if (!iso) return '';
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    if (!m) return iso;
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const day = parseInt(m[3], 10);
+    return `${day} ${months[parseInt(m[2], 10) - 1] || ''}`.trim();
   }
+
+  // 🌈 FUN FACTS — one row per fact, colour swatch + emoji icon
+  const facts = [];
+  if (profile.favouriteColour) {
+    const swatch = profile.favouriteColourHex
+      ? `<span class="kp-colour-swatch" style="background:${escapeHtml(profile.favouriteColourHex)}"></span>`
+      : '';
+    facts.push({ icon: '🎨', label: 'Favourite colour', value: `${swatch}${escapeHtml(profile.favouriteColour)}` });
+  }
+  if (profile.favouriteFood)    facts.push({ icon: '🍕', label: 'Favourite food', value: escapeHtml(profile.favouriteFood) });
+  if (profile.favouriteSnack)   facts.push({ icon: '🍎', label: 'Favourite snack', value: escapeHtml(profile.favouriteSnack) });
+  if (profile.favouriteAnimal)  facts.push({ icon: '🐾', label: 'Favourite animal', value: escapeHtml(profile.favouriteAnimal) });
+  if (profile.favouriteSport)   facts.push({ icon: '⚡', label: 'Favourite sport', value: escapeHtml(profile.favouriteSport) });
+  if (profile.favouriteMovie)   facts.push({ icon: '🎬', label: 'Favourite movie', value: escapeHtml(profile.favouriteMovie) });
+  if (profile.superpower)       facts.push({ icon: '🦸', label: 'Superpower', value: escapeHtml(profile.superpower) });
+  if (profile.dreamHoliday)     facts.push({ icon: '🏝️', label: 'Dream holiday', value: escapeHtml(profile.dreamHoliday) });
+  if (profile.birthday)         facts.push({ icon: '🎂', label: 'Birthday', value: escapeHtml(fmtBirthday(profile.birthday)) });
+
+  const factsHtml = facts.length > 0 ? `
+    <div class="kp-modal-section">
+      <h3>${isPebbles ? '🐾 All about Pebbles' : `💛 All about ${escapeHtml(name)}`}</h3>
+      <ul class="kp-funfacts">
+        ${facts.map(f => `<li><span class="kp-funfact-icon">${f.icon}</span><span class="kp-funfact-label">${f.label}</span><span class="kp-funfact-value">${f.value}</span></li>`).join('')}
+      </ul>
+    </div>` : `
+    <div class="kp-modal-section">
+      <h3>${isPebbles ? '🐾 All about Pebbles' : `💛 All about ${escapeHtml(name)}`}</h3>
+      <p class="kp-empty">No fun facts yet! A parent or grown-up can fill these in. 🐾</p>
+    </div>`;
+
+  // 🎵 Hype song — show Spotify embed if we have an ID, otherwise just title/artist
+  let songHtml = '';
+  if (profile.hypeSong && profile.hypeSong.title) {
+    const s = profile.hypeSong;
+    const embed = s.spotifyId
+      ? `<iframe class="kp-spotify" style="border-radius:14px" src="https://open.spotify.com/embed/track/${escapeHtml(s.spotifyId)}?utm_source=generator" width="100%" height="80" frameborder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`
+      : '';
+    songHtml = `
+      <div class="kp-modal-section">
+        <h3>🎵 ${escapeHtml(name)}'s hype song</h3>
+        <p class="kp-fact"><strong>${escapeHtml(s.title)}</strong> — ${escapeHtml(s.artist)}</p>
+        ${embed}
+      </div>`;
+  }
+
+  // 🐾 Special Pebbles-only "What I'm good at" section
+  const pebblesExtras = isPebbles ? `
+    <div class="kp-modal-section">
+      <h3>✨ What I'm good at</h3>
+      <ul class="kp-list">
+        <li>🎯 Helping pick activities and events</li>
+        <li>📝 Writing diary entries from your adventures</li>
+        <li>💌 Writing postcards to kids who missed out</li>
+        <li>📸 Coming up with funny photo captions</li>
+        <li>🌦️ Checking the weather before adventures</li>
+        <li>🗳️ Deciding who leads the day (Pebbles Picks)</li>
+      </ul>
+    </div>` : '';
+
+  const extraSections = factsHtml + songHtml + pebblesExtras;
 
   content.innerHTML = `
     <div class="kp-modal-header" style="border-color:${member.color}">

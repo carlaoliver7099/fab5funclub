@@ -257,15 +257,91 @@ type KidProfile = {
     artist: string
     spotifyId?: string     // Spotify track ID for embeds
   }
+  // ----- FUN FACTS (added per Saia's request) -----
+  favouriteColour?: string         // friendly name e.g. "Hot Pink"
+  favouriteColourHex?: string      // e.g. "#FF6B9D" for the swatch
+  favouriteFood?: string           // e.g. "Margherita pizza"
+  favouriteAnimal?: string         // e.g. "Sea turtle"
+  favouriteMovie?: string          // e.g. "Lilo & Stitch"
+  favouriteSport?: string          // e.g. "Wakeboarding"
+  superpower?: string              // pretend superpower e.g. "Bouncing back from anything"
+  dreamHoliday?: string            // e.g. "Hawaii to swim with turtles"
 }
 // Seeded with the 5 known members (and Pebbles too — she gets her own profile!)
+// Fun facts are PLAYFUL PLACEHOLDERS — Saia & crew can update them anytime
 const KID_PROFILES: Record<string, KidProfile> = {
-  'Ace':       { name: 'Ace' },
-  'Charlotte': { name: 'Charlotte' },
-  'Elijah':    { name: 'Elijah' },
-  'Saia':      { name: 'Saia' },
-  'Sienna':    { name: 'Sienna' },
-  'Pebbles':   { name: 'Pebbles', spark: 'The crew\'s loyal Bull Arab — wise, kind, slightly chaotic 🐾' },
+  'Ace': {
+    name: 'Ace',
+    favouriteColour: 'Ocean Aqua',
+    favouriteColourHex: '#A0E7E5',
+    favouriteFood: 'Cheeseburger with extra pickles',
+    favouriteAnimal: 'Sea turtle 🐢',
+    favouriteMovie: 'Surf\'s Up',
+    favouriteSport: 'Skateboarding 🛹',
+    superpower: 'Landing tricks first try',
+    dreamHoliday: 'Hawaii — surfing all day',
+    hypeSong: { title: 'Pump It', artist: 'Black Eyed Peas' },
+  },
+  'Charlotte': {
+    name: 'Charlotte',
+    favouriteColour: 'Sunshine Yellow',
+    favouriteColourHex: '#FFE66D',
+    favouriteFood: 'Mango smoothie bowl',
+    favouriteAnimal: 'Dolphin 🐬',
+    favouriteMovie: 'Moana',
+    favouriteSport: 'Surfing 🏄‍♀️',
+    superpower: 'Riding the BIG waves without flinching',
+    dreamHoliday: 'Fiji to chase waves',
+    hypeSong: { title: 'How Far I\'ll Go', artist: 'Auliʻi Cravalho' },
+  },
+  'Elijah': {
+    name: 'Elijah',
+    favouriteColour: 'Turquoise',
+    favouriteColourHex: '#4ECDC4',
+    favouriteFood: 'Spaghetti bolognese',
+    favouriteAnimal: 'Cheetah 🐆',
+    favouriteMovie: 'Cars',
+    favouriteSport: 'Motocross 🏍️',
+    superpower: 'Going FULL throttle then stopping on a dime',
+    dreamHoliday: 'Outback dirt-bike camp',
+    hypeSong: { title: 'Thunderstruck', artist: 'AC/DC' },
+  },
+  'Saia': {
+    name: 'Saia',
+    favouriteColour: 'Hot Pink',
+    favouriteColourHex: '#FF6B9D',
+    favouriteFood: 'Sushi rolls 🍣',
+    favouriteAnimal: 'Pebbles obviously 🐾',
+    favouriteMovie: 'Pets 2',
+    favouriteSport: 'Kayaking 🛶',
+    superpower: 'Leading the crew with kindness',
+    dreamHoliday: 'A road trip with all the crew + Pebbles',
+    hypeSong: { title: 'Pink Pony Club', artist: 'Chappell Roan', spotifyId: '0kfRfeQU0Aw1SOaiYS6Vg7' },
+  },
+  'Sienna': {
+    name: 'Sienna',
+    favouriteColour: 'Mint Lime',
+    favouriteColourHex: '#B4F8C8',
+    favouriteFood: 'Strawberry pancakes',
+    favouriteAnimal: 'Unicorn 🦄 (close second: koala)',
+    favouriteMovie: 'Trolls',
+    favouriteSport: 'Snorkeling 🤿',
+    superpower: 'Spotting rainbows even when it\'s not raining',
+    dreamHoliday: 'Great Barrier Reef snorkel trip',
+    hypeSong: { title: 'vampire', artist: 'Olivia Rodrigo', spotifyId: '1kuGVB7EU95pJObxwvfwKS' },
+  },
+  'Pebbles': {
+    name: 'Pebbles',
+    spark: 'The crew\'s loyal Bull Arab — wise, kind, slightly chaotic 🐾',
+    favouriteColour: 'Bull Arab Brown',
+    favouriteColourHex: '#D2691E',
+    favouriteFood: 'Roast chicken (any time, any day)',
+    favouriteAnimal: 'Other dogs — especially fluffy ones',
+    favouriteMovie: 'Bluey (if cartoons count)',
+    favouriteSport: 'Beach sprints + zoomies',
+    superpower: 'Knowing exactly which kid needs a cuddle',
+    dreamHoliday: 'A beach with no leash rule and infinite sticks',
+  },
 }
 
 // =========== 🎵 CREW PLAYLIST (Spotify embeds) ===========
