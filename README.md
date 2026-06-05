@@ -52,6 +52,20 @@ A **private, AI-powered adventure-planning website** for 5 friends — **Ace, Ch
    - Knows leader-rotation fairness, never calls Saia "founder", treats all 5 as equals
    - Aussie dog personality, kid-safe, teaches leadership questions
 ✅ **Cloudflare Pages production deploy** — live worldwide on the edge!
+✅ **🏷️ Club Asset Register** at `/assets` — track club-owned equipment with:
+   - Auto-generated asset IDs (F5-001, F5-002…)
+   - Categories (watersports, cycling, camping, climbing, sports, safety, camera, other)
+   - Borrow / return tracking with full history per item
+   - **QR code stickers** (free api.qrserver.com) — print and stick on the gear
+   - **Printable single sticker** or **print-all-stickers** sheet
+   - Dashboard stats (total items, at-club, borrowed, in-repair, club investment $, overdue)
+   - Search by name/ID/notes, filter by category & status
+   - **Helper-mode gating** — only parents can add/edit/delete; kids can borrow & return
+   - **🚪 Member-leaving handback workflow** — checklist + printable form of everything a kid has out, so nothing gets lost when someone leaves the club
+   - Detail view with QR + full history + cost + vendor + notes
+   - Hash deep-link: `/assets#F5-001` jumps straight to that item
+   - **Cloudflare KV persistence** — survives restarts (key `assets:all`)
+✅ **🐶 Pebbles Oops 404 page** — friendly custom 404 instead of Cloudflare's generic page
 
 ## API Endpoints
 All `/api/*` (except `/api/login`, `/api/logout`, `/api/me`) require login cookie.
@@ -78,6 +92,14 @@ All `/api/*` (except `/api/login`, `/api/logout`, `/api/me`) require login cooki
 | POST | `/api/concerts/:id/interested` | Body `{member, going: bool}` toggle interest |
 | DELETE | `/api/concerts/:id` | Delete |
 | POST | `/api/pebbles/chat` | Body `{messages, user}` → AI reply, may create events/awards/concerts |
+| GET  | `/api/assets` | List all club-owned gear with summary stats |
+| GET  | `/api/assets/:id` | Get a single asset (e.g. `F5-001`) |
+| POST | `/api/assets` | Create new asset (helper-mode only) — body: `{name, category, condition, purchaseCost?, purchaseDate?, purchaseFrom?, notes?, photoUrl?}` |
+| PATCH | `/api/assets/:id` | Edit asset (helper-mode only) |
+| DELETE | `/api/assets/:id` | Remove asset (helper-mode only) |
+| POST | `/api/assets/:id/borrow` | Member borrows home — body: `{borrower, note?}` |
+| POST | `/api/assets/:id/return` | Return to club — body: `{note?}` |
+| GET  | `/api/assets/handback/:name` | List everything `:name` currently has borrowed (for leaving-club handback) |
 
 ## Badges (8)
 **Duke of Edinburgh inspired:**
@@ -107,6 +129,7 @@ Print via: Redbubble, Printify, Spring, or local Sunshine Coast printers.
 - Tracker on the Merch section shows counts so rotation stays fair
 
 ## Data Architecture
+- **Cloudflare KV** (binding `PROFILES_KV`): club profiles + assets register (keys `assets:all`, `assets:counter`) — survives restarts
 - **In-memory** stores: events, awards, gallery (base64), concerts (resets on worker restart)
 - **AI**: OpenAI-compatible (`gpt-5-mini`) via Genspark LLM proxy with 3 function tools
 - **Auth**: HTTP-only cookie, 90-day expiry, shared password in `CLUB_PASSWORD`
