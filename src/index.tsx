@@ -930,6 +930,170 @@ function recomputeAssetStatus(a: Asset): void {
   }
 }
 
+// ====================================================================================
+// 💚 FUNDRAISING — Containers for Change tracker
+// ====================================================================================
+// fab5funclub is a registered CforC team (member number C11761772). Supporters drop
+// their drink containers at refund points and quote our member number → 10c/container
+// goes to the Fab 5's fundraising pool. We can't auto-sync the live CforC balance
+// (no public API), so adults paste totals manually from the CforC dashboard.
+//
+// Rules:
+// 1. Anyone authed can VIEW the fundraising page (kids motivated by progress!)
+// 2. Only "adult mode" (knows member number C11761772) can LOG donations / edit goals
+// 3. Each donation can be allocated to a specific savings goal (or "general fund")
+// 4. Goals: priority-ordered (1 = top focus) → kids see clearly what's next
+// ====================================================================================
+
+const CFORC_MEMBER_NUMBER = 'C11761772'                                  // the unlock code
+const CFORC_DASHBOARD_URL = 'https://member.containersforchange.com.au/'
+const CFORC_TEAM_JOIN_URL = 'https://member.containersforchange.com.au/team-member/add/qld/think-know-do-pty-ltd-6a1e42a1996da'
+const CFORC_PUBLIC_PORTAL = 'https://brandfolder.com/portals/qld-fundraising'
+
+type FundraisingGoal = {
+  id: string             // 'merch' | 'mx-camp' | 'olivia' | custom
+  emoji: string          // 👕 🏕️ 🎟️
+  title: string          // 'Crew Merch Print Run'
+  description?: string   // longer blurb
+  targetAud: number      // dollar goal
+  priority: number       // 1 = top focus
+  allocatedAud: number   // amount of donations allocated to this goal
+  achievedAt?: number    // timestamp when hit 100%
+  createdAt: number
+  updatedAt: number
+}
+
+type FundraisingDonation = {
+  id: string                  // d_<timestamp><random>
+  date: string                // YYYY-MM-DD (when containers were dropped)
+  amountAud: number           // refund amount in AUD (e.g. 7.10)
+  containers: number          // count of containers (e.g. 71)
+  source?: string             // who dropped them: "Nan & Pop", "Carla", etc
+  goalId?: string             // which goal this counts toward (undefined = general)
+  notes?: string              // optional context
+  loggedBy?: string           // adult's name who logged it
+  loggedAt: number            // timestamp
+}
+
+type FundraisingState = {
+  // Snapshot pasted from CforC dashboard (the source of truth!)
+  cforcInPocketAud: number       // "In your pocket" from dashboard
+  cforcContainersSaved: number   // "Containers saved from landfill"
+  cforcDonatedAud: number        // "Donated to a good cause"
+  cforcSyncedAt?: number         // when adult last synced from dashboard
+  cforcSyncedBy?: string         // who synced
+
+  // Local goals + donation log
+  goals: FundraisingGoal[]
+  donations: FundraisingDonation[]
+
+  createdAt: number
+  updatedAt: number
+}
+
+// Default seed: real numbers from Saia's CforC dashboard + her 3 prioritised goals
+function defaultFundraisingState(): FundraisingState {
+  const now = Date.now()
+  return {
+    cforcInPocketAud: 7.10,
+    cforcContainersSaved: 71,
+    cforcDonatedAud: 0,
+    cforcSyncedAt: now,
+    cforcSyncedBy: 'Saia',
+    goals: [
+      {
+        id: 'merch',
+        emoji: '👕',
+        title: 'Crew Merch Print Run',
+        description: 'First batch of Fab 5 crew tees — visible identity at every event!',
+        targetAud: 300,
+        priority: 1,
+        allocatedAud: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 'mx-camp',
+        emoji: '🏕️',
+        title: 'MX Farm Camping Trip',
+        description: 'Weekend adventure at MX Farm for the whole crew.',
+        targetAud: 600,
+        priority: 2,
+        allocatedAud: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 'olivia',
+        emoji: '🎟️',
+        title: 'Olivia Rodrigo Concert Tickets',
+        description: '5 tickets to see Olivia live — the legendary save-up dream!',
+        targetAud: 1500,
+        priority: 3,
+        allocatedAud: 0,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ],
+    donations: [],
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
+let FUNDRAISING: FundraisingState = defaultFundraisingState()
+let FUNDRAISING_HYDRATED = false
+
+async function hydrateFundraisingFromKV(env: Bindings): Promise<void> {
+  if (FUNDRAISING_HYDRATED || !env.PROFILES_KV) {
+    FUNDRAISING_HYDRATED = true
+    return
+  }
+  try {
+    const raw = await env.PROFILES_KV.get('fundraising:state')
+    if (raw) {
+      const parsed = JSON.parse(raw) as FundraisingState
+      if (parsed && Array.isArray(parsed.goals) && Array.isArray(parsed.donations)) {
+        FUNDRAISING = parsed
+      }
+    }
+  } catch (e) {
+    console.error('[KV] fundraising hydrate failed', e)
+  }
+  FUNDRAISING_HYDRATED = true
+}
+
+async function saveFundraisingToKV(env: Bindings): Promise<void> {
+  if (!env.PROFILES_KV) return
+  try {
+    FUNDRAISING.updatedAt = Date.now()
+    await env.PROFILES_KV.put('fundraising:state', JSON.stringify(FUNDRAISING))
+  } catch (e) {
+    console.error('[KV] fundraising save failed', e)
+  }
+}
+
+function generateDonationId(): string {
+  return 'd_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+}
+
+function recomputeGoalAllocations(): void {
+  // Reset all goal allocations to 0
+  for (const g of FUNDRAISING.goals) g.allocatedAud = 0
+  // Re-tally from donation log
+  for (const d of FUNDRAISING.donations) {
+    if (!d.goalId) continue
+    const goal = FUNDRAISING.goals.find(g => g.id === d.goalId)
+    if (goal) goal.allocatedAud = Math.round((goal.allocatedAud + d.amountAud) * 100) / 100
+  }
+  // Mark achievedAt
+  const now = Date.now()
+  for (const g of FUNDRAISING.goals) {
+    if (g.allocatedAud >= g.targetAud && !g.achievedAt) g.achievedAt = now
+    else if (g.allocatedAud < g.targetAud && g.achievedAt) g.achievedAt = undefined
+  }
+}
+
 // =========== APP ===========
 const app = new Hono<{ Bindings: Bindings }>()
 app.use('/api/*', cors())
@@ -979,6 +1143,8 @@ app.use('/api/concerts/*', authMiddleware)
 app.use('/api/leader/*', authMiddleware)
 app.use('/api/assets', authMiddleware)
 app.use('/api/assets/*', authMiddleware)
+app.use('/api/fundraising', authMiddleware)
+app.use('/api/fundraising/*', authMiddleware)
 
 // =========== EVENTS ===========
 app.get('/api/events', (c) => {
@@ -2276,6 +2442,285 @@ app.get('/api/assets/handback/:name', async (c) => {
   return c.json({ kid: name, items, count: items.length, totalValue })
 })
 
+// ====================================================================================
+// 💚 FUNDRAISING API (Containers for Change)
+// ====================================================================================
+// Public reads (any authed user) + adult-restricted writes (must know CFORC_MEMBER_NUMBER).
+// Adult mode = anyone who can paste the actual member number C11761772.
+
+// Helper — verify adult mode from request body
+function isAdultMode(body: any): boolean {
+  const code = (body?.unlockCode || '').toString().trim().toUpperCase()
+  return code === CFORC_MEMBER_NUMBER
+}
+
+// GET /api/fundraising — everything (state + computed stats)
+app.get('/api/fundraising', async (c) => {
+  await hydrateFundraisingFromKV(c.env)
+  recomputeGoalAllocations()
+
+  const totalDonationsAud = FUNDRAISING.donations.reduce((s, d) => s + d.amountAud, 0)
+  const totalContainersLogged = FUNDRAISING.donations.reduce((s, d) => s + (d.containers || 0), 0)
+  const totalAllocated = FUNDRAISING.goals.reduce((s, g) => s + g.allocatedAud, 0)
+  const unallocated = Math.max(0, Math.round((totalDonationsAud - totalAllocated) * 100) / 100)
+
+  // The "live" balance shown big = the CforC dashboard snapshot. Local donations
+  // are a SUPPLEMENT/secondary view; we don't double-count them.
+  const stats = {
+    inPocketAud: FUNDRAISING.cforcInPocketAud,
+    containersSavedFromLandfill: FUNDRAISING.cforcContainersSaved,
+    donatedToCauseAud: FUNDRAISING.cforcDonatedAud,
+    lifetimeRaisedAud: Math.round((FUNDRAISING.cforcInPocketAud + FUNDRAISING.cforcDonatedAud) * 100) / 100,
+    // Local log stats
+    loggedDonationsCount: FUNDRAISING.donations.length,
+    loggedDonationsAud: Math.round(totalDonationsAud * 100) / 100,
+    loggedContainers: totalContainersLogged,
+    unallocatedAud: unallocated,
+    syncedAt: FUNDRAISING.cforcSyncedAt,
+    syncedBy: FUNDRAISING.cforcSyncedBy,
+  }
+
+  return c.json({
+    memberNumber: CFORC_MEMBER_NUMBER,
+    teamJoinUrl: CFORC_TEAM_JOIN_URL,
+    dashboardUrl: CFORC_DASHBOARD_URL,
+    publicPortal: CFORC_PUBLIC_PORTAL,
+    stats,
+    goals: FUNDRAISING.goals.slice().sort((a, b) => a.priority - b.priority),
+    donations: FUNDRAISING.donations.slice().sort((a, b) => b.loggedAt - a.loggedAt),
+  })
+})
+
+// POST /api/fundraising/unlock — verify adult code (returns ok/not)
+app.post('/api/fundraising/unlock', async (c) => {
+  const body = await c.req.json<{ unlockCode?: string }>().catch(() => ({} as any))
+  if (isAdultMode(body)) return c.json({ ok: true, mode: 'adult' })
+  return c.json({ ok: false, error: 'Wrong member number. Ask an adult for the C-number from the CforC card.' }, 401)
+})
+
+// POST /api/fundraising/sync — adult pastes the dashboard snapshot
+app.post('/api/fundraising/sync', async (c) => {
+  await hydrateFundraisingFromKV(c.env)
+  const body = await c.req.json<{
+    unlockCode?: string
+    inPocketAud?: number
+    containersSaved?: number
+    donatedAud?: number
+    syncedBy?: string
+  }>().catch(() => ({} as any))
+
+  if (!isAdultMode(body)) return c.json({ error: 'Adult unlock required (CforC member number).' }, 401)
+
+  if (body.inPocketAud !== undefined) {
+    const n = Number(body.inPocketAud)
+    if (!isNaN(n) && n >= 0 && n < 1000000) FUNDRAISING.cforcInPocketAud = Math.round(n * 100) / 100
+  }
+  if (body.containersSaved !== undefined) {
+    const n = Number(body.containersSaved)
+    if (!isNaN(n) && n >= 0 && n < 10000000) FUNDRAISING.cforcContainersSaved = Math.floor(n)
+  }
+  if (body.donatedAud !== undefined) {
+    const n = Number(body.donatedAud)
+    if (!isNaN(n) && n >= 0 && n < 1000000) FUNDRAISING.cforcDonatedAud = Math.round(n * 100) / 100
+  }
+  FUNDRAISING.cforcSyncedAt = Date.now()
+  if (body.syncedBy) FUNDRAISING.cforcSyncedBy = body.syncedBy.toString().trim().slice(0, 50)
+
+  await saveFundraisingToKV(c.env)
+  return c.json({
+    ok: true,
+    snapshot: {
+      inPocketAud: FUNDRAISING.cforcInPocketAud,
+      containersSaved: FUNDRAISING.cforcContainersSaved,
+      donatedAud: FUNDRAISING.cforcDonatedAud,
+      syncedAt: FUNDRAISING.cforcSyncedAt,
+      syncedBy: FUNDRAISING.cforcSyncedBy,
+    },
+  })
+})
+
+// POST /api/fundraising/donations — log a donation
+app.post('/api/fundraising/donations', async (c) => {
+  await hydrateFundraisingFromKV(c.env)
+  const body = await c.req.json<{
+    unlockCode?: string
+    date?: string
+    amountAud?: number
+    containers?: number
+    source?: string
+    goalId?: string
+    notes?: string
+    loggedBy?: string
+  }>().catch(() => ({} as any))
+
+  if (!isAdultMode(body)) return c.json({ error: 'Adult unlock required (CforC member number).' }, 401)
+
+  const today = new Date().toISOString().slice(0, 10)
+  const date = (typeof body.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.date)) ? body.date : today
+
+  const amountAud = Math.round(Number(body.amountAud || 0) * 100) / 100
+  if (!isFinite(amountAud) || amountAud <= 0 || amountAud > 100000) {
+    return c.json({ error: 'Amount must be > $0 and < $100,000' }, 400)
+  }
+  const containers = Math.max(0, Math.floor(Number(body.containers || 0)))
+
+  const goalId = body.goalId && FUNDRAISING.goals.find(g => g.id === body.goalId) ? body.goalId : undefined
+
+  const donation: FundraisingDonation = {
+    id: generateDonationId(),
+    date,
+    amountAud,
+    containers,
+    source: body.source ? body.source.toString().trim().slice(0, 80) : undefined,
+    goalId,
+    notes: body.notes ? body.notes.toString().trim().slice(0, 300) : undefined,
+    loggedBy: body.loggedBy ? body.loggedBy.toString().trim().slice(0, 50) : undefined,
+    loggedAt: Date.now(),
+  }
+
+  FUNDRAISING.donations.push(donation)
+  recomputeGoalAllocations()
+  await saveFundraisingToKV(c.env)
+  return c.json({ ok: true, donation, goals: FUNDRAISING.goals })
+})
+
+// DELETE /api/fundraising/donations/:id — undo a donation (typo, mistake)
+app.delete('/api/fundraising/donations/:id', async (c) => {
+  await hydrateFundraisingFromKV(c.env)
+  const id = c.req.param('id')
+
+  // body for unlock check
+  const body = await c.req.json<{ unlockCode?: string }>().catch(() => ({} as any))
+  if (!isAdultMode(body)) return c.json({ error: 'Adult unlock required (CforC member number).' }, 401)
+
+  const idx = FUNDRAISING.donations.findIndex(d => d.id === id)
+  if (idx === -1) return c.json({ error: 'Donation not found' }, 404)
+
+  FUNDRAISING.donations.splice(idx, 1)
+  recomputeGoalAllocations()
+  await saveFundraisingToKV(c.env)
+  return c.json({ ok: true })
+})
+
+// PATCH /api/fundraising/donations/:id — re-allocate to a different goal
+app.patch('/api/fundraising/donations/:id', async (c) => {
+  await hydrateFundraisingFromKV(c.env)
+  const id = c.req.param('id')
+  const body = await c.req.json<{ unlockCode?: string; goalId?: string | null; notes?: string }>().catch(() => ({} as any))
+  if (!isAdultMode(body)) return c.json({ error: 'Adult unlock required (CforC member number).' }, 401)
+
+  const d = FUNDRAISING.donations.find(d => d.id === id)
+  if (!d) return c.json({ error: 'Donation not found' }, 404)
+
+  if (body.goalId === null || body.goalId === '') {
+    d.goalId = undefined
+  } else if (typeof body.goalId === 'string') {
+    if (FUNDRAISING.goals.find(g => g.id === body.goalId)) d.goalId = body.goalId
+  }
+  if (typeof body.notes === 'string') d.notes = body.notes.trim().slice(0, 300) || undefined
+
+  recomputeGoalAllocations()
+  await saveFundraisingToKV(c.env)
+  return c.json({ ok: true, donation: d, goals: FUNDRAISING.goals })
+})
+
+// PATCH /api/fundraising/goals/:id — edit a goal (target / title / priority)
+app.patch('/api/fundraising/goals/:id', async (c) => {
+  await hydrateFundraisingFromKV(c.env)
+  const id = c.req.param('id')
+  const body = await c.req.json<{
+    unlockCode?: string
+    title?: string
+    description?: string
+    emoji?: string
+    targetAud?: number
+    priority?: number
+  }>().catch(() => ({} as any))
+  if (!isAdultMode(body)) return c.json({ error: 'Adult unlock required (CforC member number).' }, 401)
+
+  const goal = FUNDRAISING.goals.find(g => g.id === id)
+  if (!goal) return c.json({ error: 'Goal not found' }, 404)
+
+  if (typeof body.title === 'string') {
+    const t = body.title.trim().slice(0, 80)
+    if (t) goal.title = t
+  }
+  if (typeof body.description === 'string') goal.description = body.description.trim().slice(0, 300) || undefined
+  if (typeof body.emoji === 'string') goal.emoji = body.emoji.trim().slice(0, 8) || goal.emoji
+  if (body.targetAud !== undefined) {
+    const n = Number(body.targetAud)
+    if (!isNaN(n) && n > 0 && n < 1000000) goal.targetAud = Math.round(n * 100) / 100
+  }
+  if (body.priority !== undefined) {
+    const n = Number(body.priority)
+    if (!isNaN(n) && n >= 1 && n <= 99) goal.priority = Math.floor(n)
+  }
+  goal.updatedAt = Date.now()
+  recomputeGoalAllocations()
+  await saveFundraisingToKV(c.env)
+  return c.json({ ok: true, goal })
+})
+
+// POST /api/fundraising/goals — add a new custom goal
+app.post('/api/fundraising/goals', async (c) => {
+  await hydrateFundraisingFromKV(c.env)
+  const body = await c.req.json<{
+    unlockCode?: string
+    title?: string
+    description?: string
+    emoji?: string
+    targetAud?: number
+    priority?: number
+  }>().catch(() => ({} as any))
+  if (!isAdultMode(body)) return c.json({ error: 'Adult unlock required (CforC member number).' }, 401)
+
+  const title = (body.title || '').toString().trim().slice(0, 80)
+  if (!title) return c.json({ error: 'Title is required' }, 400)
+  const targetAud = Math.round(Number(body.targetAud || 0) * 100) / 100
+  if (!isFinite(targetAud) || targetAud <= 0 || targetAud > 1000000) {
+    return c.json({ error: 'Target must be > $0 and < $1,000,000' }, 400)
+  }
+
+  const now = Date.now()
+  const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) + '-' + Math.random().toString(36).slice(2, 5)
+  const nextPriority = body.priority ? Math.floor(Number(body.priority)) : (FUNDRAISING.goals.length + 1)
+
+  const goal: FundraisingGoal = {
+    id,
+    emoji: (body.emoji || '🎯').toString().slice(0, 8),
+    title,
+    description: body.description ? body.description.toString().trim().slice(0, 300) : undefined,
+    targetAud,
+    priority: nextPriority,
+    allocatedAud: 0,
+    createdAt: now,
+    updatedAt: now,
+  }
+  FUNDRAISING.goals.push(goal)
+  await saveFundraisingToKV(c.env)
+  return c.json({ ok: true, goal })
+})
+
+// DELETE /api/fundraising/goals/:id — remove a goal (donations re-allocate to general)
+app.delete('/api/fundraising/goals/:id', async (c) => {
+  await hydrateFundraisingFromKV(c.env)
+  const id = c.req.param('id')
+  const body = await c.req.json<{ unlockCode?: string }>().catch(() => ({} as any))
+  if (!isAdultMode(body)) return c.json({ error: 'Adult unlock required (CforC member number).' }, 401)
+
+  const idx = FUNDRAISING.goals.findIndex(g => g.id === id)
+  if (idx === -1) return c.json({ error: 'Goal not found' }, 404)
+
+  // Un-allocate donations from this goal (don't delete donations, just clear the goalId)
+  for (const d of FUNDRAISING.donations) {
+    if (d.goalId === id) d.goalId = undefined
+  }
+  FUNDRAISING.goals.splice(idx, 1)
+  recomputeGoalAllocations()
+  await saveFundraisingToKV(c.env)
+  return c.json({ ok: true })
+})
+
 // =========== PEBBLES AI CHAT ===========
 const PEBBLES_SYSTEM_PROMPT = `You are PEBBLES 🐾 — the AI mascot of the Fab 5 Fun Club!
 
@@ -2716,6 +3161,7 @@ app.get('/', (c) => {
             <a href="#gallery">📸 Gallery</a>
             <a href="/dofe-syllabus">📋 Parent Syllabus</a>
             <a href="/assets">🏷️ Gear</a>
+            <a href="/fundraising">💚 Fundraising</a>
             <a href="#parents-faq">❓ Parents</a>
           </div>
           <button id="whoami-btn" class="whoami-btn" title="Who are you?">
@@ -3858,6 +4304,192 @@ app.get('/assets', (c) => {
 
       {/* MODAL: Handback list (member leaving the club) */}
       <div id="asset-handback-modal" class="asset-modal-overlay" style="display:none"></div>
+    </div>
+  )
+})
+
+// ====================================================================================
+// 💚 FUNDRAISING PAGE — Containers for Change hub
+// ====================================================================================
+app.get('/fundraising', (c) => {
+  if (!isAuthed(c)) return c.redirect('/')
+
+  return c.render(
+    <div class="fundraising-page">
+      <header class="fundraising-header">
+        <div class="fundraising-header-inner">
+          <a href="/" class="fundraising-back">← Back to Fab 5</a>
+          <div class="fundraising-eyebrow">🌱 Containers for Change Queensland</div>
+          <h1>💚 Help Fab 5 Raise Funds!</h1>
+          <p class="fundraising-subtitle">
+            Drop your eligible drink containers at any QLD refund point and quote our
+            member number — <strong>10¢ per container</strong> goes straight to the
+            Fab 5 Fun Club. 🥤 → 💰 → 🎉
+          </p>
+
+          {/* MEMBER NUMBER HERO */}
+          <div class="fundraising-member-card">
+            <div class="fundraising-member-label">Our Member Number</div>
+            <div class="fundraising-member-number" id="member-number">C11761772</div>
+            <div class="fundraising-member-org">fab5funclub</div>
+            <div class="fundraising-member-actions">
+              <button class="fund-btn fund-btn-ghost" data-action="copy-member">📋 Copy</button>
+              <button class="fund-btn fund-btn-ghost" data-action="show-qr">📱 Show QR</button>
+              <button class="fund-btn fund-btn-ghost" data-action="print-poster">🖨️ Print poster</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="fundraising-main">
+
+        {/* CFORC DASHBOARD SNAPSHOT (4 stat circles) */}
+        <section class="fund-snapshot-section">
+          <div class="fund-snapshot-title">
+            <span>📊 From the CforC Dashboard</span>
+            <span class="fund-snapshot-synced" id="fund-synced">Synced: —</span>
+          </div>
+          <div class="fund-stats-row">
+            <div class="fund-stat">
+              <div class="fund-stat-circle">
+                <div class="fund-stat-value" id="stat-in-pocket">$0.00</div>
+              </div>
+              <div class="fund-stat-label">IN OUR POCKET</div>
+            </div>
+            <div class="fund-stat">
+              <div class="fund-stat-circle fund-stat-circle-cans">
+                <div class="fund-stat-value" id="stat-containers">0</div>
+              </div>
+              <div class="fund-stat-label">CONTAINERS SAVED FROM LANDFILL</div>
+            </div>
+            <div class="fund-stat">
+              <div class="fund-stat-circle fund-stat-circle-cause">
+                <div class="fund-stat-value" id="stat-donated">$0.00</div>
+              </div>
+              <div class="fund-stat-label">DONATED TO A GOOD CAUSE</div>
+            </div>
+            <div class="fund-stat">
+              <div class="fund-stat-circle fund-stat-circle-lifetime">
+                <div class="fund-stat-value" id="stat-lifetime">$0.00</div>
+              </div>
+              <div class="fund-stat-label">LIFETIME RAISED</div>
+            </div>
+          </div>
+          <div class="fund-snapshot-actions">
+            <button class="fund-btn fund-btn-secondary" data-action="sync-snapshot">
+              🔄 Update from CforC dashboard
+            </button>
+            <a class="fund-btn fund-btn-ghost" href="https://member.containersforchange.com.au/" target="_blank" rel="noopener">
+              🌐 Open CforC dashboard ↗
+            </a>
+          </div>
+        </section>
+
+        {/* ADULT-MODE NOTICE */}
+        <div class="fund-adult-notice" id="fund-adult-notice">
+          <p>
+            🔓 <strong>Adult mode is locked.</strong> Anyone can VIEW the page and goals,
+            but to LOG donations or update totals you need the club's CforC member number.
+          </p>
+          <button class="fund-btn fund-btn-primary" data-action="unlock-adult">
+            🔑 I have the CforC code — unlock
+          </button>
+        </div>
+
+        {/* SAVINGS GOALS */}
+        <section class="fund-goals-section">
+          <div class="fund-goals-header">
+            <h2>🎯 What we're saving for</h2>
+            <div class="fund-goals-actions">
+              <button class="fund-btn fund-btn-secondary fund-adult-only" data-action="add-goal" style="display:none">
+                ➕ Add goal
+              </button>
+            </div>
+          </div>
+          <div class="fund-goals-grid" id="fund-goals-grid">
+            <div class="fund-empty">⏳ Loading goals…</div>
+          </div>
+        </section>
+
+        {/* DONATION LOG */}
+        <section class="fund-donations-section">
+          <div class="fund-donations-header">
+            <h2>📋 Donation Log</h2>
+            <div class="fund-donations-actions">
+              <button class="fund-btn fund-btn-primary fund-adult-only" data-action="add-donation" style="display:none">
+                ➕ Log donation
+              </button>
+            </div>
+          </div>
+          <div class="fund-donations-list" id="fund-donations-list">
+            <div class="fund-empty">⏳ Loading…</div>
+          </div>
+        </section>
+
+        {/* HOW TO DONATE */}
+        <section class="fund-how-section">
+          <h2>📘 How supporters can donate</h2>
+          <ol class="fund-how-steps">
+            <li>
+              <div class="fund-how-step-num">1</div>
+              <div class="fund-how-step-body">
+                <strong>📱 Download the CforC app</strong>
+                <p>"Containers for Change QLD" on iPhone or Android.</p>
+                <div class="fund-store-badges">
+                  <a class="fund-store-badge" href="https://apps.apple.com/au/app/containers-for-change-qld/id1490518719" target="_blank" rel="noopener">🍎 iOS</a>
+                  <a class="fund-store-badge" href="https://play.google.com/store/search?q=containers%20for%20change%20qld&c=apps" target="_blank" rel="noopener">🤖 Android</a>
+                </div>
+              </div>
+            </li>
+            <li>
+              <div class="fund-how-step-num">2</div>
+              <div class="fund-how-step-body">
+                <strong>🔍 Save fab5funclub as your team</strong>
+                <p>Tap the link below OR search "fab5funclub" inside the app.</p>
+                <a class="fund-btn fund-btn-primary" href="https://member.containersforchange.com.au/team-member/add/qld/think-know-do-pty-ltd-6a1e42a1996da" target="_blank" rel="noopener">
+                  🤝 Join the fab5funclub team
+                </a>
+              </div>
+            </li>
+            <li>
+              <div class="fund-how-step-num">3</div>
+              <div class="fund-how-step-body">
+                <strong>🥤 Collect & drop containers</strong>
+                <p>Eligible: most aluminium cans, glass bottles, plastic bottles, juice boxes (150ml–3L). Take them to ANY refund point in QLD.</p>
+                <a class="fund-btn fund-btn-ghost" href="https://www.containersforchange.com.au/qld/find-a-refund-point" target="_blank" rel="noopener">
+                  📍 Find a refund point
+                </a>
+              </div>
+            </li>
+            <li>
+              <div class="fund-how-step-num">4</div>
+              <div class="fund-how-step-body">
+                <strong>💰 Quote <code>C11761772</code> at drop-off</strong>
+                <p>That's it! 10¢ per container goes to the Fab 5 fundraising pool. 🎉</p>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        {/* FOOTER */}
+        <section class="fund-footer">
+          <p>
+            🌱 Containers for Change is QLD's container refund scheme — every can/bottle saved
+            from landfill = 10¢ to our club. <strong>fab5funclub member number: C11761772</strong>
+          </p>
+          <p class="fund-footer-meta">
+            💾 Donation log stored permanently in Cloudflare KV.
+            Live CforC balance is synced manually from the official dashboard.
+          </p>
+        </section>
+      </main>
+
+      {/* MODALS */}
+      <div id="fund-unlock-modal" class="fund-modal-overlay" style="display:none"></div>
+      <div id="fund-sync-modal" class="fund-modal-overlay" style="display:none"></div>
+      <div id="fund-donation-modal" class="fund-modal-overlay" style="display:none"></div>
+      <div id="fund-goal-modal" class="fund-modal-overlay" style="display:none"></div>
+      <div id="fund-qr-modal" class="fund-modal-overlay" style="display:none"></div>
     </div>
   )
 })

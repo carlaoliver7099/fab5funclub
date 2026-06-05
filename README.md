@@ -66,6 +66,17 @@ A **private, AI-powered adventure-planning website** for 5 friends — **Ace, Ch
    - Hash deep-link: `/assets#F5-001` jumps straight to that item
    - **Cloudflare KV persistence** — survives restarts (key `assets:all`)
 ✅ **🐶 Pebbles Oops 404 page** — friendly custom 404 instead of Cloudflare's generic page
+✅ **💚 Fundraising Hub** at `/fundraising` — Containers for Change tracker with:
+   - Big member-number hero card (**C11761772** — our fab5funclub team code)
+   - 4 stat circles ($ in pocket, containers saved, donated to cause, lifetime raised) synced manually from the CforC dashboard
+   - **🎯 Savings Pace Simulator** — interactive slider 0–$1000/month (default $150 = Saia's challenge) with live vibe labels (Tiny steps → Steady saver → On target → Crushing it → Fab 5 dynasty), live containers-per-month, containers-per-day, $/year, and "all goals done by" date
+   - 3 prioritised savings goals: 🥇 Crew Merch ($300) → 🥈 MX Farm Camping ($600) → 🥉 Olivia Rodrigo Tickets ($1,500)
+   - Each goal shows current progress bar + **projected ghost-bar overlay** showing where we'll be after 1 month at current pace, plus per-goal ETA
+   - Donation log (date / source / amount / containers / goal allocation) with edit & undo
+   - **Adult-mode unlock** — anyone can VIEW; only people who know the CforC member number C11761772 can LOG donations or sync dashboard totals
+   - 4-step "How supporters can donate" guide with copyable member number + team-invite QR poster (printable A4)
+   - **Cloudflare KV persistence** (key `fundraising:state`)
+   - Confetti animation when a goal is reached 🎉
 
 ## API Endpoints
 All `/api/*` (except `/api/login`, `/api/logout`, `/api/me`) require login cookie.
@@ -100,6 +111,15 @@ All `/api/*` (except `/api/login`, `/api/logout`, `/api/me`) require login cooki
 | POST | `/api/assets/:id/borrow` | Member borrows home — body: `{borrower, note?}` |
 | POST | `/api/assets/:id/return` | Return to club — body: `{note?}` |
 | GET  | `/api/assets/handback/:name` | List everything `:name` currently has borrowed (for leaving-club handback) |
+| GET  | `/api/fundraising` | Full state: $ in pocket, containers saved, goals, donations |
+| POST | `/api/fundraising/unlock` | Body `{unlockCode}` → verifies CforC member number = adult mode |
+| POST | `/api/fundraising/sync` | Adult pastes dashboard snapshot — body: `{inPocketAud, containersSavedFromLandfill, donatedToCauseAud, syncedBy?, unlockCode}` |
+| POST | `/api/fundraising/donations` | Log a donation — body: `{amountAud or containers, date?, source?, goalId?, notes?, loggedBy?, unlockCode}` |
+| PATCH | `/api/fundraising/donations/:id` | Re-allocate donation to a different goal (adult only) |
+| DELETE | `/api/fundraising/donations/:id` | Undo a donation (adult only) |
+| POST | `/api/fundraising/goals` | Add savings goal — body: `{emoji, title, targetAud, description?, unlockCode}` |
+| PATCH | `/api/fundraising/goals/:id` | Edit goal (adult only) |
+| DELETE | `/api/fundraising/goals/:id` | Remove goal (adult only) |
 
 ## Badges (8)
 **Duke of Edinburgh inspired:**
