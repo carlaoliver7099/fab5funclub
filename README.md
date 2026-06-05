@@ -73,6 +73,18 @@ A **private, AI-powered adventure-planning website** for 5 friends — **Ace, Ch
    - Auto-detects strongest & weakest pillar across the whole calendar
    - Activity → pillar mapping is M:N (an activity like Abseiling builds 3 pillars; Beach Cleanup builds 1)
 ✅ **🏅 DofE pillar chips on every event card** — homepage calendar now shows "Builds: 💪 Physical 🎓 Skills" badges (or "🎉 Fun bonus" for no-credit events) so the crew sees DofE progress every time they look at an event
+✅ **🗳️ Adventure Backlog (Sprint Picker)** at `/backlog` — kid-friendly (ages 8-14) weekend mission picker built in agile-sprint style:
+   - **Backlog of 39 activities** from the catalog, each shown as a chunky card with: emoji, category, kid-friendly duration ("⚡ Quick mission" → "🏔️ Multi-day epic"), DofE pillars (chips), skills you'll gain (kid-language: "💪 strong body", "🧭 outdoor smarts"...), and badges
+   - **Badges**: 🔥 Triple threat (3 pillars), 🎯 Fills a gap (boosts an under-covered pillar), ⭐ Crew fave (done 2+ times), ✨ Never done (brand new for the crew)
+   - **1 vote per kid per sprint** (replaces previous vote if you change your mind) — uses the "Who am I?" picker for identity
+   - **Auto-reset every Monday 5am Brisbane time** — fresh sprint every week (UTC+10, no DST)
+   - **Tie-break by recency** — if two activities tie, the one most recently voted on wins
+   - **🥇🥈🥉 Live leaderboard** with voter chips
+   - **Filter pills**: Show all / Fills a gap / Never done / Crew faves / per-pillar (Physical/Skills/Service/Adventure)
+   - **🔒 Lock-in winner** — picks current leader, stashes pre-fill in sessionStorage, and the Add Event form on the homepage auto-populates title + activity + suggested next-Saturday date
+   - **🎉 Confetti animation** on vote (and bigger confetti when locking the winner!)
+   - **🐶 New Pebbles tool: `suggest_activities`** — when kids ask "what should we do this weekend?", Pebbles uses gap+mood+efficiency scoring to suggest 3 missions with reasoning + coverage map + biggest-gap pointer
+   - Persisted to KV under key `backlog:state` (votes + locked winner + sprint history of last 10 weeks)
 ✅ **🐶 Pebbles Oops 404 page** — friendly custom 404 instead of Cloudflare's generic page
 ✅ **💚 Fundraising Hub** at `/fundraising` — Containers for Change tracker with:
    - Big member-number hero card (**C11761772** — our fab5funclub team code)
@@ -124,6 +136,12 @@ All `/api/*` (except `/api/login`, `/api/logout`, `/api/me`) require login cooki
 | GET  | `/api/dofe/team` | All 5 kids' DofE progress in one call (combined chart) |
 | GET  | `/api/dofe/journey/:name` | Event-by-event journey for a kid, each tagged with syllabus areas |
 | GET  | `/api/dofe/coverage` | **Reverse mapping** — for each pillar, which scheduled events build it + gap status (gap/thin/on-track/strong) + recommended unscheduled activities to plug gaps. Used by the Coverage view at `/dofe-syllabus#dofe-coverage` |
+| GET  | `/api/backlog` | **Adventure Backlog** state: sprint window (Mon 5am Brisbane → next Mon 5am), leaderboard, all 39 activity cards with vote counts + voter chips + gap/fave/new badges, locked winner, coverage gaps |
+| POST | `/api/backlog/vote` | Cast a vote — body: `{voter, activityName}`. Replaces voter's existing vote (1-per-kid). |
+| POST | `/api/backlog/vote/clear` | Clear voter's vote — body: `{voter}` |
+| POST | `/api/backlog/lock-winner` | Lock the current leader as the sprint winner — body: `{lockedBy}`. Returns `suggestedDate` (next Sat) + `suggestedTitle` for Add Event pre-fill. |
+| POST | `/api/backlog/lock-winner/clear` | Undo lock (escape hatch) |
+| POST | `/api/backlog/reset` | Manual sprint reset (archives current to history, clears votes) |
 | GET  | `/api/fundraising` | Full state: $ in pocket, containers saved, goals, donations |
 | POST | `/api/fundraising/unlock` | Body `{unlockCode}` → verifies CforC member number = adult mode |
 | POST | `/api/fundraising/sync` | Adult pastes dashboard snapshot — body: `{inPocketAud, containersSavedFromLandfill, donatedToCauseAud, syncedBy?, unlockCode}` |
