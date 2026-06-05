@@ -7295,3 +7295,305 @@ body {
   .fund-donations-section,
   .fund-how-section { padding: 18px; }
 }
+
+/* ============================================================================
+   🎯 DofE COVERAGE VIEW (on /dofe-syllabus page)
+   ============================================================================ */
+.dofe-coverage-section { background: linear-gradient(180deg, #FFF 0%, #F8FCFF 100%); }
+.dofe-coverage-loading { padding: 1.5rem; text-align: center; color: #888; font-style: italic; }
+.dofe-coverage-error   { padding: 1rem 1.2rem; background: #FDECEA; color: #E63946; border-radius: 12px; border-left: 4px solid #E63946; }
+
+/* TL;DR alert at top */
+.dofe-coverage-alert {
+  padding: 1rem 1.2rem;
+  border-radius: 14px;
+  margin-bottom: 1.2rem;
+  border-left: 5px solid;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.dofe-coverage-alert.alert-gap    { background: #FDECEA; border-color: #E63946; color: #8B1A23; }
+.dofe-coverage-alert.alert-warn   { background: #FFF8E1; border-color: #E0A800; color: #6A4A00; }
+.dofe-coverage-alert.alert-strong { background: #E8F5E9; border-color: #2D8F4E; color: #1B5E20; }
+.alert-pillar-tag {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0.15rem;
+}
+
+/* Stats row */
+.dofe-coverage-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+.dofe-coverage-stat {
+  background: white;
+  border: 1px solid #E0E7EE;
+  border-radius: 12px;
+  padding: 0.9rem 0.6rem;
+  text-align: center;
+}
+.dofe-coverage-stat-num { font-size: 1.8rem; font-weight: 700; color: #2D8F4E; line-height: 1.1; }
+.dofe-coverage-stat-label { font-size: 0.78rem; color: #555; margin-top: 0.25rem; line-height: 1.3; }
+.dofe-coverage-tldr {
+  background: #F0F8FF;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+}
+
+/* Per-pillar cards */
+.dofe-coverage-pillars {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+.dofe-coverage-pillar {
+  background: white;
+  border: 1px solid #E0E7EE;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.dofe-coverage-pillar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.dofe-coverage-pillar-title { display: flex; gap: 0.8rem; align-items: flex-start; }
+.dofe-coverage-pillar-emoji { font-size: 2.5rem; line-height: 1; }
+.dofe-coverage-pillar-title h3 { margin: 0; font-size: 1.4rem; }
+.dofe-coverage-pillar-kid { margin: 0.2rem 0 0 0; color: #666; font-size: 0.95rem; font-style: italic; }
+.dofe-coverage-badge {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.dofe-coverage-bar-wrap { margin: 1rem 0 0.6rem; }
+.dofe-coverage-bar {
+  width: 100%;
+  height: 18px;
+  background: #F0F0F0;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.dofe-coverage-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 4px;
+}
+.dofe-coverage-bar-label {
+  font-size: 0.88rem;
+  color: #444;
+  margin-top: 0.35rem;
+}
+
+.dofe-coverage-counts {
+  display: flex;
+  gap: 1.5rem;
+  margin: 0.6rem 0 0.4rem;
+  font-size: 0.9rem;
+  color: #555;
+  flex-wrap: wrap;
+}
+
+/* Scheduled-event list inside a pillar card */
+.dofe-coverage-event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.dofe-coverage-event {
+  display: flex;
+  gap: 0.8rem;
+  padding: 0.7rem 0.9rem;
+  background: #F8FCFF;
+  border: 1px solid #E0E7EE;
+  border-radius: 10px;
+  align-items: flex-start;
+}
+.dofe-coverage-event.is-past { opacity: 0.65; background: #F5F5F5; }
+.dofe-coverage-event-emoji { font-size: 1.6rem; line-height: 1; flex-shrink: 0; }
+.dofe-coverage-event-body { flex: 1; min-width: 0; }
+.dofe-coverage-event-title { font-weight: 600; font-size: 1rem; }
+.dofe-coverage-event-meta { font-size: 0.85rem; color: #666; margin-top: 0.2rem; }
+.dofe-coverage-event-extra { margin-top: 0.3rem; font-size: 0.8rem; color: #888; }
+.dofe-coverage-event-bonus { font-style: italic; }
+.dofe-coverage-past-tag {
+  display: inline-block;
+  background: #DDD;
+  color: #666;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  margin-left: 0.3rem;
+  font-weight: 600;
+}
+
+.dofe-coverage-empty {
+  background: #FFF8E1;
+  border-left: 4px solid #E0A800;
+  padding: 0.9rem 1.2rem;
+  border-radius: 10px;
+  margin: 0.5rem 0;
+}
+.dofe-coverage-empty strong { color: #6A4A00; }
+.dofe-coverage-empty p { margin: 0.3rem 0 0; color: #555; font-size: 0.92rem; }
+
+/* Recommendation block (gap fillers) */
+.dofe-coverage-recs {
+  margin-top: 1.3rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #DDD;
+}
+.dofe-coverage-recs h4 { margin: 0 0 0.4rem; font-size: 1.05rem; }
+.dofe-coverage-recs-hint { font-size: 0.85rem; color: #666; margin: 0 0 0.7rem; }
+.dofe-coverage-recs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.6rem;
+}
+.dofe-coverage-rec {
+  background: white;
+  border: 2px solid #E0E7EE;
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.dofe-coverage-rec:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+.dofe-coverage-rec.rec-new {
+  border-color: #FFD700;
+  background: linear-gradient(135deg, #FFFBE6 0%, #FFFFFF 100%);
+}
+.dofe-coverage-rec.rec-scheduled { opacity: 0.85; }
+.dofe-coverage-rec-top { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.35rem; }
+.dofe-coverage-rec-emoji { font-size: 1.4rem; line-height: 1; }
+.dofe-coverage-rec-name { font-weight: 600; font-size: 0.95rem; }
+.dofe-coverage-rec-meta { display: flex; flex-wrap: wrap; gap: 0.35rem; font-size: 0.75rem; }
+.dofe-coverage-rec-badge {
+  background: #F0F8FF;
+  color: #2D8F4E;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.rec-new .dofe-coverage-rec-badge { background: #FFF3CD; color: #856404; }
+.dofe-coverage-rec-hours {
+  background: #EEE;
+  color: #555;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+}
+.rec-efficiency {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.rec-eff-triple { background: #FFE0E6; color: #C2185B; }
+.rec-eff-double { background: #E3F2FD; color: #1565C0; }
+
+/* All-events tagged table */
+.dofe-coverage-events-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.8rem;
+  font-size: 0.92rem;
+}
+.dofe-coverage-events-table thead th {
+  background: #F0F8FF;
+  padding: 0.6rem 0.7rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #B0DAEA;
+}
+.dofe-coverage-events-table tbody td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid #EEE;
+  vertical-align: top;
+}
+.dofe-coverage-events-table tbody tr.event-past { opacity: 0.65; background: #FAFAFA; }
+.dofe-coverage-events-table tbody tr.event-fun { background: #FFF8E1; }
+.dofe-coverage-pillar-chip {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-right: 0.25rem;
+  white-space: nowrap;
+}
+.dofe-coverage-event-fun {
+  display: inline-block;
+  background: #FFE0B2;
+  color: #BF360C;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-style: italic;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .dofe-coverage-stats { grid-template-columns: repeat(2, 1fr); }
+  .dofe-coverage-pillar { padding: 1rem; }
+  .dofe-coverage-pillar-emoji { font-size: 2rem; }
+  .dofe-coverage-pillar-title h3 { font-size: 1.15rem; }
+  .dofe-coverage-counts { flex-direction: column; gap: 0.3rem; }
+  .dofe-coverage-recs-grid { grid-template-columns: 1fr 1fr; }
+  .dofe-coverage-events-table { font-size: 0.82rem; }
+  .dofe-coverage-events-table thead th,
+  .dofe-coverage-events-table tbody td { padding: 0.4rem 0.4rem; }
+}
+
+/* 🏅 DofE pillar chips on calendar event cards */
+.dofe-event-chips {
+  margin: 0.4rem 0;
+  font-size: 0.85rem;
+  color: #555;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+}
+.dofe-event-chip {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.dofe-event-chip-fun {
+  background: #FFE0B2;
+  color: #BF360C;
+  border: 1px dashed #FF9800;
+  font-style: italic;
+}
+.dofe-event-hours {
+  background: #2D8F4E;
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-left: 0.2rem;
+}

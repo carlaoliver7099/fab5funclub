@@ -2243,6 +2243,161 @@ app.get('/api/dofe/journey/:name', (c) => {
 })
 
 // ====================================================================================
+// 🎯 DofE COVERAGE — reverse mapping: pillar → which planned/scheduled activities cover it
+// ====================================================================================
+// Saia's question: "for the DofE skills we need, which activities on our calendar cover
+// them — and where are the gaps?"
+//
+// This endpoint answers it three ways:
+//   1. Per pillar: which calendar events (real, scheduled by the crew) build this pillar?
+//   2. Per pillar: which weeks of the 52-week template still cover it (i.e. roadmap)?
+//   3. Gap detection: which pillars are UNDER-served by what we've planned vs target hours?
+app.get('/api/dofe/coverage', (c) => {
+  ensureSeeded()
+
+  // Build a lookup of activity name → pillars + hours (from CLUB_INFO.activities)
+  const activityLookup: Record<string, { pillars: string[]; hours: number; emoji: string; category: string }> = {}
+  for (const a of (CLUB_INFO.activities as any[])) {
+    activityLookup[a.name] = { pillars: a.pillars || [], hours: a.hours || 0, emoji: a.emoji, category: a.category }
+  }
+
+  const today = new Date().toISOString().slice(0, 10)
+
+  // 1️⃣ For every pillar, find all REAL events on the calendar that build it
+  const perPillarEvents = DOFE_PILLARS.map(pillar => {
+    const matchingEvents = EVENTS
+      .map(ev => {
+        const meta = activityLookup[ev.activity] || { pillars: [], hours: 0, emoji: '🎯', category: 'Other' }
+        return { ev, meta }
+      })
+      .filter(({ meta }) => meta.pillars.includes(pillar.id))
+      .map(({ ev, meta }) => ({
+        eventId: ev.id,
+        title: ev.title,
+        activity: ev.activity,
+        emoji: meta.emoji,
+        date: ev.date,
+        location: ev.location,
+        hours: meta.hours,
+        members: ev.members,
+        leader: ev.leader,
+        isPast: ev.date <= today,
+        otherPillars: meta.pillars.filter((p: string) => p !== pillar.id)
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+
+    // Hours totals for this pillar across all scheduled events
+    const pastHours   = matchingEvents.filter(e => e.isPast).reduce((s, e) => s + e.hours, 0)
+    const futureHours = matchingEvents.filter(e => !e.isPast).reduce((s, e) => s + e.hours, 0)
+    const totalHours  = pastHours + futureHours
+
+    // 2️⃣ Which template weeks ALSO cover this pillar (the roadmap suggestions)
+    const templateWeeks = DOFE_52_WEEK_PLAN.filter(w => w.pillars.includes(pillar.id))
+
+    // 3️⃣ Activities (from the master list) that build this pillar — recommendations
+    //     for filling a gap. Sort by 'value' = hours × number of pillars hit (high = efficient).
+    const recommendedActivities = (CLUB_INFO.activities as any[])
+      .filter(a => (a.pillars || []).includes(pillar.id))
+      .map(a => ({
+        name: a.name,
+        emoji: a.emoji,
+        category: a.category,
+        hours: a.hours || 0,
+        pillars: a.pillars || [],
+        otherPillarsHit: (a.pillars || []).filter((p: string) => p !== pillar.id),
+        // Have we ever scheduled this activity?
+        timesScheduled: EVENTS.filter(ev => ev.activity === a.name).length,
+        nextScheduled: EVENTS.filter(ev => ev.activity === a.name && ev.date > today).sort((a, b) => a.date.localeCompare(b.date))[0]?.date || null
+      }))
+      .sort((a, b) => {
+        // Unscheduled activities first (they're the gap-fillers)
+        if (a.timesScheduled === 0 && b.timesScheduled > 0) return -1
+        if (b.timesScheduled === 0 && a.timesScheduled > 0) return 1
+        // Then by efficiency (more pillars covered per session)
+        return b.pillars.length - a.pillars.length
+      })
+
+    // Coverage score: scheduled future hours vs Bronze target (per-kid). We use Bronze
+    // since it's the entry milestone. Below 50% of Bronze target = "gap".
+    const bronzeTarget = DOFE_SYLLABUS.bronze.sectionTargetHours  // 13 hours
+    const coveragePercent = bronzeTarget > 0 ? Math.min(100, Math.round((totalHours / bronzeTarget) * 100)) : 0
+
+    // Gap status (per pillar across the whole club's calendar)
+    let gapStatus: 'gap' | 'thin' | 'on-track' | 'strong'
+    if (coveragePercent < 25) gapStatus = 'gap'
+    else if (coveragePercent < 50) gapStatus = 'thin'
+    else if (coveragePercent < 100) gapStatus = 'on-track'
+    else gapStatus = 'strong'
+
+    return {
+      pillarId: pillar.id,
+      pillarName: pillar.name,
+      pillarEmoji: pillar.emoji,
+      pillarColor: pillar.color,
+      pillarKidTalk: pillar.kidTalk,
+      scheduledEvents: matchingEvents,
+      pastEventCount: matchingEvents.filter(e => e.isPast).length,
+      futureEventCount: matchingEvents.filter(e => !e.isPast).length,
+      pastHours,
+      futureHours,
+      totalHours,
+      bronzeTargetHours: bronzeTarget,
+      silverTargetHours: DOFE_SYLLABUS.silver.sectionTargetHours,
+      goldTargetHours: DOFE_SYLLABUS.gold.sectionTargetHours,
+      coveragePercent,
+      gapStatus,
+      templateWeekCount: templateWeeks.length,
+      templateWeeks: templateWeeks.map(w => ({ week: w.week, stage: w.stage, activity: w.activity, hours: w.hours })),
+      recommendedActivities: recommendedActivities.slice(0, 8)  // top 8 suggestions
+    }
+  })
+
+  // 4️⃣ Per-event view: tag every event with which pillars it covers (and flag the
+  //     "fun bonus" events that don't count toward DofE — full transparency).
+  const allEventsTagged = EVENTS
+    .map(ev => {
+      const meta = activityLookup[ev.activity] || { pillars: [], hours: 0, emoji: '🎯', category: 'Other' }
+      return {
+        eventId: ev.id,
+        title: ev.title,
+        activity: ev.activity,
+        emoji: meta.emoji,
+        date: ev.date,
+        location: ev.location,
+        hours: meta.hours,
+        members: ev.members,
+        leader: ev.leader,
+        isPast: ev.date <= today,
+        pillars: meta.pillars,
+        pillarsDetailed: meta.pillars.map((pid: string) => {
+          const p = DOFE_PILLARS.find(x => x.id === pid)
+          return p ? { id: p.id, name: p.name, emoji: p.emoji, color: p.color } : null
+        }).filter(Boolean),
+        isDofEFree: meta.pillars.length === 0  // pure fun, no DofE credit
+      }
+    })
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  // 5️⃣ Summary numbers for the top of the page
+  const dofeFreeCount = allEventsTagged.filter(e => e.isDofEFree).length
+  const dofeBuildingCount = allEventsTagged.length - dofeFreeCount
+  const pillarsWithGaps = perPillarEvents.filter(p => p.gapStatus === 'gap' || p.gapStatus === 'thin').map(p => p.pillarId)
+
+  return c.json({
+    summary: {
+      totalEvents: allEventsTagged.length,
+      dofeBuildingEvents: dofeBuildingCount,
+      dofeFreeEvents: dofeFreeCount,
+      pillarsWithGaps,
+      strongestPillar: [...perPillarEvents].sort((a, b) => b.totalHours - a.totalHours)[0]?.pillarId || null,
+      weakestPillar:   [...perPillarEvents].sort((a, b) => a.totalHours - b.totalHours)[0]?.pillarId || null
+    },
+    pillars: perPillarEvents,
+    allEvents: allEventsTagged
+  })
+})
+
+// ====================================================================================
 // 🏷️ ASSET REGISTER API
 // ====================================================================================
 // Public reads (any authed user) + parent-restricted writes.
@@ -3475,7 +3630,7 @@ app.get('/', (c) => {
           <p class="section-subtitle">Zero to Hero — 52 weekends of cool stuff that builds 4 super-powers 💪🎓💛🏔️</p>
           <div class="dofe-journey-intro">
             <p>👋 Pick who you are above (the <strong>"Who am I?"</strong> button up top) and watch your pillars fill up as you join adventures!</p>
-            <p class="dofe-journey-parent-link">📋 Parents — see the full official syllabus & 52-week calendar on the <a href="/dofe-syllabus">Parent Syllabus page</a>.</p>
+            <p class="dofe-journey-parent-link">📋 Parents — see the full official syllabus & 52-week calendar on the <a href="/dofe-syllabus">Parent Syllabus page</a>. <br/>🎯 Want to see which of our planned events build each pillar (and find the gaps)? Jump to the <a href="/dofe-syllabus#dofe-coverage"><strong>Coverage view</strong></a>.</p>
           </div>
           <div id="dofe-journey-content" class="dofe-journey-content">
             <p class="muted">Loading your journey…</p>
@@ -4567,6 +4722,29 @@ app.get('/dofe-syllabus', (c) => {
               </tbody>
             </table>
             <p class="muted" style="margin-top: 1rem;"><strong>Note for parents:</strong> The hours above are official entry minimums. Many kids exceed them naturally — the goal isn't ticking boxes, it's building <em>consistent habits</em> in each pillar.</p>
+          </section>
+
+          {/* 🎯 COVERAGE SECTION — answers Saia's question: "for the DofE skills we need,
+              which planned activities cover them — and where are the gaps?" */}
+          <section class="dofe-card dofe-coverage-section" id="dofe-coverage">
+            <h2>🎯 Coverage — Which of Our Planned Activities Build Each Pillar?</h2>
+            <p>This is the <strong>reverse view</strong>: instead of "what does this activity build?", it asks <strong>"for each DofE pillar we need, which activities on OUR calendar cover it — and are there gaps?"</strong></p>
+            <p class="muted">Calculations use scheduled events from <a href="/#calendar">the calendar</a> compared against the Bronze hour target ({DOFE_SYLLABUS.bronze.sectionTargetHours}hr per pillar). Anything below 25% = 🔴 gap, 25–49% = 🟡 thin, 50–99% = 🟢 on-track, 100%+ = 🏆 strong.</p>
+
+            <div id="dofe-coverage-summary" class="dofe-coverage-summary">
+              <div class="dofe-coverage-loading">⏳ Loading coverage analysis…</div>
+            </div>
+
+            <h3 style="margin-top: 2rem;">📊 Per-Pillar Breakdown</h3>
+            <div id="dofe-coverage-pillars" class="dofe-coverage-pillars">
+              <div class="dofe-coverage-loading">⏳ Loading…</div>
+            </div>
+
+            <h3 style="margin-top: 2.5rem;">📋 Every Planned Event — Tagged with Pillars</h3>
+            <p class="muted">Every event on the calendar, tagged with which pillars it builds. Events marked <em>"fun bonus"</em> don't earn DofE credit (and that's OK — fun is fun!).</p>
+            <div id="dofe-coverage-events" class="dofe-coverage-events">
+              <div class="dofe-coverage-loading">⏳ Loading…</div>
+            </div>
           </section>
 
           <section class="dofe-card">

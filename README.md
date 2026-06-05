@@ -65,6 +65,14 @@ A **private, AI-powered adventure-planning website** for 5 friends — **Ace, Ch
    - Detail view with QR + full history + cost + vendor + notes
    - Hash deep-link: `/assets#F5-001` jumps straight to that item
    - **Cloudflare KV persistence** — survives restarts (key `assets:all`)
+✅ **🎯 DofE Coverage View** at `/dofe-syllabus#dofe-coverage` — the **reverse mapping**: instead of "what does this activity build?", it asks "for each DofE pillar we need, which of our PLANNED events covers it — and where are the gaps?"
+   - 4-pillar gap analysis (🔴 GAP <25% / 🟡 THIN <50% / 🟢 ON-TRACK <100% / 🏆 STRONG ≥100% of Bronze target)
+   - For each pillar: list of scheduled events that build it + coverage % progress bar + count of past/upcoming events + count of template weeks
+   - **Gap-filler recommendations** — unscheduled activities first, sorted by efficiency (activities hitting 3 pillars marked 🔥)
+   - Master event table — every event on the calendar tagged with which pillars it builds (or marked "fun bonus" if no DofE credit)
+   - Auto-detects strongest & weakest pillar across the whole calendar
+   - Activity → pillar mapping is M:N (an activity like Abseiling builds 3 pillars; Beach Cleanup builds 1)
+✅ **🏅 DofE pillar chips on every event card** — homepage calendar now shows "Builds: 💪 Physical 🎓 Skills" badges (or "🎉 Fun bonus" for no-credit events) so the crew sees DofE progress every time they look at an event
 ✅ **🐶 Pebbles Oops 404 page** — friendly custom 404 instead of Cloudflare's generic page
 ✅ **💚 Fundraising Hub** at `/fundraising` — Containers for Change tracker with:
    - Big member-number hero card (**C11761772** — our fab5funclub team code)
@@ -111,6 +119,11 @@ All `/api/*` (except `/api/login`, `/api/logout`, `/api/me`) require login cooki
 | POST | `/api/assets/:id/borrow` | Member borrows home — body: `{borrower, note?}` |
 | POST | `/api/assets/:id/return` | Return to club — body: `{note?}` |
 | GET  | `/api/assets/handback/:name` | List everything `:name` currently has borrowed (for leaving-club handback) |
+| GET  | `/api/dofe/syllabus` | Full DofE pillars + 52-week plan + current week marker |
+| GET  | `/api/dofe/progress/:name` | A kid's pillar hours + Bronze/Silver/Gold % + this week's activity |
+| GET  | `/api/dofe/team` | All 5 kids' DofE progress in one call (combined chart) |
+| GET  | `/api/dofe/journey/:name` | Event-by-event journey for a kid, each tagged with syllabus areas |
+| GET  | `/api/dofe/coverage` | **Reverse mapping** — for each pillar, which scheduled events build it + gap status (gap/thin/on-track/strong) + recommended unscheduled activities to plug gaps. Used by the Coverage view at `/dofe-syllabus#dofe-coverage` |
 | GET  | `/api/fundraising` | Full state: $ in pocket, containers saved, goals, donations |
 | POST | `/api/fundraising/unlock` | Body `{unlockCode}` → verifies CforC member number = adult mode |
 | POST | `/api/fundraising/sync` | Adult pastes dashboard snapshot — body: `{inPocketAud, containersSavedFromLandfill, donatedToCauseAud, syncedBy?, unlockCode}` |

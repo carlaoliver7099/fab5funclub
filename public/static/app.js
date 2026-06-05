@@ -851,6 +851,13 @@ function renderEventsList() {
     $('#events-list').innerHTML = `<div class="loading">No upcoming adventures yet — ask Pebbles! 🐾</div>`;
     return;
   }
+  // 🎯 DofE pillar metadata (mirrors DOFE_PILLARS on the server — 4 entries, never changes)
+  const PILLAR_META = {
+    physical:  { name: 'Physical',  emoji: '💪', color: '#FF6B9D' },
+    skills:    { name: 'Skills',    emoji: '🎓', color: '#4ECDC4' },
+    service:   { name: 'Service',   emoji: '💛', color: '#FFE66D' },
+    adventure: { name: 'Adventure', emoji: '🏔️', color: '#A06CD5' },
+  };
   $('#events-list').innerHTML = upcoming.map(e => {
     const dt = new Date(e.date + 'T12:00:00');
     const month = dt.toLocaleString('en-AU', { month: 'short' });
@@ -858,6 +865,17 @@ function renderEventsList() {
     const weekday = dt.toLocaleString('en-AU', { weekday: 'short' });
     const activity = CLUB.activities.find(a => a.name === e.activity);
     const emoji = activity ? activity.emoji : '🎉';
+    // 🏅 DofE pillar chips — show which DofE skills this event builds (or "fun bonus")
+    const activityPillars = activity?.pillars || [];
+    const activityHours = activity?.hours || 0;
+    const dofeChipsHtml = activityPillars.length === 0
+      ? `<span class="dofe-event-chip dofe-event-chip-fun" title="No DofE credit — pure fun!">🎉 Fun bonus (no DofE credit)</span>`
+      : activityPillars.map(pid => {
+          const meta = PILLAR_META[pid];
+          if (!meta) return '';
+          return `<span class="dofe-event-chip" style="background:${meta.color}22;color:${meta.color};border:1px solid ${meta.color}55" title="Builds the ${meta.name} pillar — ${activityHours}hr">${meta.emoji} ${meta.name}</span>`;
+        }).join('');
+    const dofeBlock = `<div class="dofe-event-chips" title="DofE pillars this event builds">🏅 Builds: ${dofeChipsHtml}${activityHours ? ` <span class="dofe-event-hours">${activityHours}hr</span>` : ''}</div>`;
     const leaderHtml = e.leader
       ? `<div class="leader-badge">🎖️ Leader: ${escapeHtml(e.leader)} <button data-rotate="${e.id}" title="Rotate to next">🔄</button></div>`
       : '';
@@ -920,6 +938,7 @@ function renderEventsList() {
         <div class="event-info">
           <h4>${emoji} ${escapeHtml(e.title)}</h4>
           <div class="meta">🎯 ${escapeHtml(e.activity)} • 🕐 ${e.startTime} - ${e.endTime} • 📍 ${escapeHtml(e.location)}</div>
+          ${dofeBlock}
           ${leaderHtml}
           ${parentsJoiningHtml}
           ${allergyHtml}
