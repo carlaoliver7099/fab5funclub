@@ -106,6 +106,7 @@ async function initApp() {
     renderFab5Ways();
     renderParentsFaq();
     setupForm();
+    applyBacklogPrefill();
     setupFlyerUpload();
     setupCalendarNav();
     setupAwardForm();
@@ -995,6 +996,39 @@ function renderRotation() {
       ${name} <span class="count">${c}×</span>
       ${c === min ? ' 🎖️' : ''}
     </span>`).join('');
+}
+
+// ---------- BACKLOG PRE-FILL ----------
+// If the user just locked in a winner on /backlog, sessionStorage holds the
+// pre-fill payload. Pop it into the Add Event form and scroll there.
+function applyBacklogPrefill() {
+  let raw = null;
+  try { raw = sessionStorage.getItem('fab5_event_prefill'); } catch { return; }
+  if (!raw) return;
+  let data = null;
+  try { data = JSON.parse(raw); } catch { return; }
+  if (!data || !data.activityName) return;
+  try { sessionStorage.removeItem('fab5_event_prefill'); } catch {}
+
+  const titleEl = $('#evt-title');
+  const activityEl = $('#evt-activity');
+  const dateEl = $('#evt-date');
+  if (titleEl && data.title) titleEl.value = data.title;
+  if (activityEl && data.activityName) {
+    // The select is populated by fillActivityDropdown() already
+    const opt = Array.from(activityEl.options).find(o => o.value === data.activityName);
+    if (opt) activityEl.value = data.activityName;
+  }
+  if (dateEl && data.date) dateEl.value = data.date;
+
+  // Scroll to the form & flash a friendly banner
+  setTimeout(() => {
+    const formSection = document.getElementById('add-event') || document.getElementById('event-form');
+    if (formSection && formSection.scrollIntoView) {
+      formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    flashMsg(`🔒 Locked in: ${data.activityName}! Confirm the date & details below 👇`, 'success');
+  }, 500);
 }
 
 // ---------- FORM ----------

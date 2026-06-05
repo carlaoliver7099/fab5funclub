@@ -1094,6 +1094,134 @@ function recomputeGoalAllocations(): void {
   }
 }
 
+// ====================================================================================
+// 🗳️ ADVENTURE BACKLOG — Sprint-planner for kids: pick activities, vote, lock in winner
+// ====================================================================================
+// Saia's words: "kids dont know what to do, we need a page to look at all activities for
+// bronze/silver/gold and take a vote on what we should do — like having a backlog and
+// what we are picking from a backlog and sprint that weekend!"
+//
+// Rules:
+// - 1 vote per kid per week (latest vote wins ties at the activity level)
+// - "Crew favourite" = activity that has been done as an event 2+ times historically
+// - Auto-reset every Monday 5am Brisbane time (AEST = UTC+10, no DST)
+// - Stored in PROFILES_KV under key 'backlog:state'
+// ====================================================================================
+type BacklogVote = {
+  voter: string             // member name from MEMBER_NAMES
+  activityName: string      // must match a name in CLUB_INFO.activities
+  votedAt: number           // epoch ms
+}
+type BacklogState = {
+  sprintStartMs: number     // start of the current week (Monday 5am Bris)
+  sprintEndMs: number       // end of the current week (next Monday 5am Bris)
+  votes: BacklogVote[]      // current week's votes
+  lockedWinner?: {          // if a winner has been "locked in" (event created)
+    activityName: string
+    lockedBy: string
+    lockedAt: number
+    eventId?: string        // the calendar event that got created
+  }
+  history: Array<{          // past sprints (last 10)
+    sprintStartMs: number
+    sprintEndMs: number
+    winner?: string
+    votes: BacklogVote[]
+  }>
+}
+
+function getBrisbaneMondayAnchor(now = new Date()): { startMs: number; endMs: number } {
+  // Brisbane is UTC+10 year-round (no DST). Find the Monday 5am Brisbane that's just passed.
+  const utcMs = now.getTime()
+  const brisbaneOffsetMs = 10 * 60 * 60 * 1000
+  const brisbaneMs = utcMs + brisbaneOffsetMs
+  const brisbaneDate = new Date(brisbaneMs)
+  // getUTCDay since we've shifted manually: 0=Sun..6=Sat. We want Monday=1.
+  const dayOfWeek = brisbaneDate.getUTCDay()
+  const hour = brisbaneDate.getUTCHours()
+  // Days since last Monday (in Brisbane wall-clock):
+  let daysSinceMonday = (dayOfWeek + 6) % 7   // Mon=0, Tue=1, ..., Sun=6
+  // If it's Monday but before 5am Bris, last anchor was 7 days ago
+  if (daysSinceMonday === 0 && hour < 5) daysSinceMonday = 7
+  // Set to 5am Brisbane of that Monday
+  const anchorBrisbaneMs = Date.UTC(
+    brisbaneDate.getUTCFullYear(),
+    brisbaneDate.getUTCMonth(),
+    brisbaneDate.getUTCDate() - daysSinceMonday,
+    5, 0, 0, 0
+  )
+  const startMs = anchorBrisbaneMs - brisbaneOffsetMs   // back to real UTC
+  const endMs = startMs + 7 * 24 * 60 * 60 * 1000
+  return { startMs, endMs }
+}
+
+function defaultBacklogState(): BacklogState {
+  const { startMs, endMs } = getBrisbaneMondayAnchor()
+  return { sprintStartMs: startMs, sprintEndMs: endMs, votes: [], history: [] }
+}
+
+let BACKLOG: BacklogState = defaultBacklogState()
+let BACKLOG_HYDRATED = false
+
+async function hydrateBacklogFromKV(env: Bindings): Promise<void> {
+  if (BACKLOG_HYDRATED || !env.PROFILES_KV) {
+    if (!env.PROFILES_KV) BACKLOG_HYDRATED = true
+    return
+  }
+  try {
+    const raw = await env.PROFILES_KV.get('backlog:state')
+    if (raw) BACKLOG = JSON.parse(raw)
+  } catch (e) { console.warn('hydrateBacklogFromKV failed:', e) }
+  BACKLOG_HYDRATED = true
+}
+async function saveBacklogToKV(env: Bindings): Promise<void> {
+  if (!env.PROFILES_KV) return
+  try { await env.PROFILES_KV.put('backlog:state', JSON.stringify(BACKLOG)) }
+  catch (e) { console.warn('saveBacklogToKV failed:', e) }
+}
+
+// Auto-reset on every read if we've crossed a Monday-5am-Brisbane boundary
+function maybeRollSprint(): boolean {
+  const now = Date.now()
+  if (now < BACKLOG.sprintEndMs) return false
+  // Roll: archive current to history (keep last 10), start fresh window
+  // Determine winner of the just-finished sprint
+  const tally: Record<string, number> = {}
+  for (const v of BACKLOG.votes) tally[v.activityName] = (tally[v.activityName] || 0) + 1
+  let winner: string | undefined
+  let topVotes = 0
+  for (const [act, n] of Object.entries(tally)) {
+    if (n > topVotes) { topVotes = n; winner = act }
+    else if (n === topVotes && winner) {
+      // tie-break: latest vote among tied activities
+      const latestForA = Math.max(...BACKLOG.votes.filter(v => v.activityName === winner!).map(v => v.votedAt), 0)
+      const latestForB = Math.max(...BACKLOG.votes.filter(v => v.activityName === act).map(v => v.votedAt), 0)
+      if (latestForB > latestForA) winner = act
+    }
+  }
+  BACKLOG.history.unshift({
+    sprintStartMs: BACKLOG.sprintStartMs,
+    sprintEndMs: BACKLOG.sprintEndMs,
+    winner, votes: BACKLOG.votes
+  })
+  BACKLOG.history = BACKLOG.history.slice(0, 10)
+  const { startMs, endMs } = getBrisbaneMondayAnchor(new Date(now))
+  BACKLOG.sprintStartMs = startMs
+  BACKLOG.sprintEndMs = endMs
+  BACKLOG.votes = []
+  BACKLOG.lockedWinner = undefined
+  return true
+}
+
+// Compute crew favourite map: activity name → how many times it appears in EVENTS
+function computeCrewFaveCounts(): Record<string, number> {
+  const counts: Record<string, number> = {}
+  for (const e of EVENTS) {
+    counts[e.activity] = (counts[e.activity] || 0) + 1
+  }
+  return counts
+}
+
 // =========== APP ===========
 const app = new Hono<{ Bindings: Bindings }>()
 app.use('/api/*', cors())
@@ -1143,6 +1271,8 @@ app.use('/api/concerts/*', authMiddleware)
 app.use('/api/leader/*', authMiddleware)
 app.use('/api/assets', authMiddleware)
 app.use('/api/assets/*', authMiddleware)
+app.use('/api/backlog', authMiddleware)
+app.use('/api/backlog/*', authMiddleware)
 app.use('/api/fundraising', authMiddleware)
 app.use('/api/fundraising/*', authMiddleware)
 
@@ -2398,6 +2528,262 @@ app.get('/api/dofe/coverage', (c) => {
 })
 
 // ====================================================================================
+// 🗳️ ADVENTURE BACKLOG API — the kid-friendly sprint planner
+// ====================================================================================
+// Helper: build the full backlog view (cards + leaderboard + sprint info).
+// Returns the same shape from GET /api/backlog and after any vote/lock action so the
+// frontend only needs one render path.
+function buildBacklogView() {
+  maybeRollSprint()
+  // Coverage stats per pillar (so cards can be tagged "🔥 we need this!")
+  const activityLookup: Record<string, { pillars: string[]; hours: number; emoji: string; category: string }> = {}
+  for (const a of (CLUB_INFO.activities as any[])) {
+    activityLookup[a.name] = { pillars: a.pillars || [], hours: a.hours || 0, emoji: a.emoji, category: a.category }
+  }
+  // Coverage: hours scheduled per pillar (same logic as /api/dofe/coverage)
+  const pillarHours: Record<string, number> = { physical: 0, skills: 0, service: 0, adventure: 0 }
+  for (const ev of EVENTS) {
+    const meta = activityLookup[ev.activity]; if (!meta) continue
+    for (const p of meta.pillars) pillarHours[p] = (pillarHours[p] || 0) + meta.hours
+  }
+  const bronzeTarget = DOFE_SYLLABUS.bronze.sectionTargetHours
+  const gapPillars = Object.entries(pillarHours)
+    .filter(([_, h]) => h / bronzeTarget < 0.5)   // <50% Bronze = gap or thin
+    .map(([p]) => p)
+
+  // Crew favourite counts (activity has been an event 2+ times)
+  const faveCounts = computeCrewFaveCounts()
+
+  // Tally votes by activity
+  const tally: Record<string, BacklogVote[]> = {}
+  for (const v of BACKLOG.votes) {
+    if (!tally[v.activityName]) tally[v.activityName] = []
+    tally[v.activityName].push(v)
+  }
+
+  // Build cards — one per activity in the master list
+  const cards = (CLUB_INFO.activities as any[]).map((a: any) => {
+    const pillars = a.pillars || []
+    const hours = a.hours || 0
+    const isFave = (faveCounts[a.name] || 0) >= 2
+    const timesDone = faveCounts[a.name] || 0
+    const isNew = timesDone === 0
+    const fillsGap = pillars.some((p: string) => gapPillars.includes(p))
+    const tripleThreat = pillars.length >= 3
+
+    // Kid-language hours bucket
+    let durationLabel: string
+    if (hours <= 1) durationLabel = '⚡ Quick mission'
+    else if (hours <= 2) durationLabel = '🎯 Short mission'
+    else if (hours <= 4) durationLabel = '🌞 Half-day mission'
+    else if (hours <= 6) durationLabel = '🏞️ Full-day mission'
+    else if (hours <= 12) durationLabel = '⛺ Overnight quest'
+    else durationLabel = '🏔️ Multi-day epic'
+
+    // Kid-language skills they'll build (one per pillar)
+    const KID_SKILLS: Record<string, string[]> = {
+      physical:  ['💪 strong body', '🏃 fitness boost', '🧠 mind-body link'],
+      skills:    ['🎓 cool new skill', '🔧 hands-on smarts', '🧠 brain power'],
+      service:   ['💛 helping heart', '🌍 community love', '🤝 team mindset'],
+      adventure: ['🏔️ bravery boost', '🧭 outdoor smarts', '🌲 nature wisdom'],
+    }
+    const skillsYouGet = pillars.map((p: string, i: number) => {
+      const opts = KID_SKILLS[p] || []
+      return opts[i % opts.length] || p
+    })
+
+    const cardVotes = tally[a.name] || []
+    return {
+      activityName: a.name,
+      emoji: a.emoji,
+      category: a.category,
+      pillars,
+      hours,
+      durationLabel,
+      skillsYouGet,
+      isFave,
+      timesDone,
+      isNew,
+      fillsGap,
+      tripleThreat,
+      voteCount: cardVotes.length,
+      voters: cardVotes.map(v => v.voter).filter((v, i, arr) => arr.indexOf(v) === i),  // unique
+    }
+  })
+
+  // Leaderboard = top voted activities
+  const leaderboard = [...cards]
+    .filter(c => c.voteCount > 0)
+    .sort((a, b) => {
+      if (b.voteCount !== a.voteCount) return b.voteCount - a.voteCount
+      // tie-break by latest vote
+      const latestA = Math.max(...(tally[a.activityName] || []).map(v => v.votedAt), 0)
+      const latestB = Math.max(...(tally[b.activityName] || []).map(v => v.votedAt), 0)
+      return latestB - latestA
+    })
+
+  // Who has already voted this week?
+  const voterMap: Record<string, string> = {}    // member → activity they voted for
+  for (const v of BACKLOG.votes) voterMap[v.voter] = v.activityName
+
+  return {
+    sprint: {
+      startMs: BACKLOG.sprintStartMs,
+      endMs: BACKLOG.sprintEndMs,
+      // Computed text for friendly display (UTC iso so client can localize)
+      startIso: new Date(BACKLOG.sprintStartMs).toISOString(),
+      endIso: new Date(BACKLOG.sprintEndMs).toISOString(),
+      hoursRemaining: Math.max(0, Math.round((BACKLOG.sprintEndMs - Date.now()) / (60 * 60 * 1000))),
+    },
+    leaderboard,
+    cards,
+    voterMap,
+    lockedWinner: BACKLOG.lockedWinner || null,
+    coverageGaps: gapPillars,
+    pillarHours,
+    bronzeTarget,
+    crewSize: MEMBER_NAMES.length,
+    voters: MEMBER_NAMES,
+    history: BACKLOG.history.slice(0, 5),
+  }
+}
+
+// GET /api/backlog — full view (auth-gated)
+app.get('/api/backlog', async (c) => {
+  ensureSeeded()
+  await hydrateBacklogFromKV(c.env)
+  const rolled = maybeRollSprint()
+  if (rolled) await saveBacklogToKV(c.env)
+  return c.json(buildBacklogView())
+})
+
+// POST /api/backlog/vote — body: { voter, activityName }
+// Replaces the voter's existing vote for this sprint (1 per kid).
+app.post('/api/backlog/vote', async (c) => {
+  ensureSeeded()
+  await hydrateBacklogFromKV(c.env)
+  maybeRollSprint()
+  const body = await c.req.json<{ voter: string; activityName: string }>()
+  const voter = (body.voter || '').trim()
+  const activityName = (body.activityName || '').trim()
+  if (!MEMBER_NAMES.includes(voter)) {
+    return c.json({ error: 'Unknown voter. Pick who you are first!' }, 400)
+  }
+  const activityExists = (CLUB_INFO.activities as any[]).some(a => a.name === activityName)
+  if (!activityExists) return c.json({ error: 'Unknown activity: ' + activityName }, 400)
+
+  // If the winner is already locked, voting is closed for this sprint
+  if (BACKLOG.lockedWinner) {
+    return c.json({ error: 'Voting is closed — the winner is locked in! Wait for next Monday\'s fresh sprint 🐶' }, 409)
+  }
+
+  // Replace any existing vote by this voter (1 per kid rule)
+  BACKLOG.votes = BACKLOG.votes.filter(v => v.voter !== voter)
+  BACKLOG.votes.push({ voter, activityName, votedAt: Date.now() })
+  await saveBacklogToKV(c.env)
+  return c.json({ ok: true, ...buildBacklogView() })
+})
+
+// DELETE /api/backlog/vote — body: { voter }  (clear my vote)
+app.post('/api/backlog/vote/clear', async (c) => {
+  ensureSeeded()
+  await hydrateBacklogFromKV(c.env)
+  const body = await c.req.json<{ voter: string }>()
+  const voter = (body.voter || '').trim()
+  if (!MEMBER_NAMES.includes(voter)) {
+    return c.json({ error: 'Unknown voter' }, 400)
+  }
+  if (BACKLOG.lockedWinner) {
+    return c.json({ error: 'Voting closed — winner is locked!' }, 409)
+  }
+  BACKLOG.votes = BACKLOG.votes.filter(v => v.voter !== voter)
+  await saveBacklogToKV(c.env)
+  return c.json({ ok: true, ...buildBacklogView() })
+})
+
+// POST /api/backlog/lock-winner — body: { lockedBy }
+// Picks the current leader as the winner. Does NOT auto-create the event — the frontend
+// pre-fills the Add Event form with the winner's details so an adult can confirm.
+app.post('/api/backlog/lock-winner', async (c) => {
+  ensureSeeded()
+  await hydrateBacklogFromKV(c.env)
+  maybeRollSprint()
+  const body = await c.req.json<{ lockedBy: string }>()
+  const lockedBy = (body.lockedBy || '').trim()
+  if (!MEMBER_NAMES.includes(lockedBy)) {
+    return c.json({ error: 'Pick who you are first!' }, 400)
+  }
+  if (BACKLOG.votes.length === 0) {
+    return c.json({ error: 'No votes yet — at least one kid needs to vote first!' }, 400)
+  }
+  if (BACKLOG.lockedWinner) {
+    return c.json({ error: 'Already locked: ' + BACKLOG.lockedWinner.activityName }, 409)
+  }
+  const view = buildBacklogView()
+  const winner = view.leaderboard[0]
+  if (!winner) return c.json({ error: 'No winner found' }, 400)
+  BACKLOG.lockedWinner = {
+    activityName: winner.activityName,
+    lockedBy,
+    lockedAt: Date.now()
+  }
+  await saveBacklogToKV(c.env)
+  // Return both the new view AND the winner details for prefill
+  const activityMeta = (CLUB_INFO.activities as any[]).find(a => a.name === winner.activityName)
+  return c.json({
+    ok: true,
+    winner: winner.activityName,
+    winnerMeta: activityMeta,
+    suggestedDate: nextWeekendDate(),
+    suggestedTitle: `${activityMeta?.emoji || '🎉'} ${winner.activityName} weekend!`,
+    ...buildBacklogView()
+  })
+})
+
+// POST /api/backlog/lock-winner/clear — undo lock (adult escape hatch)
+app.post('/api/backlog/lock-winner/clear', async (c) => {
+  ensureSeeded()
+  await hydrateBacklogFromKV(c.env)
+  BACKLOG.lockedWinner = undefined
+  await saveBacklogToKV(c.env)
+  return c.json({ ok: true, ...buildBacklogView() })
+})
+
+// POST /api/backlog/reset — manual sprint reset (adult escape hatch)
+app.post('/api/backlog/reset', async (c) => {
+  ensureSeeded()
+  await hydrateBacklogFromKV(c.env)
+  // Archive current to history
+  const tally: Record<string, number> = {}
+  for (const v of BACKLOG.votes) tally[v.activityName] = (tally[v.activityName] || 0) + 1
+  let winner: string | undefined
+  let topVotes = 0
+  for (const [act, n] of Object.entries(tally)) { if (n > topVotes) { topVotes = n; winner = act } }
+  BACKLOG.history.unshift({
+    sprintStartMs: BACKLOG.sprintStartMs,
+    sprintEndMs: BACKLOG.sprintEndMs,
+    winner, votes: BACKLOG.votes
+  })
+  BACKLOG.history = BACKLOG.history.slice(0, 10)
+  const { startMs, endMs } = getBrisbaneMondayAnchor()
+  BACKLOG.sprintStartMs = startMs
+  BACKLOG.sprintEndMs = endMs
+  BACKLOG.votes = []
+  BACKLOG.lockedWinner = undefined
+  await saveBacklogToKV(c.env)
+  return c.json({ ok: true, ...buildBacklogView() })
+})
+
+// Helper: next Saturday's date in YYYY-MM-DD
+function nextWeekendDate(): string {
+  const d = new Date()
+  const day = d.getDay()  // 0=Sun..6=Sat
+  const daysToSat = day === 6 ? 7 : (6 - day + 7) % 7 || 7  // always at least next Sat
+  d.setDate(d.getDate() + daysToSat)
+  return d.toISOString().slice(0, 10)
+}
+
+// ====================================================================================
 // 🏷️ ASSET REGISTER API
 // ====================================================================================
 // Public reads (any authed user) + parent-restricted writes.
@@ -3084,6 +3470,19 @@ const PEBBLES_TOOLS = [
         required: ['artist']
       }
     }
+  },
+  {
+    type: 'function', function: {
+      name: 'suggest_activities',
+      description: 'Suggest 3 weekend activities for the Fab 5 to consider. Prioritises activities that fill the crew\'s DofE pillar gaps, plus optionally their favourites. Use this when kids ask "what should we do?", "we don\'t know what to do this weekend", "suggest something fun", or want help picking activities. The crew can then vote on them on the /backlog page.',
+      parameters: {
+        type: 'object',
+        properties: {
+          mood: { type: 'string', description: 'Optional vibe filter: "chill" (low-energy), "adventure" (high-energy), "service" (help others), "skill" (learn something), or "any"' },
+          mustBeNew: { type: 'boolean', description: 'If true, only suggest activities the crew has never done before' }
+        }
+      }
+    }
   }
 ]
 
@@ -3249,6 +3648,82 @@ app.post('/api/pebbles/chat', async (c) => {
           CONCERTS.push(con)
           createdConcerts.push(con)
           toolResult = { ok: true, concert: con }
+        } else if (tc.function.name === 'suggest_activities') {
+          // Build coverage gaps (same logic as /api/backlog and /api/dofe/coverage)
+          const activityLookup: Record<string, { pillars: string[]; hours: number; emoji: string; category: string }> = {}
+          for (const a of (CLUB_INFO.activities as any[])) {
+            activityLookup[a.name] = { pillars: a.pillars || [], hours: a.hours || 0, emoji: a.emoji, category: a.category }
+          }
+          const pillarHours: Record<string, number> = { physical: 0, skills: 0, service: 0, adventure: 0 }
+          for (const ev of EVENTS) {
+            const meta = activityLookup[ev.activity]; if (!meta) continue
+            for (const p of meta.pillars) pillarHours[p] = (pillarHours[p] || 0) + meta.hours
+          }
+          const bronzeTarget = DOFE_SYLLABUS.bronze.sectionTargetHours
+          // Sort pillars by gap (lowest hours first = biggest gap)
+          const pillarsByGap = Object.entries(pillarHours)
+            .sort(([, a], [, b]) => a - b)
+            .map(([p]) => p)
+          const mood = (args.mood || 'any').toLowerCase()
+          const mustBeNew = args.mustBeNew === true
+          const faveCounts = computeCrewFaveCounts()
+
+          // Mood → preferred pillars
+          const moodPillars: Record<string, string[]> = {
+            chill: ['skills', 'service'],
+            adventure: ['adventure', 'physical'],
+            service: ['service'],
+            skill: ['skills'],
+            any: []
+          }
+          const preferred = moodPillars[mood] || []
+
+          // Score each activity. Higher score = better suggestion.
+          const scored = (CLUB_INFO.activities as any[]).map((a: any) => {
+            const pillars = a.pillars || []
+            if (pillars.length === 0) return null      // skip pure-fun (no DofE)
+            const timesDone = faveCounts[a.name] || 0
+            if (mustBeNew && timesDone > 0) return null
+            let score = 0
+            // Boost for hitting gap pillars
+            for (const p of pillars) {
+              const gapIdx = pillarsByGap.indexOf(p)
+              if (gapIdx === 0) score += 50      // biggest gap
+              else if (gapIdx === 1) score += 30
+              else if (gapIdx === 2) score += 10
+            }
+            // Boost for mood match
+            for (const p of pillars) if (preferred.includes(p)) score += 15
+            // Boost for triple-threat efficiency
+            if (pillars.length >= 3) score += 15
+            else if (pillars.length === 2) score += 5
+            // Mild boost for new (never tried) activities
+            if (timesDone === 0) score += 5
+            // Slight boost for fav status (crew has loved it before)
+            if (timesDone >= 2 && !mustBeNew) score += 8
+            return { a, score, timesDone, pillars }
+          }).filter(Boolean) as Array<{ a: any; score: number; timesDone: number; pillars: string[] }>
+
+          scored.sort((x, y) => y.score - x.score)
+          const top3 = scored.slice(0, 3).map(s => ({
+            name: s.a.name,
+            emoji: s.a.emoji,
+            category: s.a.category,
+            hours: s.a.hours,
+            pillars: s.pillars,
+            timesDone: s.timesDone,
+            isNew: s.timesDone === 0,
+            isFave: s.timesDone >= 2,
+            efficiency: s.pillars.length,
+            score: s.score
+          }))
+          toolResult = {
+            ok: true,
+            suggestions: top3,
+            coverage: pillarHours,
+            biggestGap: pillarsByGap[0],
+            tip: `Crew can vote on these (or anything else!) at /backlog — voting closes Sunday night when an adult locks in the winner.`
+          }
         }
 
         conv.push({
@@ -3317,6 +3792,7 @@ app.get('/', (c) => {
             <a href="/dofe-syllabus">📋 Parent Syllabus</a>
             <a href="/assets">🏷️ Gear</a>
             <a href="/fundraising">💚 Fundraising</a>
+            <a href="/backlog">🗳️ Pick Adventure</a>
             <a href="#parents-faq">❓ Parents</a>
           </div>
           <button id="whoami-btn" class="whoami-btn" title="Who are you?">
@@ -4645,6 +5121,75 @@ app.get('/fundraising', (c) => {
       <div id="fund-donation-modal" class="fund-modal-overlay" style="display:none"></div>
       <div id="fund-goal-modal" class="fund-modal-overlay" style="display:none"></div>
       <div id="fund-qr-modal" class="fund-modal-overlay" style="display:none"></div>
+    </div>
+  )
+})
+
+// =========== 🗳️ ADVENTURE BACKLOG PAGE (Sprint Picker) ===========
+app.get('/backlog', (c) => {
+  if (!isAuthed(c)) return c.redirect('/')
+  ensureSeeded()
+  return c.render(
+    <div class="backlog-page">
+      <header class="backlog-header">
+        <div class="backlog-header-inner">
+          <a href="/" class="backlog-back">← Back to Fab 5</a>
+          <div class="backlog-eyebrow">🏃‍♂️ Weekend Sprint Picker</div>
+          <h1>🗳️ Pick Our Adventure!</h1>
+          <p class="backlog-subtitle">
+            Every weekend is a fresh sprint! 🌈 Check out all the missions, see which ones
+            fill our Bronze gaps, vote for your fave, then lock in the winner — and a
+            grown-up will sort the date and details. <strong>One vote per kid!</strong>
+          </p>
+        </div>
+      </header>
+
+      <main class="backlog-main">
+        {/* Sprint countdown banner */}
+        <section id="backlog-sprint-banner" class="sprint-banner"></section>
+
+        {/* Who-am-I prompt */}
+        <section id="backlog-whoami-banner"></section>
+
+        {/* Locked-in winner card (only shows when locked) */}
+        <section id="backlog-locked-winner"></section>
+
+        {/* Leaderboard */}
+        <section id="backlog-leaderboard" class="backlog-leaderboard"></section>
+
+        {/* Gap hint */}
+        <section id="backlog-gap-hint"></section>
+
+        {/* Lock-in CTA (only shows when there's a leader & no lock yet) */}
+        <section id="backlog-lock-section" class="lock-cta" style="display:none"></section>
+
+        {/* Filter pills */}
+        <div class="backlog-filters-wrap">
+          <h2 class="backlog-filters-title">🎯 Filter the missions:</h2>
+          <div id="backlog-filters" class="backlog-filters"></div>
+        </div>
+
+        {/* Cards grid */}
+        <section id="backlog-cards" class="backlog-cards-grid">
+          <div class="backlog-loading">🐶 Pebbles is fetching the backlog...</div>
+        </section>
+
+        {/* Help footer */}
+        <section class="backlog-help">
+          <h3>🤔 How does this work?</h3>
+          <ul>
+            <li><strong>🗳️ Vote:</strong> Tap "Vote for this!" on any mission card. You get <strong>one vote per sprint</strong>. Change your mind? Just tap a different card.</li>
+            <li><strong>🎯 Fills a gap:</strong> Missions with this badge help balance out our Bronze pillars that need love.</li>
+            <li><strong>⭐ Crew fave:</strong> We've done this 2+ times before — it's a known winner!</li>
+            <li><strong>✨ Never done:</strong> Brand new mission for the Fab 5 — adventure unlocked!</li>
+            <li><strong>🔒 Lock it in:</strong> When you're ready, lock in the leading mission and the Add Event form gets pre-filled for a grown-up to confirm.</li>
+            <li><strong>⏰ Reset:</strong> Every Monday at 5am Brisbane time the sprint refreshes!</li>
+          </ul>
+          <p class="backlog-pebbles-tip">
+            💡 <strong>Stuck?</strong> Ask Pebbles "what should we do this weekend?" and they'll suggest 3 missions that fit our crew & fill the right gaps! 🐶
+          </p>
+        </section>
+      </main>
     </div>
   )
 })

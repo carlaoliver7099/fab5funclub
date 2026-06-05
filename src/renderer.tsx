@@ -2,7 +2,7 @@ import { jsxRenderer } from 'hono/jsx-renderer'
 
 // Cache-bust on every deploy so phones don't keep serving old app.js / style.css.
 // Bump this manually whenever a meaningful frontend change ships.
-const ASSET_VERSION = '2026-06-05-dofe-coverage-v1'
+const ASSET_VERSION = '2026-06-05-backlog-v1'
 
 export const renderer = jsxRenderer(({ children }) => {
   return (
@@ -22,6 +22,7 @@ export const renderer = jsxRenderer(({ children }) => {
         <script src={`/static/assets.js?v=${ASSET_VERSION}`}></script>
         <script src={`/static/fundraising.js?v=${ASSET_VERSION}`}></script>
         <script src={`/static/dofe-coverage.js?v=${ASSET_VERSION}`}></script>
+        <script src={`/static/backlog.js?v=${ASSET_VERSION}`}></script>
       </body>
     </html>
   )
