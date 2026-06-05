@@ -73,6 +73,20 @@ A **private, AI-powered adventure-planning website** for 5 friends — **Ace, Ch
    - Auto-detects strongest & weakest pillar across the whole calendar
    - Activity → pillar mapping is M:N (an activity like Abseiling builds 3 pillars; Beach Cleanup builds 1)
 ✅ **🏅 DofE pillar chips on every event card** — homepage calendar now shows "Builds: 💪 Physical 🎓 Skills" badges (or "🎉 Fun bonus" for no-credit events) so the crew sees DofE progress every time they look at an event
+✅ **🏅 Awards Progress dashboard** (inside `#team-progress` on homepage) — answers "how's the crew tracking toward Bronze/Silver/Gold?"
+   - **Stacked bar chart** across all 4 pillars (Physical / Skills / Service / Adventure) with whole-crew combined hours
+   - **Toggle**: 📅 Last 30 days  /  🏅 Whole Bronze journey
+   - **Per-pillar status tiles** with 🔴 GAP / 🟡 THIN / 🟢 ON-TRACK / 🏆 STRONG badges
+   - **🎯 "Pillar needing love most"** → one-tap link to backlog (already filtered to suggest that pillar)
+   - **Per-kid Bronze % cards** (one for each of the 5) with mini per-pillar dots + event count + auto-rotating ⭐ if Bronze complete
+   - **Positive callouts only** — celebrates wins ("Saia smashed it with 3 events!") never shames misses
+✅ **🐶 Pebbles Weekly Recap card** — auto-generated weekly summary in Pebbles' voice
+   - Cached in KV per Brisbane-week (regenerates Monday 5am, syncs with sprint reset)
+   - Manual **🔄 Refresh** button for instant new recap
+   - Powered by GPT-4o-mini with Pebbles persona (puppy voice, Aussie English, positive vibes)
+   - Includes: events done this week, top contributor, backlog winner for next weekend, biggest pillar gap
+   - Stat chips below body: event count, top contributor, backlog leader, focus pillar
+   - Deterministic fallback if OpenAI API fails (still works even offline-ish)
 ✅ **🗳️ Adventure Backlog (Sprint Picker)** at `/backlog` — kid-friendly (ages 8-14) weekend mission picker built in agile-sprint style:
    - **Backlog of 39 activities** from the catalog, each shown as a chunky card with: emoji, category, kid-friendly duration ("⚡ Quick mission" → "🏔️ Multi-day epic"), DofE pillars (chips), skills you'll gain (kid-language: "💪 strong body", "🧭 outdoor smarts"...), and badges
    - **Badges**: 🔥 Triple threat (3 pillars), 🎯 Fills a gap (boosts an under-covered pillar), ⭐ Crew fave (done 2+ times), ✨ Never done (brand new for the crew)
@@ -136,6 +150,9 @@ All `/api/*` (except `/api/login`, `/api/logout`, `/api/me`) require login cooki
 | GET  | `/api/dofe/team` | All 5 kids' DofE progress in one call (combined chart) |
 | GET  | `/api/dofe/journey/:name` | Event-by-event journey for a kid, each tagged with syllabus areas |
 | GET  | `/api/dofe/coverage` | **Reverse mapping** — for each pillar, which scheduled events build it + gap status (gap/thin/on-track/strong) + recommended unscheduled activities to plug gaps. Used by the Coverage view at `/dofe-syllabus#dofe-coverage` |
+| GET  | `/api/dofe/crew-status` | **Awards Progress dashboard data** — whole-crew pillar hours, per-kid Bronze %, status badges, biggest gap. Query `?window=month` for last 30 days, omit or `?window=journey` for whole Bronze journey (default). |
+| GET  | `/api/pebbles/weekly-summary` | Returns cached or freshly-generated Pebbles weekly recap (cached in KV per Brisbane-week). |
+| POST | `/api/pebbles/weekly-summary/refresh` | Force-regenerate the weekly summary (powers the 🔄 Refresh button). |
 | GET  | `/api/backlog` | **Adventure Backlog** state: sprint window (Mon 5am Brisbane → next Mon 5am), leaderboard, all 39 activity cards with vote counts + voter chips + gap/fave/new badges, locked winner, coverage gaps |
 | POST | `/api/backlog/vote` | Cast a vote — body: `{voter, activityName}`. Replaces voter's existing vote (1-per-kid). |
 | POST | `/api/backlog/vote/clear` | Clear voter's vote — body: `{voter}` |

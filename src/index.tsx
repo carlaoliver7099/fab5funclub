@@ -2528,6 +2528,401 @@ app.get('/api/dofe/coverage', (c) => {
 })
 
 // ====================================================================================
+// 🏅 CREW STATUS — whole-crew + per-kid DofE progress with month/journey toggle
+// ====================================================================================
+// Powers the "Awards Progress" view on the homepage (item 6 from the audit).
+// Returns:
+//   - whole crew stacked bar data (per-pillar hours combined across all 5)
+//   - per-kid breakdown (each kid's own bronze % + per-pillar hours)
+//   - status badges per pillar (🔴 GAP / 🟡 THIN / 🟢 ON-TRACK / 🏆 STRONG)
+//   - which pillar needs love most → link to backlog filter
+// Toggle via ?window=month (rolling 30 days) or ?window=journey (since journey start, default)
+app.get('/api/dofe/crew-status', (c) => {
+  ensureSeeded()
+  const windowParam = (c.req.query('window') || 'journey').toLowerCase()
+  const useMonth = windowParam === 'month'
+
+  // Activity lookup (name → {pillars, hours, emoji, category})
+  const activityLookup: Record<string, { pillars: string[]; hours: number; emoji: string; category: string }> = {}
+  for (const a of (CLUB_INFO.activities as any[])) {
+    activityLookup[a.name] = { pillars: a.pillars || [], hours: a.hours || 0, emoji: a.emoji, category: a.category }
+  }
+
+  // Window filter: month = last 30 days from today; journey = everything
+  const today = new Date()
+  const todayIso = today.toISOString().slice(0, 10)
+  const monthAgoIso = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  function inWindow(eventDate: string): boolean {
+    if (!useMonth) return true
+    return eventDate >= monthAgoIso && eventDate <= todayIso
+  }
+
+  // Per-kid pillar hours (for events inside the window AND in the past — only completed counts)
+  const perKid = MEMBER_NAMES.map(name => {
+    const member = CLUB_INFO.members.find(m => m.name === name)
+    const pillarHours: Record<string, number> = { physical: 0, skills: 0, service: 0, adventure: 0 }
+    let totalHours = 0
+    let eventCount = 0
+    let lastEventDate: string | null = null
+    for (const ev of EVENTS) {
+      if (!ev.members.includes(name)) continue
+      if (ev.date > todayIso) continue  // future events don't count toward "done"
+      if (!inWindow(ev.date)) continue
+      const meta = activityLookup[ev.activity]
+      if (!meta) continue
+      for (const p of meta.pillars) pillarHours[p] = (pillarHours[p] || 0) + meta.hours
+      totalHours += meta.hours * (meta.pillars.length || 0)  // raw event hours summed per pillar (matches existing pattern)
+      eventCount++
+      if (!lastEventDate || ev.date > lastEventDate) lastEventDate = ev.date
+    }
+    // Use existing computeDofeProgressFor for the JOURNEY view (matches the rest of the app)
+    // For month view, we compute pillar bronze % from windowed hours only
+    const bronzeTarget = DOFE_SYLLABUS.bronze.sectionTargetHours
+    let bronzePercent: number
+    let stage: 'bronze' | 'silver' | 'gold'
+    let bronzeComplete: boolean
+    if (useMonth) {
+      // Each pillar capped at bronzeTarget, average % across 4 pillars
+      const pct = (Object.values(pillarHours).reduce((s, h) => s + Math.min(h, bronzeTarget), 0) / (bronzeTarget * 4)) * 100
+      bronzePercent = Math.round(pct)
+      bronzeComplete = bronzePercent >= 100
+      stage = 'bronze'
+    } else {
+      const fullProgress = computeDofeProgressFor(name)
+      bronzePercent = fullProgress.bronze.percent
+      bronzeComplete = fullProgress.bronze.complete
+      stage = fullProgress.currentStage
+    }
+    return {
+      name,
+      emoji: member?.emoji || '⭐',
+      color: member?.color || '#999',
+      pillarHours,
+      totalHours,
+      eventCount,
+      lastEventDate,
+      bronzePercent,
+      bronzeComplete,
+      stage,
+      // Has this kid been a no-show recently? (only for month window — last event > 14 days ago)
+      missedRecently: useMonth ? false : (lastEventDate ? ((Date.now() - new Date(lastEventDate + 'T12:00:00').getTime()) / 86400000) > 14 : true)
+    }
+  })
+
+  // Whole-crew combined pillar hours
+  const crewPillarHours: Record<string, number> = { physical: 0, skills: 0, service: 0, adventure: 0 }
+  for (const k of perKid) {
+    for (const p of Object.keys(crewPillarHours)) crewPillarHours[p] += k.pillarHours[p]
+  }
+
+  // Status per pillar — crew TOTAL vs (bronzeTarget × 5 kids) for journey view; vs (bronzeTarget × 5) for month too
+  const bronzeTarget = DOFE_SYLLABUS.bronze.sectionTargetHours
+  const crewBronzeTarget = bronzeTarget * 5  // all 5 kids need to hit it
+  const pillarStatus = (Object.entries(crewPillarHours) as [string, number][]).map(([pillarId, hours]) => {
+    const pillar = DOFE_PILLARS.find(p => p.id === pillarId)!
+    const pct = (hours / crewBronzeTarget) * 100
+    let status: 'gap' | 'thin' | 'on-track' | 'strong'
+    if (pct < 25)       status = 'gap'
+    else if (pct < 50)  status = 'thin'
+    else if (pct < 100) status = 'on-track'
+    else                status = 'strong'
+    return {
+      pillarId,
+      name: pillar.name,
+      emoji: pillar.emoji,
+      color: pillar.color,
+      kidTalk: pillar.kidTalk,
+      hours: Math.round(hours * 10) / 10,
+      target: crewBronzeTarget,
+      percent: Math.round(pct),
+      status
+    }
+  })
+
+  // Biggest gap pillar (lowest %)
+  const sortedByGap = [...pillarStatus].sort((a, b) => a.percent - b.percent)
+  const biggestGap = sortedByGap[0]
+  const strongestPillar = sortedByGap[sortedByGap.length - 1]
+
+  // Crew total
+  const totalCrewHours = Object.values(crewPillarHours).reduce((s, h) => s + h, 0)
+  const crewOverallPercent = Math.round((totalCrewHours / (crewBronzeTarget * 4)) * 100)
+
+  // Quick wins for the encourage strip
+  const eventsThisWindow = EVENTS.filter(ev => ev.date <= todayIso && inWindow(ev.date))
+  const totalEventsThisWindow = eventsThisWindow.length
+  // Positive callouts: top contributor (most events) + biggest pillar lift this window
+  const topContributor = [...perKid].sort((a, b) => b.eventCount - a.eventCount)[0]
+  const positiveCallouts: string[] = []
+  if (topContributor && topContributor.eventCount > 0) {
+    positiveCallouts.push(`${topContributor.emoji} ${topContributor.name} showed up to ${topContributor.eventCount} event${topContributor.eventCount === 1 ? '' : 's'} — legend!`)
+  }
+  const newKidsAtBronze = perKid.filter(k => k.bronzeComplete)
+  if (newKidsAtBronze.length > 0) {
+    positiveCallouts.push(`🥉 ${newKidsAtBronze.map(k => k.name).join(', ')} ${newKidsAtBronze.length === 1 ? 'has' : 'have'} hit Bronze!`)
+  }
+  if (strongestPillar.status === 'strong' || strongestPillar.status === 'on-track') {
+    positiveCallouts.push(`${strongestPillar.emoji} Crew is crushing ${strongestPillar.name.split(' ')[0]} (${strongestPillar.percent}% there)!`)
+  }
+
+  return c.json({
+    window: useMonth ? 'month' : 'journey',
+    windowLabel: useMonth ? 'Last 30 days' : 'Whole Bronze journey',
+    asOf: todayIso,
+    crewSize: MEMBER_NAMES.length,
+    bronzeTarget,
+    crewBronzeTarget,
+    crewPillarHours,
+    crewOverallPercent,
+    totalCrewHours: Math.round(totalCrewHours * 10) / 10,
+    totalEventsThisWindow,
+    pillarStatus,
+    biggestGap,
+    strongestPillar,
+    perKid,
+    positiveCallouts
+  })
+})
+
+// ====================================================================================
+// 🐶 PEBBLES WEEKLY SUMMARY — auto-generated, cached weekly, manual refresh
+// ====================================================================================
+// Powers the "Pebbles weekly recap" card (item 7 from the audit).
+// Caches in KV under 'pebbles:weekly-summary' with the Brisbane-Monday week ISO as key suffix.
+// Auto-regenerates on Monday 5am Brisbane (uses getBrisbaneMondayAnchor like Backlog).
+// Friendly, 4-5 sentence summary. Positive callouts only.
+// GET  /api/pebbles/weekly-summary           → returns cached or generates fresh if stale
+// POST /api/pebbles/weekly-summary/refresh   → force regenerate (manual refresh button)
+
+type WeeklySummaryCache = {
+  weekStartMs: number
+  weekEndMs: number
+  generatedAt: number
+  summary: string         // The Pebbles-voiced paragraph
+  stats: {
+    eventsLastWeek: number
+    pillarHoursLastWeek: Record<string, number>
+    topContributor?: { name: string; emoji: string; eventCount: number }
+    backlogLeader?: string
+    biggestGap?: string
+  }
+}
+
+let WEEKLY_SUMMARY: WeeklySummaryCache | null = null
+let WEEKLY_SUMMARY_HYDRATED = false
+
+async function hydrateWeeklySummaryFromKV(env: Bindings): Promise<void> {
+  if (WEEKLY_SUMMARY_HYDRATED || !env.PROFILES_KV) { WEEKLY_SUMMARY_HYDRATED = true; return }
+  try {
+    const raw = await env.PROFILES_KV.get('pebbles:weekly-summary')
+    if (raw) WEEKLY_SUMMARY = JSON.parse(raw)
+  } catch { /* ignore */ }
+  WEEKLY_SUMMARY_HYDRATED = true
+}
+
+async function saveWeeklySummaryToKV(env: Bindings): Promise<void> {
+  if (!env.PROFILES_KV || !WEEKLY_SUMMARY) return
+  try { await env.PROFILES_KV.put('pebbles:weekly-summary', JSON.stringify(WEEKLY_SUMMARY)) } catch { /* ignore */ }
+}
+
+// Compute stats for the most recent finished week (last 7 days up to today)
+function computeWeeklyStats() {
+  ensureSeeded()
+  const today = new Date()
+  const todayIso = today.toISOString().slice(0, 10)
+  const weekAgoIso = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const activityLookup: Record<string, { pillars: string[]; hours: number; emoji: string }> = {}
+  for (const a of (CLUB_INFO.activities as any[])) {
+    activityLookup[a.name] = { pillars: a.pillars || [], hours: a.hours || 0, emoji: a.emoji }
+  }
+  const lastWeekEvents = EVENTS.filter(ev => ev.date >= weekAgoIso && ev.date <= todayIso)
+  const pillarHours: Record<string, number> = { physical: 0, skills: 0, service: 0, adventure: 0 }
+  const eventTitles: string[] = []
+  const perKidCount: Record<string, number> = {}
+  for (const ev of lastWeekEvents) {
+    const meta = activityLookup[ev.activity]
+    if (!meta) continue
+    for (const p of meta.pillars) pillarHours[p] = (pillarHours[p] || 0) + meta.hours
+    eventTitles.push(`${meta.emoji} ${ev.activity} at ${ev.location || 'TBA'}`)
+    for (const m of ev.members) perKidCount[m] = (perKidCount[m] || 0) + 1
+  }
+  // Top contributor
+  let topName: string | null = null; let topCount = 0
+  for (const [name, c] of Object.entries(perKidCount)) {
+    if (c > topCount) { topCount = c; topName = name }
+  }
+  const topMember = topName ? CLUB_INFO.members.find(m => m.name === topName) : null
+
+  // Backlog leader (for "what's next")
+  const backlogTally: Record<string, number> = {}
+  for (const v of BACKLOG.votes) backlogTally[v.activityName] = (backlogTally[v.activityName] || 0) + 1
+  let backlogLeader: string | undefined
+  let topVotes = 0
+  for (const [a, n] of Object.entries(backlogTally)) { if (n > topVotes) { topVotes = n; backlogLeader = a } }
+
+  // Crew biggest gap (which pillar is the lowest right now, across all events)
+  const allPillarHours: Record<string, number> = { physical: 0, skills: 0, service: 0, adventure: 0 }
+  for (const ev of EVENTS) {
+    if (ev.date > todayIso) continue
+    const meta = activityLookup[ev.activity]; if (!meta) continue
+    for (const p of meta.pillars) allPillarHours[p] = (allPillarHours[p] || 0) + meta.hours
+  }
+  const gapEntry = (Object.entries(allPillarHours) as [string, number][]).sort((a, b) => a[1] - b[1])[0]
+  const biggestGapPillar = DOFE_PILLARS.find(p => p.id === gapEntry[0])
+
+  return {
+    eventsLastWeek: lastWeekEvents.length,
+    pillarHoursLastWeek: pillarHours,
+    eventTitles,
+    topContributor: topMember ? { name: topMember.name, emoji: topMember.emoji, eventCount: topCount } : undefined,
+    backlogLeader,
+    backlogVoteCount: topVotes,
+    biggestGap: biggestGapPillar ? `${biggestGapPillar.emoji} ${biggestGapPillar.name}` : undefined,
+    biggestGapId: biggestGapPillar?.id
+  }
+}
+
+// Render a Pebbles-voiced summary using OpenAI (with deterministic fallback if no API key)
+async function generateWeeklySummary(env: Bindings, stats: ReturnType<typeof computeWeeklyStats>): Promise<string> {
+  const apiKey = env.OPENAI_API_KEY || ''
+  const baseUrl = (env as any).OPENAI_BASE_URL || 'https://api.openai.com/v1'
+
+  // Fallback (no API key OR API call fails) — built from stats deterministically
+  function fallback(): string {
+    const parts: string[] = []
+    if (stats.eventsLastWeek === 0) {
+      parts.push(`🐾 Quiet week for the Fab 5 — no events on the calendar in the last 7 days!`)
+    } else {
+      parts.push(`🌟 This week the Fab 5 did ${stats.eventsLastWeek} event${stats.eventsLastWeek === 1 ? '' : 's'}${stats.eventTitles.length ? ` (${stats.eventTitles.slice(0, 2).join(' + ')})` : ''}.`)
+    }
+    if (stats.topContributor && stats.topContributor.eventCount > 0) {
+      parts.push(`${stats.topContributor.emoji} ${stats.topContributor.name} smashed it with ${stats.topContributor.eventCount} event${stats.topContributor.eventCount === 1 ? '' : 's'} — legend!`)
+    }
+    if (stats.backlogLeader) {
+      parts.push(`🗳️ Next weekend the backlog is leaning toward **${stats.backlogLeader}** (${stats.backlogVoteCount} vote${stats.backlogVoteCount === 1 ? '' : 's'}).`)
+    } else {
+      parts.push(`🗳️ Nobody's voted on the backlog yet — be the first to pick the next adventure!`)
+    }
+    if (stats.biggestGap) {
+      parts.push(`🎯 Crew could use more ${stats.biggestGap} hours — let's plan something this weekend.`)
+    }
+    parts.push(`Keep shining ✨ Pebbles xx`)
+    return parts.join(' ')
+  }
+
+  if (!apiKey) return fallback()
+
+  const userPrompt = `Write a Pebbles-voiced weekly summary for the Fab 5 Fun Club (5 kids, ages 8-14, Sunshine Coast Australia). Pebbles is their loving Bull Arab puppy mascot.
+
+THIS WEEK'S FACTS:
+- Events done this week: ${stats.eventsLastWeek}
+${stats.eventTitles.length ? `- Events: ${stats.eventTitles.join(', ')}` : ''}
+${stats.topContributor ? `- Top contributor: ${stats.topContributor.emoji} ${stats.topContributor.name} (${stats.topContributor.eventCount} events)` : '- No standout contributor'}
+- Pillar hours this week: 💪 Physical=${stats.pillarHoursLastWeek.physical}, 🎓 Skills=${stats.pillarHoursLastWeek.skills}, 💛 Service=${stats.pillarHoursLastWeek.service}, 🏔️ Adventure=${stats.pillarHoursLastWeek.adventure}
+${stats.backlogLeader ? `- Backlog leader for next weekend: ${stats.backlogLeader} with ${stats.backlogVoteCount} vote(s)` : '- No backlog votes yet'}
+${stats.biggestGap ? `- Biggest pillar gap (overall): ${stats.biggestGap}` : ''}
+
+REQUIREMENTS:
+- 4 to 5 sentences total
+- Warm, encouraging, friendly puppy voice
+- Use 2-4 emojis
+- Positive callouts ONLY — celebrate wins, never call out anyone for missing events
+- Include the events done, the top contributor (if any), next weekend's backlog vibe, and which pillar to focus on next
+- End with a Pebbles sign-off ("Pebbles xx" or similar)
+- Plain text, no markdown headers, no bullet points — just a friendly paragraph`
+
+  try {
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are Pebbles, a loving Bull Arab puppy who is the mascot of the Fab 5 Fun Club — 5 kids aged 8-14 on the Sunshine Coast, Australia. You write short, warm, encouraging weekly summaries. Australian English, positive vibes only.' },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 250
+      })
+    })
+    if (!res.ok) throw new Error('OpenAI ' + res.status)
+    const data = await res.json() as any
+    const text = (data?.choices?.[0]?.message?.content || '').trim()
+    return text || fallback()
+  } catch {
+    return fallback()
+  }
+}
+
+// Helper: detect whether the cached summary is for the current Brisbane-week
+function summaryIsCurrent(): boolean {
+  if (!WEEKLY_SUMMARY) return false
+  const { startMs } = getBrisbaneMondayAnchor()
+  return WEEKLY_SUMMARY.weekStartMs === startMs
+}
+
+app.get('/api/pebbles/weekly-summary', async (c) => {
+  ensureSeeded()
+  await hydrateWeeklySummaryFromKV(c.env)
+  await hydrateBacklogFromKV(c.env)  // backlog leader is part of the stats
+
+  // If we have a current-week cached summary, return it
+  if (summaryIsCurrent() && WEEKLY_SUMMARY) {
+    return c.json({
+      cached: true,
+      ...WEEKLY_SUMMARY
+    })
+  }
+
+  // Otherwise generate fresh
+  const stats = computeWeeklyStats()
+  const summary = await generateWeeklySummary(c.env, stats)
+  const { startMs, endMs } = getBrisbaneMondayAnchor()
+  WEEKLY_SUMMARY = {
+    weekStartMs: startMs,
+    weekEndMs: endMs,
+    generatedAt: Date.now(),
+    summary,
+    stats: {
+      eventsLastWeek: stats.eventsLastWeek,
+      pillarHoursLastWeek: stats.pillarHoursLastWeek,
+      topContributor: stats.topContributor,
+      backlogLeader: stats.backlogLeader,
+      biggestGap: stats.biggestGap
+    }
+  }
+  await saveWeeklySummaryToKV(c.env)
+  return c.json({ cached: false, ...WEEKLY_SUMMARY })
+})
+
+// Force regenerate (the kids tap "🔄 Refresh" button)
+app.post('/api/pebbles/weekly-summary/refresh', async (c) => {
+  ensureSeeded()
+  await hydrateBacklogFromKV(c.env)
+  const stats = computeWeeklyStats()
+  const summary = await generateWeeklySummary(c.env, stats)
+  const { startMs, endMs } = getBrisbaneMondayAnchor()
+  WEEKLY_SUMMARY = {
+    weekStartMs: startMs,
+    weekEndMs: endMs,
+    generatedAt: Date.now(),
+    summary,
+    stats: {
+      eventsLastWeek: stats.eventsLastWeek,
+      pillarHoursLastWeek: stats.pillarHoursLastWeek,
+      topContributor: stats.topContributor,
+      backlogLeader: stats.backlogLeader,
+      biggestGap: stats.biggestGap
+    }
+  }
+  await saveWeeklySummaryToKV(c.env)
+  return c.json({ cached: false, refreshed: true, ...WEEKLY_SUMMARY })
+})
+
+// ====================================================================================
 // 🗳️ ADVENTURE BACKLOG API — the kid-friendly sprint planner
 // ====================================================================================
 // Helper: build the full backlog view (cards + leaderboard + sprint info).
@@ -4122,7 +4517,17 @@ app.get('/', (c) => {
           <h2 class="section-title">📊 Team Progress Chart</h2>
           <p class="section-subtitle">See how the WHOLE crew is doing — tap any kid to drill into their journey! 🔍</p>
 
-          {/* Team-wide pillar totals (combined) */}
+          {/* 🏅 NEW: Awards Progress dashboard — stacked bar + per-kid Bronze % + gap hint */}
+          <div id="crew-status-host" class="crew-status-host">
+            <div class="crew-status-loading">🏅 Loading Awards Progress…</div>
+          </div>
+
+          {/* 🐶 NEW: Pebbles weekly summary — auto-cached, manual refresh */}
+          <div id="pebbles-summary-host" class="pebbles-summary-host">
+            <div class="pebbles-summary-loading">🐶 Pebbles is writing this week's recap…</div>
+          </div>
+
+          {/* Team-wide pillar totals (combined) — existing block, kept for backward compatibility */}
           <div class="team-totals-card">
             <h3>🌟 The Fab 5 Combined Power</h3>
             <p class="team-totals-sub">Every adventure builds the team's total pillar hours!</p>
