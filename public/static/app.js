@@ -3311,7 +3311,591 @@ function setupBottleAdminForms() {
   }
 }
 
+// ============================================================================
+// 🏷️ ASSET REGISTER — Client-side controller
+// Only runs on the /assets route. Handles fetch, grid render, search/filter,
+// add/edit/delete (helper mode only), borrow/return, QR codes, handback.
+// ============================================================================
+
+const ASSET_CATEGORIES = [
+  { id: 'watersports', emoji: '🛶', label: 'Watersports' },
+  { id: 'cycling',     emoji: '🚴', label: 'Cycling' },
+  { id: 'camping',     emoji: '⛺', label: 'Camping' },
+  { id: 'climbing',    emoji: '🧗', label: 'Climbing' },
+  { id: 'sports',      emoji: '⚽', label: 'Sports' },
+  { id: 'safety',      emoji: '🦺', label: 'Safety' },
+  { id: 'camera',      emoji: '📷', label: 'Camera' },
+  { id: 'other',       emoji: '📦', label: 'Other' },
+];
+const ASSET_CONDITIONS = [
+  { id: 'new',          label: 'New',          colour: '#10B981' },
+  { id: 'good',         label: 'Good',         colour: '#3B82F6' },
+  { id: 'fair',         label: 'Fair',         colour: '#F59E0B' },
+  { id: 'needs-repair', label: 'Needs repair', colour: '#EF4444' },
+  { id: 'retired',      label: 'Retired',      colour: '#6B7280' },
+];
+const ASSET_MEMBERS = ['Ace', 'Charlotte', 'Elijah', 'Saia', 'Sienna'];
+
+let ASSETS_DATA = [];
+let ASSETS_STATS = null;
+let ASSETS_FILTERS = { search: '', category: '', status: '' };
+
+function getCatMeta(id) { return ASSET_CATEGORIES.find(c => c.id === id) || ASSET_CATEGORIES[7]; }
+function getCondMeta(id) { return ASSET_CONDITIONS.find(c => c.id === id) || ASSET_CONDITIONS[1]; }
+function fmtAud(n) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return '$' + Number(n).toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+function fmtDate(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function daysSince(ts) {
+  if (!ts) return 0;
+  return Math.floor((Date.now() - ts) / (24 * 60 * 60 * 1000));
+}
+function escAttr(s) { return String(s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+async function loadAssets() {
+  try {
+    const res = await fetch('/api/assets', { credentials: 'include' });
+    if (res.status === 401) {
+      // Not logged in → redirect home
+      window.location.href = '/';
+      return;
+    }
+    const data = await res.json();
+    ASSETS_DATA = data.assets || [];
+    ASSETS_STATS = data.stats || null;
+    renderAssetStats();
+    renderAssetGrid();
+  } catch (err) {
+    console.error('[assets] load failed', err);
+    const grid = document.getElementById('assets-grid');
+    if (grid) grid.innerHTML = '<div class="assets-error">Could not load gear. Try refreshing! 🐾</div>';
+  }
+}
+
+function renderAssetStats() {
+  if (!ASSETS_STATS) return;
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setText('stat-total',    ASSETS_STATS.total);
+  setText('stat-at-club',  ASSETS_STATS.atClub);
+  setText('stat-borrowed', ASSETS_STATS.borrowed);
+  setText('stat-repair',   ASSETS_STATS.inRepair);
+  setText('stat-value',    fmtAud(ASSETS_STATS.totalValue));
+  setText('stat-overdue',  ASSETS_STATS.overdue);
+}
+
+function filteredAssets() {
+  return ASSETS_DATA.filter(a => {
+    if (ASSETS_FILTERS.category && a.category !== ASSETS_FILTERS.category) return false;
+    if (ASSETS_FILTERS.status && a.status !== ASSETS_FILTERS.status) return false;
+    if (ASSETS_FILTERS.search) {
+      const q = ASSETS_FILTERS.search.toLowerCase();
+      const hay = (a.id + ' ' + a.name + ' ' + (a.notes || '') + ' ' + (a.currentBorrower || '')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function renderAssetGrid() {
+  const grid = document.getElementById('assets-grid');
+  if (!grid) return;
+  const items = filteredAssets();
+  if (items.length === 0) {
+    if (ASSETS_DATA.length === 0) {
+      grid.innerHTML = `
+        <div class="assets-empty">
+          <div class="assets-empty-icon">🎒</div>
+          <h2>No gear registered yet</h2>
+          <p>Click <strong>➕ Add asset</strong> above to register your first piece of club equipment.</p>
+          <p class="muted">(You'll need 🛟 Helper Mode on. Switch it from the homepage.)</p>
+        </div>`;
+    } else {
+      grid.innerHTML = '<div class="assets-empty">No matches for your filter. Try clearing it! 🐾</div>';
+    }
+    return;
+  }
+  grid.innerHTML = items.map(renderAssetCard).join('');
+  grid.querySelectorAll('.asset-card').forEach(card => {
+    card.addEventListener('click', () => openAssetDetail(card.dataset.assetId));
+  });
+}
+
+function renderAssetCard(a) {
+  const cat = getCatMeta(a.category);
+  const cond = getCondMeta(a.condition);
+  let statusBadge = '';
+  if (a.status === 'at-club')   statusBadge = `<span class="asset-status asset-status-at-club">🏠 At club</span>`;
+  if (a.status === 'borrowed')  statusBadge = `<span class="asset-status asset-status-borrowed">🎈 With ${escAttr(a.currentBorrower)}</span>`;
+  if (a.status === 'in-repair') statusBadge = `<span class="asset-status asset-status-repair">🔧 Needs repair</span>`;
+  if (a.status === 'retired')   statusBadge = `<span class="asset-status asset-status-retired">📦 Retired</span>`;
+  const photoBg = a.photoUrl ? `style="background-image:url('${escAttr(a.photoUrl)}')"` : '';
+  return `
+    <div class="asset-card" data-asset-id="${escAttr(a.id)}">
+      <div class="asset-card-photo" ${photoBg}>
+        ${a.photoUrl ? '' : `<div class="asset-card-photo-placeholder">${cat.emoji}</div>`}
+        <div class="asset-card-id-badge">${escAttr(a.id)}</div>
+      </div>
+      <div class="asset-card-body">
+        <h3 class="asset-card-name">${escAttr(a.name)}</h3>
+        <div class="asset-card-meta">
+          <span class="asset-card-cat">${cat.emoji} ${cat.label}</span>
+          <span class="asset-card-cond" style="background:${cond.colour}22;color:${cond.colour}">${cond.label}</span>
+        </div>
+        ${statusBadge}
+        ${a.purchaseCost ? `<div class="asset-card-cost">${fmtAud(a.purchaseCost)}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+// ---------- Detail modal (with QR code + borrow/return) ----------
+function openAssetDetail(id) {
+  const asset = ASSETS_DATA.find(a => a.id === id);
+  if (!asset) return;
+  const modal = document.getElementById('asset-detail-modal');
+  modal.innerHTML = renderAssetDetail(asset);
+  modal.style.display = 'flex';
+  setupAssetDetailHandlers(asset);
+}
+
+function renderAssetDetail(a) {
+  const cat = getCatMeta(a.category);
+  const cond = getCondMeta(a.condition);
+  // QR code via quickchart.io (free, no key)
+  const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(window.location.origin + '/assets#' + a.id)}&size=240&margin=2`;
+  const helperOn = (typeof LEADER_OVERRIDE_MODE !== 'undefined') && LEADER_OVERRIDE_MODE;
+
+  const history = a.borrowHistory.slice().reverse();
+  const historyHtml = history.length === 0
+    ? '<p class="muted">No borrow history yet.</p>'
+    : '<ul class="asset-history-list">' + history.map(h => {
+        const status = h.returnedAt ? `✅ Returned ${fmtDate(h.returnedAt)}` : `🎈 Out since ${fmtDate(h.borrowedAt)} (${daysSince(h.borrowedAt)} days)`;
+        return `<li>
+          <strong>${escAttr(h.borrower)}</strong> — ${status}
+          ${h.borrowNote ? `<div class="asset-history-note">📝 ${escAttr(h.borrowNote)}</div>` : ''}
+          ${h.returnNote ? `<div class="asset-history-note">↩️ ${escAttr(h.returnNote)}</div>` : ''}
+        </li>`;
+      }).join('') + '</ul>';
+
+  let actionHtml = '';
+  if (a.status === 'at-club') {
+    actionHtml = `
+      <div class="asset-action-block">
+        <h3>🎈 Borrow this home</h3>
+        <p class="muted">Pick who's taking it home. Remember — it's club property, you must bring it back!</p>
+        <div class="asset-borrow-form">
+          <select id="asset-borrow-who">
+            <option value="">Who's borrowing?</option>
+            ${ASSET_MEMBERS.map(n => `<option value="${n}">${n}</option>`).join('')}
+          </select>
+          <input type="text" id="asset-borrow-note" placeholder="What for? (optional)" maxlength="200" />
+          <button id="asset-borrow-btn" class="asset-action-btn asset-action-borrow">🎈 Borrow home</button>
+        </div>
+      </div>`;
+  } else if (a.status === 'borrowed') {
+    actionHtml = `
+      <div class="asset-action-block asset-action-block-borrowed">
+        <h3>🏠 Return to club</h3>
+        <p>Currently with <strong>${escAttr(a.currentBorrower)}</strong> since ${fmtDate(a.currentBorrowedAt)} (<strong>${daysSince(a.currentBorrowedAt)} days</strong>).</p>
+        <div class="asset-borrow-form">
+          <input type="text" id="asset-return-note" placeholder="Any condition notes? (optional)" maxlength="200" />
+          <button id="asset-return-btn" class="asset-action-btn asset-action-return">🏠 Mark returned</button>
+        </div>
+      </div>`;
+  } else if (a.status === 'in-repair') {
+    actionHtml = `<div class="asset-action-block asset-action-block-warning"><h3>🔧 Needs repair</h3><p>This item is marked for repair. Update its condition to "Good" once fixed.</p></div>`;
+  } else if (a.status === 'retired') {
+    actionHtml = `<div class="asset-action-block asset-action-block-warning"><h3>📦 Retired</h3><p>This item is no longer in service.</p></div>`;
+  }
+
+  const parentActions = helperOn ? `
+    <div class="asset-parent-actions">
+      <button id="asset-edit-btn" class="asset-action-btn asset-action-edit">✏️ Edit</button>
+      <button id="asset-delete-btn" class="asset-action-btn asset-action-delete">🗑️ Delete</button>
+    </div>` : '';
+
+  return `
+    <div class="asset-modal-card">
+      <button class="asset-modal-close" id="asset-detail-close">✖</button>
+      <div class="asset-detail-header">
+        <div class="asset-detail-id">${escAttr(a.id)}</div>
+        <h2>${escAttr(a.name)}</h2>
+        <div class="asset-detail-meta">
+          <span>${cat.emoji} ${cat.label}</span>
+          <span class="asset-card-cond" style="background:${cond.colour}22;color:${cond.colour}">${cond.label}</span>
+        </div>
+      </div>
+
+      ${a.photoUrl ? `<img class="asset-detail-photo" src="${escAttr(a.photoUrl)}" alt="${escAttr(a.name)}" />` : ''}
+
+      <div class="asset-detail-grid">
+        <div><strong>Status:</strong> ${a.status}</div>
+        <div><strong>Purchase:</strong> ${fmtAud(a.purchaseCost)}</div>
+        <div><strong>Bought:</strong> ${a.purchaseDate || '—'}</div>
+        <div><strong>From:</strong> ${escAttr(a.purchaseFrom) || '—'}</div>
+      </div>
+
+      ${a.notes ? `<div class="asset-detail-notes"><strong>📝 Notes:</strong> ${escAttr(a.notes)}</div>` : ''}
+
+      ${actionHtml}
+
+      <div class="asset-qr-section">
+        <h3>🏷️ QR Sticker</h3>
+        <p class="muted">Print this & stick on the item. Anyone can scan to view/borrow.</p>
+        <img class="asset-qr-img" src="${qrUrl}" alt="QR for ${escAttr(a.id)}" />
+        <button id="asset-qr-print-btn" class="asset-action-btn">🖨️ Print just this sticker</button>
+      </div>
+
+      <details class="asset-history">
+        <summary>📚 Borrow history (${a.borrowHistory.length})</summary>
+        ${historyHtml}
+      </details>
+
+      ${parentActions}
+    </div>
+  `;
+}
+
+function setupAssetDetailHandlers(asset) {
+  const close = () => { document.getElementById('asset-detail-modal').style.display = 'none'; };
+  document.getElementById('asset-detail-close')?.addEventListener('click', close);
+
+  document.getElementById('asset-borrow-btn')?.addEventListener('click', async () => {
+    const who = document.getElementById('asset-borrow-who').value;
+    const note = document.getElementById('asset-borrow-note').value;
+    if (!who) { alert('Pick who is borrowing! 🐾'); return; }
+    try {
+      await fetch(`/api/assets/${asset.id}/borrow`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ borrower: who, note })
+      }).then(r => { if (!r.ok) return r.json().then(d => { throw new Error(d.error); }); });
+      close();
+      await loadAssets();
+    } catch (err) { alert('Failed: ' + err.message); }
+  });
+
+  document.getElementById('asset-return-btn')?.addEventListener('click', async () => {
+    const note = document.getElementById('asset-return-note').value;
+    try {
+      await fetch(`/api/assets/${asset.id}/return`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ note })
+      }).then(r => { if (!r.ok) return r.json().then(d => { throw new Error(d.error); }); });
+      close();
+      await loadAssets();
+    } catch (err) { alert('Failed: ' + err.message); }
+  });
+
+  document.getElementById('asset-edit-btn')?.addEventListener('click', () => {
+    close();
+    openAssetEditor(asset);
+  });
+
+  document.getElementById('asset-delete-btn')?.addEventListener('click', async () => {
+    if (!confirm(`Delete asset ${asset.id} (${asset.name})? This can't be undone.`)) return;
+    try {
+      await fetch(`/api/assets/${asset.id}`, { method: 'DELETE', credentials: 'include' })
+        .then(r => { if (!r.ok) return r.json().then(d => { throw new Error(d.error); }); });
+      close();
+      await loadAssets();
+    } catch (err) { alert('Failed: ' + err.message); }
+  });
+
+  document.getElementById('asset-qr-print-btn')?.addEventListener('click', () => printSingleSticker(asset));
+}
+
+// ---------- Editor (add / edit) ----------
+function openAssetEditor(asset) {
+  const isNew = !asset;
+  const a = asset || { name: '', category: 'other', condition: 'good', purchaseCost: '', purchaseDate: '', purchaseFrom: '', notes: '', photoUrl: '' };
+  const modal = document.getElementById('asset-edit-modal');
+  modal.innerHTML = `
+    <div class="asset-modal-card">
+      <button class="asset-modal-close" id="asset-edit-close">✖</button>
+      <h2>${isNew ? '➕ Add new asset' : `✏️ Edit ${escAttr(asset.id)}`}</h2>
+      <form id="asset-edit-form" class="asset-edit-form">
+        <label>📛 Name <em>(required)</em>
+          <input type="text" name="name" required maxlength="100" value="${escAttr(a.name)}" placeholder="e.g. Yellow Kayak" />
+        </label>
+        <label>🏷️ Category
+          <select name="category">
+            ${ASSET_CATEGORIES.map(c => `<option value="${c.id}" ${c.id === a.category ? 'selected' : ''}>${c.emoji} ${c.label}</option>`).join('')}
+          </select>
+        </label>
+        <label>✅ Condition
+          <select name="condition">
+            ${ASSET_CONDITIONS.map(c => `<option value="${c.id}" ${c.id === a.condition ? 'selected' : ''}>${c.label}</option>`).join('')}
+          </select>
+        </label>
+        <label>💰 Purchase cost (AUD)
+          <input type="number" name="purchaseCost" min="0" step="0.01" value="${a.purchaseCost ?? ''}" placeholder="e.g. 250" />
+        </label>
+        <label>📅 Purchase date
+          <input type="date" name="purchaseDate" value="${escAttr(a.purchaseDate || '')}" />
+        </label>
+        <label>🏪 Bought from
+          <input type="text" name="purchaseFrom" maxlength="100" value="${escAttr(a.purchaseFrom || '')}" placeholder="e.g. Anaconda, Maroochydore" />
+        </label>
+        <label>📷 Photo URL <em>(optional — paste an image link)</em>
+          <input type="url" name="photoUrl" maxlength="500" value="${escAttr(a.photoUrl || '')}" placeholder="https://..." />
+        </label>
+        <label>📝 Notes
+          <textarea name="notes" maxlength="500" placeholder="Anything to remember (dents, missing parts, serial number...)">${escAttr(a.notes || '')}</textarea>
+        </label>
+        <div class="asset-edit-actions">
+          <button type="submit" class="asset-action-btn asset-action-borrow">${isNew ? '➕ Add to register' : '💾 Save changes'}</button>
+          <button type="button" class="asset-action-btn" id="asset-edit-cancel">Cancel</button>
+        </div>
+      </form>
+    </div>`;
+  modal.style.display = 'flex';
+
+  const close = () => { modal.style.display = 'none'; };
+  document.getElementById('asset-edit-close').addEventListener('click', close);
+  document.getElementById('asset-edit-cancel').addEventListener('click', close);
+
+  document.getElementById('asset-edit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const body = {
+      name: fd.get('name'),
+      category: fd.get('category'),
+      condition: fd.get('condition'),
+      purchaseCost: fd.get('purchaseCost') ? Number(fd.get('purchaseCost')) : null,
+      purchaseDate: fd.get('purchaseDate') || '',
+      purchaseFrom: fd.get('purchaseFrom') || '',
+      photoUrl: fd.get('photoUrl') || '',
+      notes: fd.get('notes') || '',
+    };
+    try {
+      const url = isNew ? '/api/assets' : `/api/assets/${asset.id}`;
+      const method = isNew ? 'POST' : 'PATCH';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Failed');
+      }
+      close();
+      await loadAssets();
+    } catch (err) { alert('Failed: ' + err.message); }
+  });
+}
+
+// ---------- Print stickers ----------
+function printSingleSticker(asset) {
+  const win = window.open('', '_blank', 'width=600,height=800');
+  if (!win) { alert('Pop-up blocked! Allow pop-ups for this site to print.'); return; }
+  const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(window.location.origin + '/assets#' + asset.id)}&size=300&margin=2`;
+  win.document.write(`
+    <html><head><title>Sticker ${asset.id}</title>
+    <style>
+      body { font-family: -apple-system, sans-serif; padding: 40px; text-align: center; }
+      .sticker { border: 2px dashed #999; border-radius: 16px; padding: 20px; max-width: 350px; margin: 0 auto; }
+      .sticker img { width: 220px; height: 220px; }
+      .sticker .id { font-size: 24px; font-weight: 800; margin: 10px 0 4px; }
+      .sticker .name { font-size: 18px; color: #555; margin: 0 0 8px; }
+      .sticker .url { font-size: 11px; color: #888; word-break: break-all; }
+      @media print { .no-print { display: none; } body { padding: 0; } }
+    </style></head><body>
+      <div class="sticker">
+        <img src="${qrUrl}" alt="QR" />
+        <div class="id">🏷️ ${asset.id}</div>
+        <div class="name">${escAttr(asset.name)}</div>
+        <div class="url">fab5funclub.org/assets</div>
+      </div>
+      <button class="no-print" onclick="window.print()" style="margin-top:20px;padding:12px 24px;font-size:16px;border-radius:8px;background:#FF6B9D;color:white;border:none;cursor:pointer;">🖨️ Print this sticker</button>
+    </body></html>`);
+  win.document.close();
+}
+
+function printAllStickers() {
+  if (ASSETS_DATA.length === 0) { alert('No assets to print yet!'); return; }
+  const win = window.open('', '_blank', 'width=800,height=1000');
+  if (!win) { alert('Pop-up blocked! Allow pop-ups for this site to print.'); return; }
+  const stickers = ASSETS_DATA.map(a => {
+    const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(window.location.origin + '/assets#' + a.id)}&size=200&margin=2`;
+    return `
+      <div class="sticker">
+        <img src="${qrUrl}" alt="QR" />
+        <div class="id">🏷️ ${a.id}</div>
+        <div class="name">${escAttr(a.name)}</div>
+      </div>`;
+  }).join('');
+  win.document.write(`
+    <html><head><title>All Asset Stickers</title>
+    <style>
+      body { font-family: -apple-system, sans-serif; padding: 20px; }
+      h1 { text-align: center; }
+      .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+      .sticker { border: 2px dashed #999; border-radius: 12px; padding: 12px; text-align: center; page-break-inside: avoid; }
+      .sticker img { width: 150px; height: 150px; }
+      .id { font-size: 18px; font-weight: 800; margin: 6px 0 2px; }
+      .name { font-size: 14px; color: #555; margin: 0; }
+      @media print { .no-print { display: none; } body { padding: 0; } .grid { grid-template-columns: repeat(2, 1fr); } }
+    </style></head><body>
+      <h1 class="no-print">🏷️ Fab 5 Asset Stickers (${ASSETS_DATA.length})</h1>
+      <button class="no-print" onclick="window.print()" style="display:block;margin:0 auto 20px;padding:12px 24px;font-size:16px;border-radius:8px;background:#FF6B9D;color:white;border:none;cursor:pointer;">🖨️ Print all stickers</button>
+      <div class="grid">${stickers}</div>
+    </body></html>`);
+  win.document.close();
+}
+
+// ---------- Handback (kid leaves club) ----------
+function openHandbackPicker() {
+  const modal = document.getElementById('asset-handback-modal');
+  modal.innerHTML = `
+    <div class="asset-modal-card">
+      <button class="asset-modal-close" id="handback-close">✖</button>
+      <h2>🚪 Member leaving — Handback checklist</h2>
+      <p>Pick the member who's leaving the club. We'll list every item they need to return.</p>
+      <div class="handback-picker">
+        ${ASSET_MEMBERS.map(n => `<button class="handback-pick-btn" data-name="${n}">${n}</button>`).join('')}
+      </div>
+      <div id="handback-result"></div>
+    </div>`;
+  modal.style.display = 'flex';
+  document.getElementById('handback-close').addEventListener('click', () => { modal.style.display = 'none'; });
+  modal.querySelectorAll('.handback-pick-btn').forEach(b => {
+    b.addEventListener('click', () => loadHandback(b.dataset.name));
+  });
+}
+
+async function loadHandback(name) {
+  const result = document.getElementById('handback-result');
+  result.innerHTML = '<div class="muted">Loading...</div>';
+  try {
+    const res = await fetch(`/api/assets/handback/${encodeURIComponent(name)}`, { credentials: 'include' });
+    const data = await res.json();
+    if (data.count === 0) {
+      result.innerHTML = `<div class="handback-result handback-clear">
+        <h3>✅ All clear!</h3>
+        <p><strong>${escAttr(name)}</strong> has no club items checked out. Safe to depart 🐾</p>
+      </div>`;
+      return;
+    }
+    result.innerHTML = `
+      <div class="handback-result">
+        <h3>⚠️ ${escAttr(name)} must return ${data.count} item${data.count > 1 ? 's' : ''}</h3>
+        <p>Total club investment: <strong>${fmtAud(data.totalValue)}</strong></p>
+        <ul class="handback-list">
+          ${data.items.map(i => `<li>
+            <strong>${escAttr(i.id)}</strong> — ${escAttr(i.name)}
+            <span class="muted">(borrowed ${fmtDate(i.currentBorrowedAt)}, ${daysSince(i.currentBorrowedAt)} days)</span>
+            <button class="handback-return-btn" data-id="${escAttr(i.id)}">🏠 Mark returned</button>
+          </li>`).join('')}
+        </ul>
+        <button id="handback-print" class="asset-action-btn">🖨️ Print checklist</button>
+      </div>`;
+    result.querySelectorAll('.handback-return-btn').forEach(b => {
+      b.addEventListener('click', async () => {
+        try {
+          await fetch(`/api/assets/${b.dataset.id}/return`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ note: `Handback: ${name} left the club` })
+          });
+          loadHandback(name);
+          loadAssets();
+        } catch (err) { alert('Failed: ' + err.message); }
+      });
+    });
+    document.getElementById('handback-print').addEventListener('click', () => {
+      const win = window.open('', '_blank');
+      win.document.write(`<html><head><title>Handback ${name}</title></head><body>
+        <h1>🚪 Fab 5 Club Handback — ${escAttr(name)}</h1>
+        <p>Items to return: ${data.count}. Total value: ${fmtAud(data.totalValue)}.</p>
+        <ul>${data.items.map(i => `<li>☐ <strong>${escAttr(i.id)}</strong> — ${escAttr(i.name)} (borrowed ${fmtDate(i.currentBorrowedAt)})</li>`).join('')}</ul>
+        <p>Signed by member: __________________ Date: __________</p>
+        <p>Signed by parent: __________________ Date: __________</p>
+        <button onclick="window.print()" style="padding:10px 20px;">🖨️ Print</button>
+      </body></html>`);
+      win.document.close();
+    });
+  } catch (err) {
+    result.innerHTML = `<div class="handback-result">Failed: ${err.message}</div>`;
+  }
+}
+
+// ---------- Bootstrap for /assets page ----------
+async function initAssetsPage() {
+  // Helper-mode notice
+  try { loadLeaderOverride && loadLeaderOverride(); } catch {}
+  const notice = document.getElementById('asset-helper-notice');
+  if (notice) notice.style.display = LEADER_OVERRIDE_MODE ? 'none' : 'block';
+
+  // Toolbar events
+  const search = document.getElementById('asset-search');
+  if (search) search.addEventListener('input', () => {
+    ASSETS_FILTERS.search = search.value;
+    renderAssetGrid();
+  });
+  const catFilter = document.getElementById('asset-filter-category');
+  if (catFilter) catFilter.addEventListener('change', () => {
+    ASSETS_FILTERS.category = catFilter.value;
+    renderAssetGrid();
+  });
+  const statusFilter = document.getElementById('asset-filter-status');
+  if (statusFilter) statusFilter.addEventListener('change', () => {
+    ASSETS_FILTERS.status = statusFilter.value;
+    renderAssetGrid();
+  });
+  document.getElementById('asset-add-btn')?.addEventListener('click', () => {
+    if (!LEADER_OVERRIDE_MODE) {
+      alert('🛟 Turn on Helper Mode first (from the homepage). Only grown-ups can add assets.');
+      return;
+    }
+    openAssetEditor(null);
+  });
+  document.getElementById('asset-print-stickers-btn')?.addEventListener('click', printAllStickers);
+  document.getElementById('handback-link')?.addEventListener('click', (e) => { e.preventDefault(); openHandbackPicker(); });
+
+  // Close modals when clicking overlay
+  ['asset-detail-modal','asset-edit-modal','asset-handback-modal'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', (e) => { if (e.target === el) el.style.display = 'none'; });
+  });
+
+  await loadAssets();
+
+  // If URL hash points to an asset ID (from QR code scan), open it
+  const hash = window.location.hash.replace('#','').toUpperCase();
+  if (hash && hash.startsWith('F5-')) {
+    setTimeout(() => openAssetDetail(hash), 500);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  // Route detection: /assets page bootstraps differently
+  if (document.querySelector('.assets-page')) {
+    // Need auth check first
+    fetch('/api/me', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.authed) {
+          // Redirect to home with login
+          window.location.href = '/';
+        } else {
+          initAssetsPage();
+        }
+      })
+      .catch(() => { window.location.href = '/'; });
+    return;
+  }
+  // Main app bootstrap (original)
   setupLogin();
   checkAuth();
 });

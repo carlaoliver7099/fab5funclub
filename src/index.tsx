@@ -826,6 +826,110 @@ LEADER MERCH ROTATION:
 - The leader's job is NOT to boss — it's to ask the leadership questions and make sure the team is happy & safe.
 `
 
+// ====================================================================================
+// 🏷️ ASSET REGISTER — Club-owned equipment tracking
+// ====================================================================================
+// Rules (from Saia's mum):
+// 1. ALL assets are purchased with club funds → club property, not personal
+// 2. Every asset gets a printable QR sticker (asset ID F5-001, F5-002...)
+// 3. Kids can borrow assets home → tracked with borrower name + date
+// 4. If a kid LEAVES the club, all their borrowed gear MUST be returned
+// 5. Only parents (helper mode 🛟) can add/edit/delete assets; kids can borrow/return
+// ====================================================================================
+type AssetCondition = 'new' | 'good' | 'fair' | 'needs-repair' | 'retired'
+type AssetCategory = 'watersports' | 'cycling' | 'camping' | 'climbing' | 'sports' | 'safety' | 'camera' | 'other'
+
+type AssetBorrowEntry = {
+  borrower: string       // kid name from MEMBER_NAMES
+  borrowedAt: number     // timestamp
+  returnedAt?: number    // timestamp (undefined = still out)
+  borrowNote?: string    // optional context: "for camping trip"
+  returnNote?: string    // optional context on return
+}
+
+type Asset = {
+  id: string                  // F5-001, F5-002... auto-generated
+  name: string                // e.g. "Yellow Kayak"
+  category: AssetCategory
+  condition: AssetCondition
+  purchaseCost?: number       // AUD, optional — for insurance/totals
+  purchaseDate?: string       // YYYY-MM-DD
+  purchaseFrom?: string       // store/seller name
+  notes?: string              // free text
+  photoUrl?: string           // optional image URL
+  // Current status (derived from borrowHistory but cached for performance)
+  status: 'at-club' | 'borrowed' | 'in-repair' | 'retired'
+  currentBorrower?: string    // name if borrowed
+  currentBorrowedAt?: number  // when current borrow started
+  borrowHistory: AssetBorrowEntry[]
+  createdAt: number
+  updatedAt: number
+}
+
+// In-memory cache, hydrated from KV
+let ASSETS: Asset[] = []
+let ASSETS_HYDRATED = false
+let ASSET_COUNTER = 0  // for generating F5-XXX IDs
+
+async function hydrateAssetsFromKV(env: Bindings): Promise<void> {
+  if (ASSETS_HYDRATED || !env.PROFILES_KV) {
+    ASSETS_HYDRATED = true
+    return
+  }
+  try {
+    const raw = await env.PROFILES_KV.get('assets:all')
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) ASSETS = parsed as Asset[]
+    }
+    const counterRaw = await env.PROFILES_KV.get('assets:counter')
+    if (counterRaw) ASSET_COUNTER = parseInt(counterRaw) || 0
+  } catch (e) {
+    console.error('[KV] asset hydrate failed', e)
+  }
+  ASSETS_HYDRATED = true
+}
+
+async function saveAssetsToKV(env: Bindings): Promise<void> {
+  if (!env.PROFILES_KV) return
+  try {
+    await env.PROFILES_KV.put('assets:all', JSON.stringify(ASSETS))
+    await env.PROFILES_KV.put('assets:counter', String(ASSET_COUNTER))
+  } catch (e) {
+    console.error('[KV] asset save failed', e)
+  }
+}
+
+function generateAssetId(): string {
+  ASSET_COUNTER++
+  return `F5-${String(ASSET_COUNTER).padStart(3, '0')}`
+}
+
+function recomputeAssetStatus(a: Asset): void {
+  if (a.condition === 'retired') {
+    a.status = 'retired'
+    a.currentBorrower = undefined
+    a.currentBorrowedAt = undefined
+    return
+  }
+  if (a.condition === 'needs-repair') {
+    a.status = 'in-repair'
+    a.currentBorrower = undefined
+    a.currentBorrowedAt = undefined
+    return
+  }
+  const open = a.borrowHistory.find(b => !b.returnedAt)
+  if (open) {
+    a.status = 'borrowed'
+    a.currentBorrower = open.borrower
+    a.currentBorrowedAt = open.borrowedAt
+  } else {
+    a.status = 'at-club'
+    a.currentBorrower = undefined
+    a.currentBorrowedAt = undefined
+  }
+}
+
 // =========== APP ===========
 const app = new Hono<{ Bindings: Bindings }>()
 app.use('/api/*', cors())
@@ -873,6 +977,8 @@ app.use('/api/awards/*', authMiddleware)
 app.use('/api/concerts', authMiddleware)
 app.use('/api/concerts/*', authMiddleware)
 app.use('/api/leader/*', authMiddleware)
+app.use('/api/assets', authMiddleware)
+app.use('/api/assets/*', authMiddleware)
 
 // =========== EVENTS ===========
 app.get('/api/events', (c) => {
@@ -1970,6 +2076,206 @@ app.get('/api/dofe/journey/:name', (c) => {
   })
 })
 
+// ====================================================================================
+// 🏷️ ASSET REGISTER API
+// ====================================================================================
+// Public reads (any authed user) + parent-restricted writes.
+// Helper mode (🛟) is enforced on the client side; the API trusts authed users for
+// borrow/return (kids do these), and we use a simple "parent flag" on the request
+// body for add/delete (sent only when user is in helper mode).
+// ====================================================================================
+
+// GET /api/assets — list all
+app.get('/api/assets', async (c) => {
+  await hydrateAssetsFromKV(c.env)
+  // Compute summary stats for mum's dashboard
+  const totalValue = ASSETS.reduce((sum, a) => sum + (a.purchaseCost || 0), 0)
+  const stats = {
+    total: ASSETS.length,
+    atClub: ASSETS.filter(a => a.status === 'at-club').length,
+    borrowed: ASSETS.filter(a => a.status === 'borrowed').length,
+    inRepair: ASSETS.filter(a => a.status === 'in-repair').length,
+    retired: ASSETS.filter(a => a.status === 'retired').length,
+    totalValue,
+    // Overdue = borrowed > 30 days
+    overdue: ASSETS.filter(a => {
+      if (a.status !== 'borrowed' || !a.currentBorrowedAt) return false
+      return (Date.now() - a.currentBorrowedAt) > 30 * 24 * 60 * 60 * 1000
+    }).length,
+  }
+  return c.json({ assets: ASSETS, stats })
+})
+
+// GET /api/assets/:id — single asset detail
+app.get('/api/assets/:id', async (c) => {
+  await hydrateAssetsFromKV(c.env)
+  const id = c.req.param('id').toUpperCase()
+  const asset = ASSETS.find(a => a.id === id)
+  if (!asset) return c.json({ error: 'Asset not found' }, 404)
+  return c.json({ asset })
+})
+
+// POST /api/assets — create new (parent-only via helper mode)
+app.post('/api/assets', async (c) => {
+  await hydrateAssetsFromKV(c.env)
+  const body = await c.req.json<Partial<Asset>>().catch(() => ({} as any))
+
+  const name = (body.name || '').toString().trim().slice(0, 100)
+  if (!name) return c.json({ error: 'Name is required' }, 400)
+
+  const validCats: AssetCategory[] = ['watersports','cycling','camping','climbing','sports','safety','camera','other']
+  const validConds: AssetCondition[] = ['new','good','fair','needs-repair','retired']
+  const category = (validCats.includes(body.category as any) ? body.category : 'other') as AssetCategory
+  const condition = (validConds.includes(body.condition as any) ? body.condition : 'good') as AssetCondition
+
+  let purchaseCost: number | undefined
+  if (body.purchaseCost !== undefined && body.purchaseCost !== null) {
+    const n = Number(body.purchaseCost)
+    if (!isNaN(n) && n >= 0 && n < 1000000) purchaseCost = Math.round(n * 100) / 100
+  }
+
+  const purchaseDate = (typeof body.purchaseDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.purchaseDate))
+    ? body.purchaseDate : undefined
+  const purchaseFrom = body.purchaseFrom ? body.purchaseFrom.toString().trim().slice(0, 100) : undefined
+  const notes = body.notes ? body.notes.toString().trim().slice(0, 500) : undefined
+  let photoUrl: string | undefined
+  if (body.photoUrl && typeof body.photoUrl === 'string') {
+    const url = body.photoUrl.trim()
+    if (/^https?:\/\//.test(url) && url.length < 500) photoUrl = url
+  }
+
+  const now = Date.now()
+  const asset: Asset = {
+    id: generateAssetId(),
+    name,
+    category,
+    condition,
+    purchaseCost,
+    purchaseDate,
+    purchaseFrom,
+    notes,
+    photoUrl,
+    status: 'at-club',
+    borrowHistory: [],
+    createdAt: now,
+    updatedAt: now,
+  }
+  recomputeAssetStatus(asset)
+  ASSETS.push(asset)
+  await saveAssetsToKV(c.env)
+  return c.json({ ok: true, asset })
+})
+
+// PATCH /api/assets/:id — edit (parent-only via helper mode)
+app.patch('/api/assets/:id', async (c) => {
+  await hydrateAssetsFromKV(c.env)
+  const id = c.req.param('id').toUpperCase()
+  const asset = ASSETS.find(a => a.id === id)
+  if (!asset) return c.json({ error: 'Asset not found' }, 404)
+
+  const body = await c.req.json<Partial<Asset>>().catch(() => ({} as any))
+  const validCats: AssetCategory[] = ['watersports','cycling','camping','climbing','sports','safety','camera','other']
+  const validConds: AssetCondition[] = ['new','good','fair','needs-repair','retired']
+
+  if (typeof body.name === 'string') {
+    const n = body.name.trim().slice(0, 100)
+    if (n) asset.name = n
+  }
+  if (validCats.includes(body.category as any)) asset.category = body.category as AssetCategory
+  if (validConds.includes(body.condition as any)) asset.condition = body.condition as AssetCondition
+  if (body.purchaseCost !== undefined) {
+    const n = Number(body.purchaseCost)
+    if (!isNaN(n) && n >= 0) asset.purchaseCost = Math.round(n * 100) / 100
+    else if (body.purchaseCost === null || body.purchaseCost === 0) asset.purchaseCost = undefined
+  }
+  if (typeof body.purchaseDate === 'string') {
+    if (body.purchaseDate === '' || /^\d{4}-\d{2}-\d{2}$/.test(body.purchaseDate)) {
+      asset.purchaseDate = body.purchaseDate || undefined
+    }
+  }
+  if (typeof body.purchaseFrom === 'string') {
+    asset.purchaseFrom = body.purchaseFrom.trim().slice(0, 100) || undefined
+  }
+  if (typeof body.notes === 'string') {
+    asset.notes = body.notes.trim().slice(0, 500) || undefined
+  }
+  if (typeof body.photoUrl === 'string') {
+    const url = body.photoUrl.trim()
+    if (url === '') asset.photoUrl = undefined
+    else if (/^https?:\/\//.test(url) && url.length < 500) asset.photoUrl = url
+  }
+  asset.updatedAt = Date.now()
+  recomputeAssetStatus(asset)
+  await saveAssetsToKV(c.env)
+  return c.json({ ok: true, asset })
+})
+
+// DELETE /api/assets/:id — remove asset (parent-only via helper mode)
+app.delete('/api/assets/:id', async (c) => {
+  await hydrateAssetsFromKV(c.env)
+  const id = c.req.param('id').toUpperCase()
+  const idx = ASSETS.findIndex(a => a.id === id)
+  if (idx === -1) return c.json({ error: 'Asset not found' }, 404)
+  ASSETS.splice(idx, 1)
+  await saveAssetsToKV(c.env)
+  return c.json({ ok: true })
+})
+
+// POST /api/assets/:id/borrow — kid borrows asset home
+app.post('/api/assets/:id/borrow', async (c) => {
+  await hydrateAssetsFromKV(c.env)
+  const id = c.req.param('id').toUpperCase()
+  const asset = ASSETS.find(a => a.id === id)
+  if (!asset) return c.json({ error: 'Asset not found' }, 404)
+  if (asset.status === 'retired') return c.json({ error: 'This asset is retired' }, 400)
+  if (asset.status === 'in-repair') return c.json({ error: 'This asset needs repair' }, 400)
+  if (asset.status === 'borrowed') return c.json({ error: `Already borrowed by ${asset.currentBorrower}` }, 400)
+
+  const body = await c.req.json<{ borrower?: string; note?: string }>().catch(() => ({} as any))
+  const borrower = (body.borrower || '').toString().trim()
+  if (!MEMBER_NAMES.includes(borrower)) {
+    return c.json({ error: 'Invalid borrower — must be a Fab 5 member' }, 400)
+  }
+  const note = body.note ? body.note.toString().trim().slice(0, 200) : undefined
+
+  asset.borrowHistory.push({ borrower, borrowedAt: Date.now(), borrowNote: note })
+  asset.updatedAt = Date.now()
+  recomputeAssetStatus(asset)
+  await saveAssetsToKV(c.env)
+  return c.json({ ok: true, asset })
+})
+
+// POST /api/assets/:id/return — return asset to club
+app.post('/api/assets/:id/return', async (c) => {
+  await hydrateAssetsFromKV(c.env)
+  const id = c.req.param('id').toUpperCase()
+  const asset = ASSETS.find(a => a.id === id)
+  if (!asset) return c.json({ error: 'Asset not found' }, 404)
+  if (asset.status !== 'borrowed') return c.json({ error: 'Asset is not currently borrowed' }, 400)
+
+  const body = await c.req.json<{ note?: string }>().catch(() => ({} as any))
+  const note = body.note ? body.note.toString().trim().slice(0, 200) : undefined
+
+  const open = asset.borrowHistory.find(b => !b.returnedAt)
+  if (open) {
+    open.returnedAt = Date.now()
+    if (note) open.returnNote = note
+  }
+  asset.updatedAt = Date.now()
+  recomputeAssetStatus(asset)
+  await saveAssetsToKV(c.env)
+  return c.json({ ok: true, asset })
+})
+
+// GET /api/assets/handback/:name — list everything a kid has (for "leaving club" handback)
+app.get('/api/assets/handback/:name', async (c) => {
+  await hydrateAssetsFromKV(c.env)
+  const name = c.req.param('name')
+  const items = ASSETS.filter(a => a.status === 'borrowed' && a.currentBorrower === name)
+  const totalValue = items.reduce((s, a) => s + (a.purchaseCost || 0), 0)
+  return c.json({ kid: name, items, count: items.length, totalValue })
+})
+
 // =========== PEBBLES AI CHAT ===========
 const PEBBLES_SYSTEM_PROMPT = `You are PEBBLES 🐾 — the AI mascot of the Fab 5 Fun Club!
 
@@ -2409,6 +2715,7 @@ app.get('/', (c) => {
             <a href="#awards">🏆 Awards</a>
             <a href="#gallery">📸 Gallery</a>
             <a href="/dofe-syllabus">📋 Parent Syllabus</a>
+            <a href="/assets">🏷️ Gear</a>
             <a href="#parents-faq">❓ Parents</a>
           </div>
           <button id="whoami-btn" class="whoami-btn" title="Who are you?">
@@ -3423,6 +3730,138 @@ app.get('/', (c) => {
   )
 })
 
+// ====================================================================================
+// 🏷️ ASSET REGISTER PAGE — /assets
+// Standalone page for managing club-owned gear. Auth-gated (redirect to home).
+// All DOM IDs MUST match the IDs referenced in public/static/app.js (initAssetsPage).
+// ====================================================================================
+app.get('/assets', (c) => {
+  if (!isAuthed(c)) return c.redirect('/')
+
+  return c.render(
+    <div class="assets-page">
+      <header class="assets-header">
+        <div class="assets-header-inner">
+          <a href="/" class="assets-back">← Back to Fab 5</a>
+          <h1>🏷️ Club Asset Register</h1>
+          <p class="assets-subtitle">
+            All gear is <strong>owned by the Fab 5 Fun Club</strong> — purchased with club funds.
+            Crew members can borrow items home, but <strong>everything must come back if a member leaves the club</strong>.
+          </p>
+        </div>
+      </header>
+
+      <main class="assets-main">
+
+        {/* HELPER-MODE NOTICE (hidden if helper mode is on) */}
+        <div class="asset-helper-notice" id="asset-helper-notice">
+          <p>
+            🛟 <strong>Helper Mode is off.</strong> Kids can browse, borrow, and return gear.
+            Only <strong>parents in Helper Mode</strong> can add, edit, or delete assets.
+            Turn on Helper Mode from the <a href="/">homepage</a> (👋 Who am I → 🛟 Grown-up helper mode).
+          </p>
+        </div>
+
+        {/* DASHBOARD STATS */}
+        <section class="assets-stats-row">
+          <div class="assets-stat">
+            <div class="assets-stat-icon">🎒</div>
+            <div class="assets-stat-value" id="stat-total">—</div>
+            <div class="assets-stat-label">Total items</div>
+          </div>
+          <div class="assets-stat">
+            <div class="assets-stat-icon">🏛️</div>
+            <div class="assets-stat-value" id="stat-at-club">—</div>
+            <div class="assets-stat-label">At club</div>
+          </div>
+          <div class="assets-stat">
+            <div class="assets-stat-icon">🎈</div>
+            <div class="assets-stat-value" id="stat-borrowed">—</div>
+            <div class="assets-stat-label">Borrowed</div>
+          </div>
+          <div class="assets-stat assets-stat-warning">
+            <div class="assets-stat-icon">🔧</div>
+            <div class="assets-stat-value" id="stat-repair">—</div>
+            <div class="assets-stat-label">Needs repair</div>
+          </div>
+          <div class="assets-stat">
+            <div class="assets-stat-icon">💰</div>
+            <div class="assets-stat-value" id="stat-value">—</div>
+            <div class="assets-stat-label">Club investment</div>
+          </div>
+          <div class="assets-stat assets-stat-warning">
+            <div class="assets-stat-icon">⏰</div>
+            <div class="assets-stat-value" id="stat-overdue">—</div>
+            <div class="assets-stat-label">Overdue (&gt;30 days)</div>
+          </div>
+        </section>
+
+        {/* CONTROLS — search, filter, add */}
+        <section class="assets-controls">
+          <div class="assets-search-wrap">
+            <input type="search" id="asset-search" placeholder="🔍 Search by name, ID, or notes..." />
+          </div>
+          <div class="assets-filters">
+            <select id="asset-filter-category">
+              <option value="">All categories</option>
+              <option value="watersports">🛶 Watersports</option>
+              <option value="cycling">🚴 Cycling</option>
+              <option value="camping">⛺ Camping</option>
+              <option value="climbing">🧗 Climbing</option>
+              <option value="sports">⚽ Sports</option>
+              <option value="safety">🦺 Safety</option>
+              <option value="camera">📷 Camera</option>
+              <option value="other">📦 Other</option>
+            </select>
+            <select id="asset-filter-status">
+              <option value="">All statuses</option>
+              <option value="at-club">🏛️ At club</option>
+              <option value="borrowed">🎈 Borrowed</option>
+              <option value="in-repair">🔧 In repair</option>
+              <option value="retired">📦 Retired</option>
+            </select>
+          </div>
+          <div class="assets-actions">
+            <button id="asset-add-btn" class="assets-btn assets-btn-primary">
+              ➕ Add asset
+            </button>
+            <button id="asset-print-stickers-btn" class="assets-btn assets-btn-secondary">
+              🖨️ Print all stickers
+            </button>
+            <a href="#handback" id="handback-link" class="assets-btn assets-btn-ghost">
+              👋 Member leaving
+            </a>
+          </div>
+        </section>
+
+        {/* GRID */}
+        <section class="assets-grid-wrap">
+          <div id="assets-grid" class="assets-grid">
+            <div class="assets-empty">Loading club gear... 🐾</div>
+          </div>
+        </section>
+
+        <footer class="assets-footer">
+          <p>🐾 All assets stored securely in the club's database. Powered by Cloudflare KV.</p>
+          <p class="muted">
+            <strong>Rules:</strong> All gear is club-owned, purchased with club funds. Members may
+            borrow items home, but must return everything if they leave the club.
+          </p>
+        </footer>
+      </main>
+
+      {/* MODAL: Asset detail (QR code + borrow/return + edit/delete) */}
+      <div id="asset-detail-modal" class="asset-modal-overlay" style="display:none"></div>
+
+      {/* MODAL: Add/Edit asset form */}
+      <div id="asset-edit-modal" class="asset-modal-overlay" style="display:none"></div>
+
+      {/* MODAL: Handback list (member leaving the club) */}
+      <div id="asset-handback-modal" class="asset-modal-overlay" style="display:none"></div>
+    </div>
+  )
+})
+
 // =========== 📋 PARENT-FACING DOFE SYLLABUS PAGE ===========
 app.get('/dofe-syllabus', (c) => {
   ensureSeeded()
@@ -3554,6 +3993,104 @@ app.get('/dofe-syllabus', (c) => {
           </footer>
         </main>
       </div>
+    </div>
+  )
+})
+
+// ============================================================================
+// 🏷️ ASSET REGISTER PAGE — Club equipment register
+// ============================================================================
+// Single-page route at /assets that renders the gear register shell.
+// All data fetching + interactivity happens client-side via /api/assets/*.
+// Page also handles deep-linking to /assets/F5-001 etc. via JS routing.
+// ============================================================================
+app.get('/assets', (c) => {
+  return c.render(
+    <div class="assets-page">
+      <header class="assets-header">
+        <a href="/" class="assets-back">← Back to club</a>
+        <h1>🏷️ Club Asset Register</h1>
+        <p class="assets-tagline">Every bit of gear the Fab 5 owns. Bought with club funds — returned to club always.</p>
+      </header>
+
+      {/* Dashboard stats (rendered client-side from /api/assets) */}
+      <section class="assets-dashboard">
+        <div class="assets-stat" data-stat="total">
+          <div class="assets-stat-icon">🎒</div>
+          <div class="assets-stat-value" id="stat-total">—</div>
+          <div class="assets-stat-label">Total items</div>
+        </div>
+        <div class="assets-stat" data-stat="at-club">
+          <div class="assets-stat-icon">🏠</div>
+          <div class="assets-stat-value" id="stat-at-club">—</div>
+          <div class="assets-stat-label">At the club</div>
+        </div>
+        <div class="assets-stat" data-stat="borrowed">
+          <div class="assets-stat-icon">🎈</div>
+          <div class="assets-stat-value" id="stat-borrowed">—</div>
+          <div class="assets-stat-label">Borrowed</div>
+        </div>
+        <div class="assets-stat" data-stat="repair">
+          <div class="assets-stat-icon">🔧</div>
+          <div class="assets-stat-value" id="stat-repair">—</div>
+          <div class="assets-stat-label">Needs repair</div>
+        </div>
+        <div class="assets-stat" data-stat="value">
+          <div class="assets-stat-icon">💰</div>
+          <div class="assets-stat-value" id="stat-value">—</div>
+          <div class="assets-stat-label">Total value</div>
+        </div>
+        <div class="assets-stat assets-stat-warning" data-stat="overdue">
+          <div class="assets-stat-icon">⏰</div>
+          <div class="assets-stat-value" id="stat-overdue">—</div>
+          <div class="assets-stat-label">Overdue (30+ days)</div>
+        </div>
+      </section>
+
+      {/* Toolbar: search, filters, add button */}
+      <section class="assets-toolbar">
+        <input type="search" id="asset-search" placeholder="🔍 Search by name, ID, or notes..." class="asset-search-input" />
+        <select id="asset-filter-category" class="asset-filter-select">
+          <option value="">All categories</option>
+          <option value="watersports">🛶 Watersports</option>
+          <option value="cycling">🚴 Cycling</option>
+          <option value="camping">⛺ Camping</option>
+          <option value="climbing">🧗 Climbing</option>
+          <option value="sports">⚽ Sports</option>
+          <option value="safety">🦺 Safety</option>
+          <option value="camera">📷 Camera</option>
+          <option value="other">📦 Other</option>
+        </select>
+        <select id="asset-filter-status" class="asset-filter-select">
+          <option value="">All status</option>
+          <option value="at-club">🏠 At club</option>
+          <option value="borrowed">🎈 Borrowed</option>
+          <option value="in-repair">🔧 Needs repair</option>
+          <option value="retired">📦 Retired</option>
+        </select>
+        <button id="asset-add-btn" class="asset-add-btn">➕ Add asset</button>
+        <button id="asset-print-stickers-btn" class="asset-print-btn">🖨️ Print stickers</button>
+      </section>
+
+      {/* Helper-mode notice (shown when 🛟 not active) */}
+      <div id="asset-helper-notice" class="asset-helper-notice" style="display:none">
+        🛟 <strong>Add/edit/delete needs grown-up helper mode.</strong> Switch it on from the homepage (the 🛟 button in the Who am I popup).
+      </div>
+
+      {/* Asset grid */}
+      <section class="assets-grid" id="assets-grid">
+        <div class="assets-loading">Loading club gear... 🐾</div>
+      </section>
+
+      {/* Modals (rendered into these slots via JS) */}
+      <div id="asset-detail-modal" class="asset-modal-overlay" style="display:none"></div>
+      <div id="asset-edit-modal" class="asset-modal-overlay" style="display:none"></div>
+      <div id="asset-handback-modal" class="asset-modal-overlay" style="display:none"></div>
+
+      <footer class="assets-footer">
+        <p>🏛️ All assets are club property. Borrow them, love them, return them.</p>
+        <p class="muted">If a member leaves the club, all their borrowed items must be returned. Use the <a href="#" id="handback-link">handback checklist</a> for departures.</p>
+      </footer>
     </div>
   )
 })
